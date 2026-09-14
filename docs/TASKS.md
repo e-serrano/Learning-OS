@@ -69,7 +69,7 @@ Issue bug/feature y PR template con cambios, motivo, tests e impacto en especifi
 Python 3.13+, FastAPI, Pydantic v2, SQLAlchemy 2, Alembic, pytest, httpx, Ruff, mypy, uv.
 
 ### T011 — Frontend bootstrap
-**Estado:** TODO
+**Estado:** DONE
 **Dep:** T001  
 React + TypeScript + Vite; `npm run build` funcional.
 
