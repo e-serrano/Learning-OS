@@ -26,6 +26,11 @@ Start with [docs/SPECS.md](docs/SPECS.md). The execution backlog lives in
 [docs/TASKS.md](docs/TASKS.md); [docs/AGENTS.md](docs/AGENTS.md) defines the
 coding-agent contract for this repository.
 
+## Development
+
+See [DEVELOPMENT.md](DEVELOPMENT.md) for setup and [CONTRIBUTING.md](CONTRIBUTING.md)
+for branch/commit conventions and quality gates.
+
 ## Status
 
 Early bootstrap. See `docs/TASKS.md` for current progress.

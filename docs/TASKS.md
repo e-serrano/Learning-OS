@@ -74,6 +74,7 @@ Python 3.13+, FastAPI, Pydantic v2, SQLAlchemy 2, Alembic, pytest, httpx, Ruff, 
 React + TypeScript + Vite; `npm run build` funcional.
 
 ### T012 — Entorno de desarrollo
+**Estado:** DONE
 **Dep:** T010, T011  
 `.env.example`, README de desarrollo y comandos reproducibles.
 
