@@ -49,7 +49,7 @@ Crear repositorio GitHub privado por defecto; configurar `origin`; no inventar o
 Definir `main`, `feature/*`, `fix/*`, `chore/*`; `develop` es opcional.
 
 ### T007 — Protección de `main`
-**Estado:** TODO (pendiente de autorización — cambia configuración remota compartida)
+**Estado:** BLOCKED — GitHub API devuelve 403: "Upgrade to GitHub Pro or make this repository public to enable this feature." El repositorio es privado en un plan Free; branch protection clásica no está disponible. Requiere que el usuario decida: pasar a GitHub Pro, o hacer el repositorio público. Ninguna de las dos se ha aplicado (cambio de facturación/visibilidad fuera de autonomía del agente).
 **Dep:** T005  
 PR requerido, checks de CI requeridos y sin force-push cuando la configuración de GitHub lo permita.
 
