@@ -64,10 +64,12 @@ Crear `.github/workflows/ci.yml`; ejecutar backend tests, Ruff, mypy, frontend b
 Issue bug/feature y PR template con cambios, motivo, tests e impacto en especificación.
 
 ### T010 — Backend bootstrap
+**Estado:** DONE
 **Dep:** T001  
 Python 3.13+, FastAPI, Pydantic v2, SQLAlchemy 2, Alembic, pytest, httpx, Ruff, mypy, uv.
 
 ### T011 — Frontend bootstrap
+**Estado:** TODO
 **Dep:** T001  
 React + TypeScript + Vite; `npm run build` funcional.
 
