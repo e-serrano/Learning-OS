@@ -83,6 +83,7 @@ React + TypeScript + Vite; `npm run build` funcional.
 # Fase 1 — Configuración y onboarding
 
 ### T013 — Modelo de configuración local
+**Estado:** DONE (almacenado en JSON local vía `ConfigStore`; se migrará a SQLite `app_settings` en T034, ver Dep de T027)
 **Dep:** T010  
 Configurar `vault_path`, provider, model, base URL, idioma y estado de onboarding. Sin secretos.
 
