@@ -88,6 +88,7 @@ React + TypeScript + Vite; `npm run build` funcional.
 Configurar `vault_path`, provider, model, base URL, idioma y estado de onboarding. Sin secretos.
 
 ### T014 — Almacenamiento seguro de credenciales
+**Estado:** DONE
 **Dep:** T013  
 Usar OS keyring/credential store para OpenAI, Anthropic, OpenRouter y NVIDIA. Nunca SQLite/Markdown/Git/logs/localStorage.
 
