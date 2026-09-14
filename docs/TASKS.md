@@ -93,6 +93,7 @@ Configurar `vault_path`, provider, model, base URL, idioma y estado de onboardin
 Usar OS keyring/credential store para OpenAI, Anthropic, OpenRouter y NVIDIA. Nunca SQLite/Markdown/Git/logs/localStorage.
 
 ### T015 — Registro de providers
+**Estado:** DONE
 **Dep:** T010  
 IDs: `mock`, `ollama`, `openai`, `anthropic`, `openrouter`, `nvidia_nim`, `openai_compatible`.
 
