@@ -54,7 +54,7 @@ Definir `main`, `feature/*`, `fix/*`, `chore/*`; `develop` es opcional.
 PR requerido, checks de CI requeridos y sin force-push cuando la configuración de GitHub lo permita.
 
 ### T008 — GitHub Actions
-**Estado:** TODO
+**Estado:** DONE
 **Dep:** T010, T011  
 Crear `.github/workflows/ci.yml`; ejecutar backend tests, Ruff, mypy, frontend build/tests.
 
