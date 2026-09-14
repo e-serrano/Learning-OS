@@ -18,39 +18,48 @@ Estados: `TODO → IN_PROGRESS → BLOCKED → DONE`.
 # Fase 0 — GitHub y bootstrap
 
 ### T001 — Estructura inicial
+**Estado:** DONE
 **Dep:** —  
 **Archivos:** raíz, `backend/`, `frontend/`, `scripts/`.  
 **Aceptación:** estructura del repositorio creada y documentación normativa presente.
 
 ### T002 — Inicializar Git
+**Estado:** DONE
 **Dep:** T001  
 `git init`, rama `main`, working tree limpio.
 
 ### T003 — `.gitignore`
+**Estado:** DONE
 **Dep:** T002  
 Ignorar `.venv`, `node_modules`, builds, `.env`, bases SQLite locales, IDEs y caches; no ignorar código, tests, migraciones ni prompts.
 
 ### T004 — Commit inicial
+**Estado:** DONE
 **Dep:** T003  
 Commit `chore: bootstrap learning os repository`.
 
 ### T005 — Crear GitHub remote
+**Estado:** DONE
 **Dep:** T004  
 Crear repositorio GitHub privado por defecto; configurar `origin`; no inventar owner/URL.
 
 ### T006 — Workflow de ramas
+**Estado:** DONE
 **Dep:** T005  
 Definir `main`, `feature/*`, `fix/*`, `chore/*`; `develop` es opcional.
 
 ### T007 — Protección de `main`
+**Estado:** TODO (pendiente de autorización — cambia configuración remota compartida)
 **Dep:** T005  
 PR requerido, checks de CI requeridos y sin force-push cuando la configuración de GitHub lo permita.
 
 ### T008 — GitHub Actions
+**Estado:** TODO
 **Dep:** T010, T011  
 Crear `.github/workflows/ci.yml`; ejecutar backend tests, Ruff, mypy, frontend build/tests.
 
 ### T009 — Templates GitHub
+**Estado:** DONE
 **Dep:** T005  
 Issue bug/feature y PR template con cambios, motivo, tests e impacto en especificación.
 
