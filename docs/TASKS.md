@@ -98,6 +98,7 @@ Usar OS keyring/credential store para OpenAI, Anthropic, OpenRouter y NVIDIA. Nu
 IDs: `mock`, `ollama`, `openai`, `anthropic`, `openrouter`, `nvidia_nim`, `openai_compatible`.
 
 ### T016 — Configuración de provider
+**Estado:** DONE
 **Dep:** T015  
 `provider_id`, `model`, `base_url`, `credential_ref`, `enabled`, `is_default`.
 

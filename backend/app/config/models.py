@@ -1,6 +1,9 @@
 from enum import StrEnum
+from uuid import uuid4
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, model_validator
+
+from app.ai.provider_registry import ProviderId
 
 
 class OnboardingStep(StrEnum):
@@ -13,6 +16,22 @@ class OnboardingStep(StrEnum):
     VALIDATE = "VALIDATE"
     FIRST_GOAL = "FIRST_GOAL"
     COMPLETE = "COMPLETE"
+
+
+class AIProviderConfig(BaseModel):
+    """A saved provider configuration -- mirrors the `ai_provider_configs` table.
+
+    `credential_ref` is only a keyring lookup key, never the secret itself
+    -- see docs/DATABASE_SCHEMA.md #17 and docs/AGENTS.md #21.
+    """
+
+    id: str = Field(default_factory=lambda: uuid4().hex)
+    provider_id: ProviderId
+    model: str
+    base_url: str | None = None
+    credential_ref: str | None = None
+    enabled: bool = True
+    is_default: bool = False
 
 
 class AppConfig(BaseModel):
@@ -28,3 +47,11 @@ class AppConfig(BaseModel):
     base_url: str | None = None
     language: str = "en"
     onboarding_step: OnboardingStep = OnboardingStep.WELCOME
+    ai_providers: list[AIProviderConfig] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _at_most_one_default_provider(self) -> "AppConfig":
+        defaults = [p for p in self.ai_providers if p.is_default]
+        if len(defaults) > 1:
+            raise ValueError("At most one AIProviderConfig may have is_default=True")
+        return self

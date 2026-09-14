@@ -1,6 +1,7 @@
 from pathlib import Path
 
-from app.config.models import AppConfig, OnboardingStep
+from app.ai.provider_registry import ProviderId
+from app.config.models import AIProviderConfig, AppConfig, OnboardingStep
 from app.config.store import ConfigStore
 
 
@@ -23,6 +24,25 @@ def test_save_then_load_roundtrips(tmp_path: Path) -> None:
 
     loaded = store.load()
     assert loaded == original
+
+
+def test_save_then_load_roundtrips_ai_providers(tmp_path: Path) -> None:
+    store = ConfigStore(tmp_path / "app_config.json")
+    original = AppConfig(
+        ai_providers=[
+            AIProviderConfig(
+                provider_id=ProviderId.OPENAI,
+                model="gpt-5",
+                credential_ref="openai:abc123",
+                is_default=True,
+            ),
+        ]
+    )
+    store.save(original)
+
+    loaded = store.load()
+    assert loaded == original
+    assert loaded.ai_providers[0].credential_ref == "openai:abc123"
 
 
 def test_save_is_atomic_no_leftover_temp_files(tmp_path: Path) -> None:
