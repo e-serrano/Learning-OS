@@ -174,6 +174,7 @@ Probar instalación limpia con Mock/Ollama y provider remoto simulado.
 Foreign keys ON, WAL, busy timeout, timestamps UTC.
 
 ### T028 — Alembic
+**Estado:** DONE
 **Dep:** T027  
 Migración desde DB vacía y esquema versionado.
 
