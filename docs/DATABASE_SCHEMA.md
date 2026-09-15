@@ -325,6 +325,33 @@ them). `managed_id` is the note's stable frontmatter `id` when present
 (docs/OBSIDIAN_SCHEMA.md #3); `missing` supports the deletion policy in
 docs/OBSIDIAN_SCHEMA.md #16 (mark missing, never silently delete evidence).
 
+### change_proposals
+
+Added while implementing T046 -- absent from the original schema despite
+docs/SPECS.md #16, docs/AI_CONTRACTS.md #9 and docs/API_SPEC.md #2
+(vault changes) all describing this exact flow.
+
+```sql
+CREATE TABLE change_proposals (
+    id TEXT PRIMARY KEY,
+    path TEXT NOT NULL,
+    operation TEXT NOT NULL,
+    section TEXT,
+    content TEXT NOT NULL,
+    status TEXT NOT NULL,
+    error TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    applied_at TEXT
+);
+```
+
+`operation` is restricted to the enum in docs/AGENTS.md #6:
+`create_file`, `update_frontmatter`, `replace_managed_section`,
+`add_link`. `status` is one of `pending`, `approved`, `rejected`,
+`applied`, `conflicted`, `failed` (T046). Applying a proposal (T083) is
+a separate, later concern -- this table only stores the proposal itself.
+
 ---
 
 ## 3. Indexes

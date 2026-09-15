@@ -294,8 +294,11 @@ Diff before/after legible para UI.
 **Nota:** `app/obsidian/diff_engine.py` (`generate_diff`), sobre `difflib` de stdlib. Devuelve dos formas: `unified` (texto estándar para mostrar tal cual) y `lines` (desglose línea a línea tipado equal/added/removed, para una UI custom inline/side-by-side). Sin dependencias nuevas.
 
 ### T046 — Change proposals
+**Estado:** DONE
 **Dep:** T045  
 Estados `pending/approved/rejected/applied/conflicted/failed`; operaciones limitadas.
+
+**Nota:** Gap de esquema igual que evidence.session_id y vault_files — `DATABASE_SCHEMA.md` nunca listaba `change_proposals` pese a que `SPECS.md` §16, `AI_CONTRACTS.md` §9 y `API_SPEC.md` §2 describen el flujo exacto. Añadida tabla vía migración nueva `b9c38d0c7cf0`. `app/obsidian/change_proposal.py`: enums `ProposalOperation` (4 valores, `AGENTS.md` §6) y `ProposalStatus` (6 valores) + `ChangeProposalRepository`. Aplicar una propuesta aprobada (T083) queda fuera de alcance — esto solo modela y persiste la propuesta.
 
 ### T047 — Obsidian tests
 **Dep:** T037–T046  

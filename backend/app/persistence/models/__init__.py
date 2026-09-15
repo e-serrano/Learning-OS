@@ -1,4 +1,5 @@
 from app.persistence.models.ai_run import AIRunModel
+from app.persistence.models.change_proposal import ChangeProposalModel
 from app.persistence.models.concept import ConceptModel, ConceptRelationModel
 from app.persistence.models.config import AIProviderConfigModel, AppSettingModel
 from app.persistence.models.evaluation import EvaluationModel
@@ -20,6 +21,7 @@ __all__ = [
     "AIRunModel",
     "ActivityModel",
     "AppSettingModel",
+    "ChangeProposalModel",
     "ConceptModel",
     "ConceptRelationModel",
     "EvaluationModel",

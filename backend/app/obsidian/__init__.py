@@ -1,4 +1,10 @@
 from app.obsidian.atomic_writer import AtomicWriteVerificationError, write_note
+from app.obsidian.change_proposal import (
+    ChangeProposal,
+    ChangeProposalRepository,
+    ProposalOperation,
+    ProposalStatus,
+)
 from app.obsidian.conflict_detection import VaultConflictError, assert_no_conflict
 from app.obsidian.diff_engine import DiffLine, DiffResult, generate_diff
 from app.obsidian.frontmatter import ParsedFrontmatter, parse_frontmatter
@@ -21,10 +27,14 @@ from app.obsidian.vault_resolver import (
 __all__ = [
     "AtomicWriteVerificationError",
     "DEFAULT_IGNORED_DIRS",
+    "ChangeProposal",
+    "ChangeProposalRepository",
     "DiffLine",
     "DiffResult",
     "ManagedSectionError",
     "ParsedFrontmatter",
+    "ProposalOperation",
+    "ProposalStatus",
     "ScanResult",
     "ScannedFile",
     "VaultConflictError",
