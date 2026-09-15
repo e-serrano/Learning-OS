@@ -169,6 +169,7 @@ Probar instalación limpia con Mock/Ollama y provider remoto simulado.
 # Fase 2 — Dominio y SQLite
 
 ### T027 — SQLite engine
+**Estado:** DONE
 **Dep:** T010, T013  
 Foreign keys ON, WAL, busy timeout, timestamps UTC.
 
