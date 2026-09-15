@@ -117,6 +117,7 @@ Validar endpoint, credencial, modelo y capacidad mínima de structured output si
 **Nota de alcance:** `check_provider_capability` (`app/ai/capability_check.py`) valida localmente credencial/base_url/model requeridos según el registro de providers y nunca toca red ni vault. La validación en vivo (conexión real + round-trip de structured output) se añade cuando los adapters reales (T051–T056) existan; hasta entonces `ok=True` significa "configuración bien formada", no "provider confirmado alcanzable".
 
 ### T019 — Máquina de estados de onboarding
+**Estado:** DONE
 **Dep:** T013  
 `WELCOME → VAULT → VAULT_SCAN → AI_PROVIDER → CREDENTIAL → MODEL → VALIDATE → FIRST_GOAL → COMPLETE`.
 
