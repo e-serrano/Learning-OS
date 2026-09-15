@@ -222,8 +222,11 @@ CRUD y métodos de consulta necesarios; evidence append-only.
 **Nota:** `app/persistence/repositories/` — implementación SQL de los 7 puertos de T032 (Sql{Goal,Concept,Evidence,Session,Exercise,Review,Mistake}Repository). `SqlEvidenceRepository` no tiene `update`/`delete` (verificado con test explícito de ausencia). Descubierto durante la implementación: mapear entre entidades de dominio y modelos ORM requiere gestionar campos que no coinciden 1:1 — `Skill`/`Session` no tienen `created_at` en el dominio pero la tabla sí (el repository lo sintetiza); `Exercise` empaqueta `skill_ids`/`prerequisite_ids`/`success_criteria`/`hints`/`common_mistakes`/`transfer_variant` en `metadata_json` porque `DATABASE_SCHEMA.md` no tiene columnas dedicadas, mientras que `concept_ids` viene de la tabla join `exercise_concepts`. Corregido un bug real: clases ORM sin `relationship()` declarado no se ordenan automáticamente en el flush, así que insertar padre+hijo en una sola transacción sin `flush()` intermedio puede violar FK aunque ambos objetos ya estén en la sesión.
 
 ### T036 — Persistence tests
+**Estado:** DONE
 **Dep:** T035  
 CRUD, FK, transacciones, rollback, append-only y migraciones.
+
+**Nota:** CRUD/FK/append-only/migraciones ya cubiertos por T027/T033/T034/T035. Añadido `tests/persistence/test_transactions.py`: rollback explícito, rollback automático por excepción antes de commit, persistencia entre sesiones, rollback conjunto multi-tabla (goal+concept+evidence) cuando una FK falla a mitad de transacción, y verificación de que evidence acumula (nunca sobrescribe) a través de escrituras secuenciales. 202 tests backend en total.
 
 ---
 
