@@ -14,6 +14,7 @@ class EvidenceModel(Base):
     id: Mapped[str] = mapped_column(primary_key=True)
     goal_id: Mapped[str] = mapped_column(ForeignKey("goals.id"))
     concept_id: Mapped[str] = mapped_column(ForeignKey("concepts.id"))
+    session_id: Mapped[str | None] = mapped_column(ForeignKey("sessions.id"))
     activity_id: Mapped[str] = mapped_column(ForeignKey("activities.id"))
     source_type: Mapped[str]
     difficulty: Mapped[int]

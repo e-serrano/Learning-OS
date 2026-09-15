@@ -63,10 +63,10 @@ def test_expected_indexes_are_present() -> None:
     }
 
 
-def test_evidence_table_has_three_foreign_keys() -> None:
+def test_evidence_table_has_four_foreign_keys() -> None:
     evidence_table = Base.metadata.tables["evidence"]
     fk_targets = {fk.column.table.name for fk in evidence_table.foreign_keys}
-    assert fk_targets == {"goals", "concepts", "activities"}
+    assert fk_targets == {"goals", "concepts", "activities", "sessions"}
 
 
 def test_composite_primary_keys_match_schema() -> None:

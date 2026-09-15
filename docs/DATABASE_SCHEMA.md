@@ -223,6 +223,7 @@ CREATE TABLE evidence (
     id TEXT PRIMARY KEY,
     goal_id TEXT NOT NULL,
     concept_id TEXT NOT NULL,
+    session_id TEXT,
     activity_id TEXT NOT NULL,
     source_type TEXT NOT NULL,
     difficulty INTEGER NOT NULL,
@@ -235,9 +236,15 @@ CREATE TABLE evidence (
     metadata_json TEXT NOT NULL,
     FOREIGN KEY (goal_id) REFERENCES goals(id),
     FOREIGN KEY (concept_id) REFERENCES concepts(id),
+    FOREIGN KEY (session_id) REFERENCES sessions(id),
     FOREIGN KEY (activity_id) REFERENCES activities(id)
 );
 ```
+
+`session_id` was added while implementing T035: `DOMAIN_MODEL.md` #6 already
+declares it on the Evidence entity, but it was missing from this table.
+Added via a new migration (`add_evidence_session_id`), never by editing the
+original schema migration.
 
 ### mistakes
 
