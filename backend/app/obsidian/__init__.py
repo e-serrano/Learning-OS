@@ -1,3 +1,4 @@
+from app.obsidian.atomic_writer import AtomicWriteVerificationError, write_note
 from app.obsidian.conflict_detection import VaultConflictError, assert_no_conflict
 from app.obsidian.frontmatter import ParsedFrontmatter, parse_frontmatter
 from app.obsidian.hashing import hash_content, hash_file
@@ -17,6 +18,7 @@ from app.obsidian.vault_resolver import (
 )
 
 __all__ = [
+    "AtomicWriteVerificationError",
     "DEFAULT_IGNORED_DIRS",
     "ManagedSectionError",
     "ParsedFrontmatter",
@@ -37,4 +39,5 @@ __all__ = [
     "replace_section",
     "scan_markdown_files",
     "scan_vault_readonly",
+    "write_note",
 ]

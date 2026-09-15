@@ -280,8 +280,11 @@ Si hash actual != hash indexado, no escribir y devolver `VAULT_CONFLICT`.
 **Nota:** `app/obsidian/conflict_detection.py` (`assert_no_conflict`, `VaultConflictError` — mapea a `VAULT_CONFLICT` de `API_SPEC.md` §11). Sin fila indexada no hay conflicto (archivo nuevo). Archivo indexado pero borrado del disco SÍ es conflicto. Usado por el atomic writer en T044.
 
 ### T044 — Atomic writer
+**Estado:** DONE
 **Dep:** T040, T043  
 Temp file mismo directorio → flush → atomic replace → reread → verify.
+
+**Nota:** `app/obsidian/atomic_writer.py` (`write_note`). Comprueba conflicto (T043) antes de escribir, escribe vía temp file + `os.replace` (mismo patrón que `ConfigStore` de T034), relee y verifica byte-a-byte, y actualiza el índice de vault (T042) con el nuevo hash. Verificado: escritura en conflicto nunca toca el archivo (la edición externa sobrevive intacta), sin ficheros temporales residuales, y bloqueo de path traversal heredado de `VaultResolver`.
 
 ### T045 — Diff engine
 **Dep:** T044  
