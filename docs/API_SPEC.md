@@ -314,7 +314,18 @@ Future authentication is required before supporting non-local binding.
 
 `POST /onboarding/ai-provider/validate`
 
-Returns validation result and capabilities, never credentials.
+```json
+{"credential": "sk-..."}
+```
+
+`credential` is optional (omit for providers that don't require one, e.g.
+`mock`). The raw value is never echoed back or persisted — on success it is
+stored via the OS keyring and only a `credential_ref` is kept. Returns
+validation result and capabilities, never credentials:
+
+```json
+{"onboarding_step": "VALIDATE", "ok": true, "reason": null}
+```
 
 `POST /onboarding/complete`
 

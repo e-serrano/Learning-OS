@@ -142,8 +142,11 @@ Introducir credencial de forma segura, elegir modelo y no conservar el secreto e
 Reabrir aplicación y continuar desde el último paso válido.
 
 ### T025 — API onboarding
+**Estado:** DONE (implementada antes de T020–T024 UI; ver nota)
 **Dep:** T013, T019  
 `GET /onboarding/status`; `POST /onboarding/vault`; `POST /onboarding/ai-provider`; `POST /onboarding/ai-provider/validate`; `POST /onboarding/complete`.
+
+**Nota de orden:** Implementada antes que T020–T024 (UI de onboarding) para respetar `AGENTS.md` §2 (API antes que UI; "no empezar por workflows de UI sin modelo estable detrás"). El grafo de `Dep` de T025 (T013, T019) ya lo permitía. Incluye un scanner de vault mínimo de solo lectura (`app/obsidian/onboarding_scan.py`) — la versión completa con frontmatter/hashing/índice es T037–T038 (Fase 3). `POST /onboarding/complete` exige vault + provider por defecto validado, tal como dice literalmente `API_SPEC.md` §13; el paso `FIRST_GOAL` avanza como paso de paso (pass-through) hasta que exista el servicio de creación de goals (T065, Fase 5).
 
 ### T026 — E2E onboarding
 **Dep:** T020–T025  
