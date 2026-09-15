@@ -215,8 +215,11 @@ Crear `app_settings` y `ai_provider_configs`; credential_ref nunca contiene el s
 **Nota:** Migración `570ee5d78516_local_configuration`. `ConfigStore` (T013) reescrito de JSON a SQLite (mismo `load()`/`save()`, constructor ahora recibe `db_path`). Verificado con flujo completo de onboarding vía HTTP real contra DB migrada real (no solo TestClient). `Settings.config_path`/`LEARNINGOS_CONFIG_PATH` eliminados (ya no se usan). `DEVELOPMENT.md` actualizado: `alembic upgrade head` ahora requerido antes de arrancar el backend.
 
 ### T035 — Repositories
+**Estado:** DONE
 **Dep:** T032, T033  
 CRUD y métodos de consulta necesarios; evidence append-only.
+
+**Nota:** `app/persistence/repositories/` — implementación SQL de los 7 puertos de T032 (Sql{Goal,Concept,Evidence,Session,Exercise,Review,Mistake}Repository). `SqlEvidenceRepository` no tiene `update`/`delete` (verificado con test explícito de ausencia). Descubierto durante la implementación: mapear entre entidades de dominio y modelos ORM requiere gestionar campos que no coinciden 1:1 — `Skill`/`Session` no tienen `created_at` en el dominio pero la tabla sí (el repository lo sintetiza); `Exercise` empaqueta `skill_ids`/`prerequisite_ids`/`success_criteria`/`hints`/`common_mistakes`/`transfer_variant` en `metadata_json` porque `DATABASE_SCHEMA.md` no tiene columnas dedicadas, mientras que `concept_ids` viene de la tabla join `exercise_concepts`. Corregido un bug real: clases ORM sin `relationship()` declarado no se ordenan automáticamente en el flush, así que insertar padre+hijo en una sola transacción sin `flush()` intermedio puede violar FK aunque ambos objetos ya estén en la sesión.
 
 ### T036 — Persistence tests
 **Dep:** T035  
