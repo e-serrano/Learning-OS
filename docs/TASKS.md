@@ -201,8 +201,11 @@ Interfaces para goals, concepts, evidence, sessions, exercises, reviews, mistake
 **Nota:** `app/domain/ports.py`. El puerto "AI" no se redeclara — `app.ai.protocol.AIProvider` (T017) ya cumple ese contrato. Métodos mantenidos deliberadamente mínimos (add/get/update + 1-2 queries justificadas por los índices de `DATABASE_SCHEMA.md` §3); se ampliarán en T035 según necesidad real de los servicios. `EvidenceRepository` no tiene `update`/`delete` (append-only).
 
 ### T033 — SQLAlchemy models
+**Estado:** DONE
 **Dep:** T028, T030  
 Implementar tablas de `DATABASE_SCHEMA.md` sin usar ORM models como domain entities.
+
+**Nota:** 17 tablas en `app/persistence/models/` (una por archivo, agrupadas como en `DATABASE_SCHEMA.md` §2), más los 6 índices de §3. Timestamps como `TEXT` (no `DateTime` nativo) para conformidad byte-exacta con el esquema — la conversión datetime↔ISO-8601 es responsabilidad de los repositories (T035). Migración `fd57ee07b3b9_domain_schema` generada con `alembic revision --autogenerate` y verificada (upgrade contra DB vacía, FKs correctas, 17 tablas + `alembic_version`).
 
 ### T034 — Config tables migration
 **Dep:** T033  

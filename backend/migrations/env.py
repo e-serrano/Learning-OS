@@ -3,6 +3,7 @@ from logging.config import fileConfig
 from alembic import context
 
 from app.config.settings import Settings
+from app.persistence import models  # noqa: F401  (registers ORM tables on Base.metadata)
 from app.persistence.base import Base
 from app.persistence.engine import create_sqlite_engine
 
