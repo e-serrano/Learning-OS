@@ -113,6 +113,23 @@ def test_validate_mock_provider_succeeds_without_credential(
     assert body["onboarding_step"] == "VALIDATE"
 
 
+def test_validate_ollama_local_provider_requires_base_url_but_no_credential(
+    client: TestClient, vault_dir: Path
+) -> None:
+    client.post("/api/v1/onboarding/vault", json={"path": str(vault_dir)})
+    client.post(
+        "/api/v1/onboarding/ai-provider",
+        json={"provider_id": "ollama", "model": "llama3", "base_url": "http://localhost:11434"},
+    )
+
+    response = client.post("/api/v1/onboarding/ai-provider/validate", json={})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["ok"] is True
+    assert body["onboarding_step"] == "VALIDATE"
+
+
 def test_validate_remote_provider_without_credential_fails_and_does_not_advance(
     client: TestClient, vault_dir: Path
 ) -> None:
@@ -178,6 +195,44 @@ def test_full_happy_path_reaches_complete_with_mock_provider(
 
     status = client.get("/api/v1/onboarding/status")
     assert status.json()["onboarding_step"] == "COMPLETE"
+
+
+def test_full_happy_path_reaches_complete_with_ollama_local_provider(
+    client: TestClient, vault_dir: Path
+) -> None:
+    client.post("/api/v1/onboarding/vault", json={"path": str(vault_dir)})
+    client.post(
+        "/api/v1/onboarding/ai-provider",
+        json={"provider_id": "ollama", "model": "llama3", "base_url": "http://localhost:11434"},
+    )
+    client.post("/api/v1/onboarding/ai-provider/validate", json={})
+
+    response = client.post("/api/v1/onboarding/complete")
+
+    assert response.status_code == 200
+    assert response.json()["onboarding_step"] == "COMPLETE"
+
+
+def test_full_happy_path_reaches_complete_with_simulated_remote_provider(
+    client: TestClient, vault_dir: Path
+) -> None:
+    client.post("/api/v1/onboarding/vault", json={"path": str(vault_dir)})
+    client.post(
+        "/api/v1/onboarding/ai-provider", json={"provider_id": "anthropic", "model": "claude-x"}
+    )
+    validate = client.post(
+        "/api/v1/onboarding/ai-provider/validate", json={"credential": "sk-ant-simulated"}
+    )
+    assert validate.json()["ok"] is True
+
+    response = client.post("/api/v1/onboarding/complete")
+
+    assert response.status_code == 200
+    assert response.json()["onboarding_step"] == "COMPLETE"
+
+    status = client.get("/api/v1/onboarding/status")
+    assert "sk-ant-simulated" not in status.text
+    assert status.json()["ai_providers"][0]["credential_ref"].startswith("anthropic:")
 
 
 def test_complete_is_idempotent_once_already_complete(

@@ -122,24 +122,33 @@ Validar endpoint, credencial, modelo y capacidad mínima de structured output si
 `WELCOME → VAULT → VAULT_SCAN → AI_PROVIDER → CREDENTIAL → MODEL → VALIDATE → FIRST_GOAL → COMPLETE`.
 
 ### T020 — UI selección de vault
+**Estado:** DONE
 **Dep:** T019  
 Seleccionar directorio, validar existencia/lectura y mostrar resultado del scan read-only.
 
 ### T021 — UI selección de IA
+**Estado:** DONE
 **Dep:** T019, T015  
 Cards para Ollama, OpenAI, Anthropic/Claude, OpenRouter, NVIDIA y OpenAI-compatible; explicar local/remoto y credenciales.
 
 ### T022 — UI credenciales/modelo
+**Estado:** DONE (combinada con T023, ver nota)
 **Dep:** T014, T021  
 Introducir credencial de forma segura, elegir modelo y no conservar el secreto en estado persistente del frontend.
 
 ### T023 — Validación de provider en onboarding
+**Estado:** DONE
 **Dep:** T018, T022  
 `select → credential → model → test → result → continue`.
 
+**Nota T022/T023:** Implementadas como un único componente (`CredentialModelStep.tsx`) porque son una sola interacción de usuario continua (introducir modelo+credencial → probar conexión → ver resultado). Verificado manualmente en navegador: el valor de la credencial nunca aparece en ninguna respuesta de red ni se conserva en estado tras una validación exitosa.
+
 ### T024 — Onboarding resumible
+**Estado:** DONE
 **Dep:** T019  
 Reabrir aplicación y continuar desde el último paso válido.
+
+**Nota:** Verificado manualmente — recargar el navegador tras completar onboarding reabre directamente en el paso persistido (`GET /onboarding/status` en el montaje del wizard).
 
 ### T025 — API onboarding
 **Estado:** DONE (implementada antes de T020–T024 UI; ver nota)
@@ -149,8 +158,11 @@ Reabrir aplicación y continuar desde el último paso válido.
 **Nota de orden:** Implementada antes que T020–T024 (UI de onboarding) para respetar `AGENTS.md` §2 (API antes que UI; "no empezar por workflows de UI sin modelo estable detrás"). El grafo de `Dep` de T025 (T013, T019) ya lo permitía. Incluye un scanner de vault mínimo de solo lectura (`app/obsidian/onboarding_scan.py`) — la versión completa con frontmatter/hashing/índice es T037–T038 (Fase 3). `POST /onboarding/complete` exige vault + provider por defecto validado, tal como dice literalmente `API_SPEC.md` §13; el paso `FIRST_GOAL` avanza como paso de paso (pass-through) hasta que exista el servicio de creación de goals (T065, Fase 5).
 
 ### T026 — E2E onboarding
+**Estado:** DONE
 **Dep:** T020–T025  
 Probar instalación limpia con Mock/Ollama y provider remoto simulado.
+
+**Nota:** Cubierto por tests de integración de API (`backend/tests/api/test_onboarding.py`) que ejecutan el flujo completo `status → vault → ai-provider → validate → complete` con Mock, Ollama (local, sin credencial) y un provider remoto simulado (Anthropic con credencial falsa), más verificación manual en navegador real contra el backend real (vault válido/ inválido, selección de provider, fallo por credencial faltante, resumibilidad tras recarga). No se añadió un framework de E2E de navegador (Playwright) dedicado — no es necesario aún y evita fijar una decisión de infraestructura de testing sin necesidad clara.
 
 ---
 

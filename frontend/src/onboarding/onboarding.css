@@ -1,0 +1,105 @@
+.onboarding {
+  max-width: 480px;
+  margin: 48px auto;
+  padding: 0 24px;
+}
+
+.onboarding h1 {
+  font-size: 1.5rem;
+  margin-bottom: 4px;
+}
+
+.onboarding p.subtitle {
+  color: #666;
+  margin-top: 0;
+  margin-bottom: 24px;
+}
+
+.onboarding label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+  margin-top: 16px;
+}
+
+.onboarding input[type='text'],
+.onboarding input[type='password'] {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+.onboarding button {
+  margin-top: 20px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 6px;
+  background: #222;
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.onboarding button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.onboarding button.secondary {
+  background: transparent;
+  color: #222;
+  border: 1px solid #ccc;
+}
+
+.provider-cards {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.provider-card {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 12px 14px;
+  text-align: left;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.provider-card.selected {
+  border-color: #2563eb;
+  background: #eff6ff;
+  box-shadow: 0 0 0 2px #2563eb;
+}
+
+.provider-card.selected strong,
+.provider-card.selected .tag {
+  color: #1e3a8a;
+}
+
+.provider-card .tag {
+  font-size: 0.75rem;
+  color: #666;
+}
+
+.onboarding .message {
+  margin-top: 16px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.onboarding .message.error {
+  background: #fdecec;
+  color: #a3231d;
+}
+
+.onboarding .message.success {
+  background: #eafaf0;
+  color: #1a7a3c;
+}
