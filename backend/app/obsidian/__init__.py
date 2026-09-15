@@ -1,3 +1,4 @@
+from app.obsidian.conflict_detection import VaultConflictError, assert_no_conflict
 from app.obsidian.frontmatter import ParsedFrontmatter, parse_frontmatter
 from app.obsidian.hashing import hash_content, hash_file
 from app.obsidian.managed_sections import ManagedSectionError, get_section, replace_section
@@ -21,12 +22,14 @@ __all__ = [
     "ParsedFrontmatter",
     "ScanResult",
     "ScannedFile",
+    "VaultConflictError",
     "VaultIndexEntry",
     "VaultIndexer",
     "VaultPathTraversalError",
     "VaultResolver",
     "VaultScanResult",
     "VaultUnavailableError",
+    "assert_no_conflict",
     "get_section",
     "hash_content",
     "hash_file",
