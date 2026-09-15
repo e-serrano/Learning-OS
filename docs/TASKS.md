@@ -254,8 +254,11 @@ Parseo YAML tolerante a errores sin abortar todo el scan.
 **Nota:** `app/obsidian/frontmatter.py`, usa `yaml.safe_load` (nunca `load`). Nunca lanza excepción — YAML mal formado, bloque sin cerrar o frontmatter no-mapping se reportan vía `error`, dejando `body` con el contenido original intacto para no perder texto. `pyyaml` añadido como dependencia explícita (antes solo transitiva vía alembic).
 
 ### T040 — Managed sections parser
+**Estado:** DONE
 **Dep:** T038  
 `get_section`/`replace_section` para marcadores Learning OS.
+
+**Nota:** `app/obsidian/managed_sections.py`. `replace_section` añade la sección si no existe; lanza `ManagedSectionError` si hay BEGIN sin END (en vez de adivinar y arriesgar corromper el archivo). Contenido fuera de marcadores nunca se toca (verificado con test que confirma texto de usuario intacto tras un replace).
 
 ### T041 — Hashing
 **Dep:** T038  
