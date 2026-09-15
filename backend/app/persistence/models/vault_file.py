@@ -13,3 +13,6 @@ class VaultFileModel(Base):
     modified_at: Mapped[str]
     indexed_at: Mapped[str]
     file_type: Mapped[str]
+    managed_id: Mapped[str | None]
+    metadata_json: Mapped[str] = mapped_column(default="{}")
+    missing: Mapped[bool] = mapped_column(default=False)

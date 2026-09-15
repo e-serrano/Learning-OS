@@ -8,6 +8,7 @@ from app.obsidian.markdown_scanner import (
     scan_markdown_files,
 )
 from app.obsidian.onboarding_scan import VaultScanResult, scan_vault_readonly
+from app.obsidian.vault_index import VaultIndexEntry, VaultIndexer
 from app.obsidian.vault_resolver import (
     VaultPathTraversalError,
     VaultResolver,
@@ -20,6 +21,8 @@ __all__ = [
     "ParsedFrontmatter",
     "ScanResult",
     "ScannedFile",
+    "VaultIndexEntry",
+    "VaultIndexer",
     "VaultPathTraversalError",
     "VaultResolver",
     "VaultScanResult",

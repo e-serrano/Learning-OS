@@ -266,8 +266,11 @@ Parseo YAML tolerante a errores sin abortar todo el scan.
 SHA-256 por archivo.
 
 ### T042 — Vault index
+**Estado:** DONE
 **Dep:** T034, T041  
 Persistir path, hash, tipo, managed ID, metadata, indexed_at y missing.
+
+**Nota:** `app/obsidian/vault_index.py` (`VaultIndexer.reindex()`), sobre `VaultResolver`+scanner+frontmatter+hashing. Corregido gap de esquema (igual que evidence.session_id): `vault_files` no tenía `managed_id`/`metadata_json`/`missing` pese a que T042 los exige explícitamente — añadidos vía migración nueva `017d17b1666e` con `server_default` (columnas NOT NULL sobre ALTER TABLE necesitan default en SQLite). `managed_id` solo se rellena si `managed_by: learning_os` está en el frontmatter. Archivos borrados del disco se marcan `missing=True`, nunca se eliminan de la tabla; reaparecen como `missing=False` si el archivo vuelve.
 
 ### T043 — Conflict detection
 **Dep:** T042  

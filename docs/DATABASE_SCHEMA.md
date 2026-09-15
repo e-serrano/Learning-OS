@@ -312,9 +312,18 @@ CREATE TABLE vault_files (
     content_hash TEXT NOT NULL,
     modified_at TEXT NOT NULL,
     indexed_at TEXT NOT NULL,
-    file_type TEXT NOT NULL
+    file_type TEXT NOT NULL,
+    managed_id TEXT,
+    metadata_json TEXT NOT NULL DEFAULT ('{}'),
+    missing INTEGER NOT NULL DEFAULT 0
 );
 ```
+
+`managed_id`, `metadata_json` and `missing` were added while implementing
+T042 (its own acceptance criteria names them; this table originally lacked
+them). `managed_id` is the note's stable frontmatter `id` when present
+(docs/OBSIDIAN_SCHEMA.md #3); `missing` supports the deletion policy in
+docs/OBSIDIAN_SCHEMA.md #16 (mark missing, never silently delete evidence).
 
 ---
 
