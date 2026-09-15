@@ -326,8 +326,11 @@ Punto único para provider calls y `ai_runs`.
 **Nota:** `app/ai/orchestrator.py` (`AIOrchestrator.generate`). Registra cada llamada en `ai_runs` — éxito y fallo — con latencia, hash de input (SHA-256, nunca el contenido crudo) y nombre del schema de respuesta; nunca guarda prompt/respuesta reales (`AI_CONTRACTS.md` §14). Reenvía la excepción original tras loguear el fallo.
 
 ### T050 — MockProvider
+**Estado:** DONE
 **Dep:** T048  
 Respuestas deterministas para éxito, error, parcialidad, misconceptions y confidence.
+
+**Nota:** `app/ai/adapters/mock_scenarios.py`, sobre el `MockProvider` genérico de T017. `AI_CONTRACTS.md` §8 no tiene campo "confidence" en `EvaluatorResponse` — se interpretó como escenarios de calibración de confianza (`ProgressResponse.calibration`, ya que ese SÍ tiene overconfidence/underconfidence): `progress_overconfident`/`progress_underconfident`/`progress_well_calibrated`. Factories deterministas verificadas con test explícito de determinismo (misma llamada, mismo resultado).
 
 ### T051 — OllamaProvider
 **Dep:** T017  
