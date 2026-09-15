@@ -14,6 +14,7 @@ from app.ai.contracts import (
     TutorResponse,
 )
 from app.ai.errors import AIInvalidOutputError, AIProviderError, AIProviderUnavailableError
+from app.ai.orchestrator import AIOrchestrator
 from app.ai.protocol import AIProvider, AIRequest
 from app.ai.provider_registry import (
     PROVIDER_REGISTRY,
@@ -40,6 +41,7 @@ __all__ = [
     "EvaluatorResponse",
     "ExerciseGeneratorResponse",
     "HighLeverageConcept",
+    "AIOrchestrator",
     "MockProvider",
     "PlannerResponse",
     "ProgressResponse",

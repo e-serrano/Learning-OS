@@ -319,8 +319,11 @@ Implementar Planner, Diagnostic, Tutor, Exercise, Evaluator, Curator y Progress 
 **Nota:** `app/ai/contracts.py`, las 7 respuestas de `AI_CONTRACTS.md` §4–10. Reutiliza `ExerciseType`/`FiveLevelScale`/`NormalizedScore` del dominio en vez de reinventar tipos. Refactor previo: `ProposalOperation` movido de `app.obsidian.change_proposal` a `app.domain.enums` (con re-export desde su ubicación original) para que `app.ai` (Curator) y `app.obsidian` compartan el mismo enum sin que una capa dependa de la otra. `roadmap_nodes`/`roadmap_edges` del Planner quedan como `list[dict]` — el spec no define su forma exacta, así que no se inventa una estructura.
 
 ### T049 — AI orchestrator
+**Estado:** DONE
 **Dep:** T048, T017  
 Punto único para provider calls y `ai_runs`.
+
+**Nota:** `app/ai/orchestrator.py` (`AIOrchestrator.generate`). Registra cada llamada en `ai_runs` — éxito y fallo — con latencia, hash de input (SHA-256, nunca el contenido crudo) y nombre del schema de respuesta; nunca guarda prompt/respuesta reales (`AI_CONTRACTS.md` §14). Reenvía la excepción original tras loguear el fallo.
 
 ### T050 — MockProvider
 **Dep:** T048  
