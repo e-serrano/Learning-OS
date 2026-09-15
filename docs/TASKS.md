@@ -179,6 +179,7 @@ Foreign keys ON, WAL, busy timeout, timestamps UTC.
 Migración desde DB vacía y esquema versionado.
 
 ### T029 — Domain enums
+**Estado:** DONE
 **Dep:** T010  
 Todos los enums de `DOMAIN_MODEL.md` como valores string canónicos.
 
