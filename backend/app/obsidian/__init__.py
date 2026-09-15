@@ -1,5 +1,6 @@
 from app.obsidian.atomic_writer import AtomicWriteVerificationError, write_note
 from app.obsidian.conflict_detection import VaultConflictError, assert_no_conflict
+from app.obsidian.diff_engine import DiffLine, DiffResult, generate_diff
 from app.obsidian.frontmatter import ParsedFrontmatter, parse_frontmatter
 from app.obsidian.hashing import hash_content, hash_file
 from app.obsidian.managed_sections import ManagedSectionError, get_section, replace_section
@@ -20,6 +21,8 @@ from app.obsidian.vault_resolver import (
 __all__ = [
     "AtomicWriteVerificationError",
     "DEFAULT_IGNORED_DIRS",
+    "DiffLine",
+    "DiffResult",
     "ManagedSectionError",
     "ParsedFrontmatter",
     "ScanResult",
@@ -32,6 +35,7 @@ __all__ = [
     "VaultScanResult",
     "VaultUnavailableError",
     "assert_no_conflict",
+    "generate_diff",
     "get_section",
     "hash_content",
     "hash_file",
