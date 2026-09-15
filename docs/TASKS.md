@@ -247,8 +247,11 @@ Scan recursivo read-only; ignorar `.obsidian/`.
 **Nota:** `app/obsidian/markdown_scanner.py`, sobre `VaultResolver`. Ignora también `Attachments/`/`Templates/` por defecto (configurable), tal como `OBSIDIAN_SCHEMA.md` §14 documenta como default. Este scanner alimenta el índice de vault (T042); el scan resumido de onboarding (`onboarding_scan.py`, T025) queda como está — sirve una necesidad distinta (feedback de UI) y ya está probado en navegador real.
 
 ### T039 — Frontmatter parser
+**Estado:** DONE
 **Dep:** T038  
 Parseo YAML tolerante a errores sin abortar todo el scan.
+
+**Nota:** `app/obsidian/frontmatter.py`, usa `yaml.safe_load` (nunca `load`). Nunca lanza excepción — YAML mal formado, bloque sin cerrar o frontmatter no-mapping se reportan vía `error`, dejando `body` con el contenido original intacto para no perder texto. `pyyaml` añadido como dependencia explícita (antes solo transitiva vía alembic).
 
 ### T040 — Managed sections parser
 **Dep:** T038  

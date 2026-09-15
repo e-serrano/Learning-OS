@@ -1,3 +1,4 @@
+from app.obsidian.frontmatter import ParsedFrontmatter, parse_frontmatter
 from app.obsidian.markdown_scanner import (
     DEFAULT_IGNORED_DIRS,
     ScannedFile,
@@ -13,12 +14,14 @@ from app.obsidian.vault_resolver import (
 
 __all__ = [
     "DEFAULT_IGNORED_DIRS",
+    "ParsedFrontmatter",
     "ScanResult",
     "ScannedFile",
     "VaultPathTraversalError",
     "VaultResolver",
     "VaultScanResult",
     "VaultUnavailableError",
+    "parse_frontmatter",
     "scan_markdown_files",
     "scan_vault_readonly",
 ]
