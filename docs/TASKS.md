@@ -301,8 +301,11 @@ Estados `pending/approved/rejected/applied/conflicted/failed`; operaciones limit
 **Nota:** Gap de esquema igual que evidence.session_id y vault_files — `DATABASE_SCHEMA.md` nunca listaba `change_proposals` pese a que `SPECS.md` §16, `AI_CONTRACTS.md` §9 y `API_SPEC.md` §2 describen el flujo exacto. Añadida tabla vía migración nueva `b9c38d0c7cf0`. `app/obsidian/change_proposal.py`: enums `ProposalOperation` (4 valores, `AGENTS.md` §6) y `ProposalStatus` (6 valores) + `ChangeProposalRepository`. Aplicar una propuesta aprobada (T083) queda fuera de alcance — esto solo modela y persiste la propuesta.
 
 ### T047 — Obsidian tests
+**Estado:** DONE
 **Dep:** T037–T046  
 Vault vacío/existente, malformed frontmatter, cambios externos, conflictos y preservación de texto del usuario.
+
+**Nota:** `tests/obsidian/test_integration.py` consolida T037–T046 sobre un vault realista (nota simple + nota gestionada con secciones managed + prosa de usuario + frontmatter malformado). Cubre: vault vacío, vault mixto, frontmatter roto no aborta el scan del resto, cambio externo bloquea escritura sin tocar el archivo, y flujo completo propuesta→diff→aprobación→escritura→verificación con texto de usuario intacto y hash de índice actualizado. Fase 3 (Obsidian) completa — 292 tests backend en total.
 
 ---
 
