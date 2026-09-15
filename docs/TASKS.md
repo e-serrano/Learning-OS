@@ -194,8 +194,11 @@ Goal, Concept, Skill, Evidence, Exercise, Attempt, Evaluation, Mistake, Review, 
 Mastery 0..5, confidence/retention 0..100, importance/difficulty 1..5.
 
 ### T032 — Repository ports
+**Estado:** DONE
 **Dep:** T030  
 Interfaces para goals, concepts, evidence, sessions, exercises, reviews, mistakes, vault, AI, clock e IDs.
+
+**Nota:** `app/domain/ports.py`. El puerto "AI" no se redeclara — `app.ai.protocol.AIProvider` (T017) ya cumple ese contrato. Métodos mantenidos deliberadamente mínimos (add/get/update + 1-2 queries justificadas por los índices de `DATABASE_SCHEMA.md` §3); se ampliarán en T035 según necesidad real de los servicios. `EvidenceRepository` no tiene `update`/`delete` (append-only).
 
 ### T033 — SQLAlchemy models
 **Dep:** T028, T030  
