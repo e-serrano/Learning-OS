@@ -184,6 +184,7 @@ Migración desde DB vacía y esquema versionado.
 Todos los enums de `DOMAIN_MODEL.md` como valores string canónicos.
 
 ### T030 — Domain entities
+**Estado:** DONE
 **Dep:** T029  
 Goal, Concept, Skill, Evidence, Exercise, Attempt, Evaluation, Mistake, Review, Session, Activity, Project, Assessment.
 
