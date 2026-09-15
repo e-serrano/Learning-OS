@@ -233,8 +233,11 @@ CRUD, FK, transacciones, rollback, append-only y migraciones.
 # Fase 3 — Obsidian
 
 ### T037 — Vault resolver
+**Estado:** DONE
 **Dep:** T013  
 Validar root y bloquear path traversal fuera del vault.
+
+**Nota:** `app/obsidian/vault_resolver.py`. Falla rápido en construcción si el root no existe/no es directorio/no es legible (distinto del check "suave" de `onboarding_scan.py`, que muestra errores en la UI en vez de lanzar). `resolve()` bloquea tanto `../` como inyección de rutas absolutas (un solo `relative_to()` cubre ambos, por cómo pathlib ancla rutas absolutas al unir).
 
 ### T038 — Markdown scanner
 **Dep:** T037  
