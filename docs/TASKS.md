@@ -333,28 +333,46 @@ Respuestas deterministas para éxito, error, parcialidad, misconceptions y confi
 **Nota:** `app/ai/adapters/mock_scenarios.py`, sobre el `MockProvider` genérico de T017. `AI_CONTRACTS.md` §8 no tiene campo "confidence" en `EvaluatorResponse` — se interpretó como escenarios de calibración de confianza (`ProgressResponse.calibration`, ya que ese SÍ tiene overconfidence/underconfidence): `progress_overconfident`/`progress_underconfident`/`progress_well_calibrated`. Factories deterministas verificadas con test explícito de determinismo (misma llamada, mismo resultado).
 
 ### T051 — OllamaProvider
+**Estado:** DONE
 **Dep:** T017  
 Endpoint configurable, default local `http://localhost:11434`.
 
+**Nota:** `app/ai/adapters/ollama.py`. Protocolo nativo `/api/chat` (no el shim OpenAI-compatible de Ollama), usando su propio soporte de structured output vía `format: <json schema>`.
+
 ### T052 — OpenAIProvider
+**Estado:** DONE
 **Dep:** T017  
 API key segura, model configurable y structured output.
 
+**Nota:** `app/ai/adapters/openai.py`, sobre la base compartida `_openai_compatible_base.py` (Chat Completions + `response_format: json_schema`).
+
 ### T053 — AnthropicProvider
+**Estado:** DONE
 **Dep:** T017  
 Protocolo Anthropic nativo para Claude.
 
+**Nota:** `app/ai/adapters/anthropic.py`. Messages API nativa, no la base OpenAI-compatible (`AGENTS.md` §20). Structured output vía tool use forzado (`tool_choice`) — patrón documentado de Anthropic para output fiable.
+
 ### T054 — OpenRouterProvider
+**Estado:** DONE
 **Dep:** T017  
 Endpoint y model configurables.
 
+**Nota:** `app/ai/adapters/openrouter.py`, sobre la base compartida (mismo wire format que OpenAI).
+
 ### T055 — NvidiaNimProvider
+**Estado:** DONE
 **Dep:** T017  
 API key, endpoint y model configurables.
 
+**Nota:** `app/ai/adapters/nvidia_nim.py`, sobre la base compartida; sin `base_url` por defecto (NIM puede ser self-hosted).
+
 ### T056 — OpenAICompatibleProvider
+**Estado:** DONE
 **Dep:** T017  
 `base_url`, model y API key opcional.
+
+**Nota:** `app/ai/adapters/openai_compatible.py`, sobre la base compartida. `_openai_compatible_base.py` (T052/T054/T055/T056 comparten esta implementación — mismo wire format Chat Completions; Ollama y Anthropic usan protocolos nativos propios). Probado con `httpx.MockTransport` (sin credenciales reales) por cada camino: éxito, error HTTP, JSON malformado, schema no coincidente y ausencia de campos esperados. Validación contra APIs reales en vivo queda para T122 (`AGENTS.md` §17: el suite normal no depende de un modelo externo).
 
 ### T057 — Retry policy
 **Dep:** T049  
