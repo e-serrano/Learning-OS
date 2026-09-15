@@ -5,18 +5,15 @@ from pydantic import BaseModel
 from sqlalchemy import Engine, select
 from sqlalchemy.orm import Session as DbSession
 
+from app.domain.enums import ProposalOperation
 from app.persistence.models import ChangeProposalModel
 
-
-class ProposalOperation(StrEnum):
-    """The only Obsidian write operations a proposal may request -- see
-    docs/AGENTS.md #6 (AI-generated file operations are data, not
-    executable instructions)."""
-
-    CREATE_FILE = "create_file"
-    UPDATE_FRONTMATTER = "update_frontmatter"
-    REPLACE_MANAGED_SECTION = "replace_managed_section"
-    ADD_LINK = "add_link"
+__all__ = [
+    "ProposalOperation",  # re-exported: this module is its established home for callers
+    "ProposalStatus",
+    "ChangeProposal",
+    "ChangeProposalRepository",
+]
 
 
 class ProposalStatus(StrEnum):

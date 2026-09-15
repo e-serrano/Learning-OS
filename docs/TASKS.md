@@ -312,8 +312,11 @@ Vault vacío/existente, malformed frontmatter, cambios externos, conflictos y pr
 # Fase 4 — AI
 
 ### T048 — Pydantic AI contracts
+**Estado:** DONE
 **Dep:** T010  
 Implementar Planner, Diagnostic, Tutor, Exercise, Evaluator, Curator y Progress responses.
+
+**Nota:** `app/ai/contracts.py`, las 7 respuestas de `AI_CONTRACTS.md` §4–10. Reutiliza `ExerciseType`/`FiveLevelScale`/`NormalizedScore` del dominio en vez de reinventar tipos. Refactor previo: `ProposalOperation` movido de `app.obsidian.change_proposal` a `app.domain.enums` (con re-export desde su ubicación original) para que `app.ai` (Curator) y `app.obsidian` compartan el mismo enum sin que una capa dependa de la otra. `roadmap_nodes`/`roadmap_edges` del Planner quedan como `list[dict]` — el spec no define su forma exacta, así que no se inventa una estructura.
 
 ### T049 — AI orchestrator
 **Dep:** T048, T017  

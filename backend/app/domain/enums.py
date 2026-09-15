@@ -137,3 +137,15 @@ class AssessmentType(StrEnum):
 class RoadmapStatus(StrEnum):
     ACTIVE = "active"
     SUPERSEDED = "superseded"
+
+
+class ProposalOperation(StrEnum):
+    """The only Obsidian write operations a proposal may request -- see
+    docs/AGENTS.md #6 (AI-generated file operations are data, not
+    executable instructions). Shared by app.ai (curator responses) and
+    app.obsidian (change proposals) so neither depends on the other."""
+
+    CREATE_FILE = "create_file"
+    UPDATE_FRONTMATTER = "update_frontmatter"
+    REPLACE_MANAGED_SECTION = "replace_managed_section"
+    ADD_LINK = "add_link"
