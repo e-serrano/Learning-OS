@@ -9,7 +9,7 @@ def get_settings() -> Settings:
 
 
 def get_config_store() -> ConfigStore:
-    return ConfigStore(get_settings().config_path)
+    return ConfigStore(get_settings().db_path)
 
 
 def get_credential_store() -> CredentialStore:

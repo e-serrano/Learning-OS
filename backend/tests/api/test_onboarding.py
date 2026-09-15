@@ -8,6 +8,8 @@ from app.api.dependencies import get_config_store, get_credential_store
 from app.config.credentials import CredentialStore
 from app.config.store import ConfigStore
 from app.main import app
+from app.persistence.base import Base
+from app.persistence.engine import create_sqlite_engine
 
 
 class FakeKeyringBackend:
@@ -34,9 +36,10 @@ def fake_keyring() -> FakeKeyringBackend:
 
 @pytest.fixture
 def client(tmp_path: Path, fake_keyring: FakeKeyringBackend) -> TestClient:
-    app.dependency_overrides[get_config_store] = lambda: ConfigStore(
-        tmp_path / "app_config.json"
-    )
+    db_path = tmp_path / "test.sqlite3"
+    Base.metadata.create_all(create_sqlite_engine(str(db_path)))
+
+    app.dependency_overrides[get_config_store] = lambda: ConfigStore(str(db_path))
     app.dependency_overrides[get_credential_store] = lambda: CredentialStore(
         backend=fake_keyring
     )

@@ -13,5 +13,4 @@ class Settings(BaseSettings):
     host: str = "127.0.0.1"
     port: int = 8000
     db_path: str = "./data/learning_os.sqlite3"
-    config_path: str = "./data/app_config.json"
     log_level: str = "INFO"

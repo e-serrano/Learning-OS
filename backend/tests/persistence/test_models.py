@@ -46,7 +46,9 @@ EXPECTED_TABLES = {
 
 
 def test_all_database_schema_tables_are_registered_on_base_metadata() -> None:
-    assert set(Base.metadata.tables.keys()) == EXPECTED_TABLES
+    # A superset check: app_settings/ai_provider_configs (T034) also
+    # register on the same Base.metadata -- see test_config_models.py.
+    assert EXPECTED_TABLES.issubset(Base.metadata.tables.keys())
 
 
 def test_expected_indexes_are_present() -> None:

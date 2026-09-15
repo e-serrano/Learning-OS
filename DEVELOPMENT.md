@@ -17,8 +17,13 @@ cp .env.example .env
 ```bash
 cd backend
 uv sync
+uv run alembic upgrade head
 uv run uvicorn app.main:app --reload
 ```
+
+`alembic upgrade head` creates/updates the SQLite schema (including
+`app_settings`/`ai_provider_configs` — onboarding will fail with "no such
+table" without it). Re-run it after pulling migrations added by others.
 
 Runs at `http://127.0.0.1:8000` (loopback only — see `docs/API_SPEC.md` §12).
 

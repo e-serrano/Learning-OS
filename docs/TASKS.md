@@ -83,7 +83,7 @@ React + TypeScript + Vite; `npm run build` funcional.
 # Fase 1 — Configuración y onboarding
 
 ### T013 — Modelo de configuración local
-**Estado:** DONE (almacenado en JSON local vía `ConfigStore`; se migrará a SQLite `app_settings` en T034, ver Dep de T027)
+**Estado:** DONE (modelo Pydantic `AppConfig`; persistencia migrada a SQLite en T034)
 **Dep:** T010  
 Configurar `vault_path`, provider, model, base URL, idioma y estado de onboarding. Sin secretos.
 
@@ -208,8 +208,11 @@ Implementar tablas de `DATABASE_SCHEMA.md` sin usar ORM models como domain entit
 **Nota:** 17 tablas en `app/persistence/models/` (una por archivo, agrupadas como en `DATABASE_SCHEMA.md` §2), más los 6 índices de §3. Timestamps como `TEXT` (no `DateTime` nativo) para conformidad byte-exacta con el esquema — la conversión datetime↔ISO-8601 es responsabilidad de los repositories (T035). Migración `fd57ee07b3b9_domain_schema` generada con `alembic revision --autogenerate` y verificada (upgrade contra DB vacía, FKs correctas, 17 tablas + `alembic_version`).
 
 ### T034 — Config tables migration
+**Estado:** DONE
 **Dep:** T033  
 Crear `app_settings` y `ai_provider_configs`; credential_ref nunca contiene el secreto.
+
+**Nota:** Migración `570ee5d78516_local_configuration`. `ConfigStore` (T013) reescrito de JSON a SQLite (mismo `load()`/`save()`, constructor ahora recibe `db_path`). Verificado con flujo completo de onboarding vía HTTP real contra DB migrada real (no solo TestClient). `Settings.config_path`/`LEARNINGOS_CONFIG_PATH` eliminados (ya no se usan). `DEVELOPMENT.md` actualizado: `alembic upgrade head` ahora requerido antes de arrancar el backend.
 
 ### T035 — Repositories
 **Dep:** T032, T033  

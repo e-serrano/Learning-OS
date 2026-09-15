@@ -1,40 +1,90 @@
-import os
-import tempfile
-from pathlib import Path
+import json
+from datetime import UTC, datetime
 
-from app.config.models import AppConfig
+from sqlalchemy import delete, select
+from sqlalchemy.orm import Session as DbSession
+
+from app.config.models import AIProviderConfig, AppConfig
+from app.persistence.engine import create_sqlite_engine
+from app.persistence.models.config import AIProviderConfigModel, AppSettingModel
+
+_SETTINGS_KEYS = ("vault_path", "provider_id", "model", "base_url", "language", "onboarding_step")
+
+
+def _now_iso() -> str:
+    return datetime.now(UTC).isoformat()
 
 
 class ConfigStore:
-    """File-backed store for AppConfig.
+    """SQLite-backed store for AppConfig -- app_settings + ai_provider_configs
+    (docs/DATABASE_SCHEMA.md #17).
 
-    Provisional persistence for onboarding (Phase 1), ahead of the SQLite
-    engine bootstrapped in Phase 2. Writes are atomic: a temp file in the
-    same directory is written, flushed, and swapped in with os.replace, so
-    a crash mid-write never leaves a partial/corrupt config file.
+    Formalizes the JSON-file-backed store used during onboarding bootstrap
+    (T013) now that the versioned schema exists (T034). The schema itself
+    must already be migrated (`alembic upgrade head`) -- this store never
+    creates tables itself (docs/AGENTS.md #8: no ad-hoc schema changes at
+    application startup).
     """
 
-    def __init__(self, path: str | Path) -> None:
-        self._path = Path(path)
+    def __init__(self, db_path: str) -> None:
+        self._engine = create_sqlite_engine(db_path)
 
     def load(self) -> AppConfig:
-        if not self._path.exists():
-            return AppConfig()
-        return AppConfig.model_validate_json(self._path.read_text(encoding="utf-8"))
+        with DbSession(self._engine) as db:
+            settings = {
+                row.key: json.loads(row.value_json) for row in db.scalars(select(AppSettingModel))
+            }
+            providers = [
+                AIProviderConfig(
+                    id=row.id,
+                    provider_id=row.provider_id,  # type: ignore[arg-type]
+                    model=row.model,
+                    base_url=row.base_url,
+                    credential_ref=row.credential_ref,
+                    enabled=row.enabled,
+                    is_default=row.is_default,
+                )
+                for row in db.scalars(select(AIProviderConfigModel))
+            ]
+
+        kwargs = {key: settings[key] for key in _SETTINGS_KEYS if key in settings}
+        return AppConfig(ai_providers=providers, **kwargs)
 
     def save(self, config: AppConfig) -> None:
-        self._path.parent.mkdir(parents=True, exist_ok=True)
-        payload = config.model_dump_json(indent=2)
+        now = _now_iso()
+        values = {
+            "vault_path": config.vault_path,
+            "provider_id": config.provider_id,
+            "model": config.model,
+            "base_url": config.base_url,
+            "language": config.language,
+            "onboarding_step": config.onboarding_step.value,
+        }
 
-        fd, tmp_name = tempfile.mkstemp(
-            dir=self._path.parent, prefix=f".{self._path.name}.", suffix=".tmp"
-        )
-        try:
-            with os.fdopen(fd, "w", encoding="utf-8") as tmp_file:
-                tmp_file.write(payload)
-                tmp_file.flush()
-                os.fsync(tmp_file.fileno())
-            os.replace(tmp_name, self._path)
-        except BaseException:
-            Path(tmp_name).unlink(missing_ok=True)
-            raise
+        with DbSession(self._engine) as db:
+            for key, value in values.items():
+                row = db.get(AppSettingModel, key)
+                value_json = json.dumps(value)
+                if row is None:
+                    db.add(AppSettingModel(key=key, value_json=value_json, updated_at=now))
+                else:
+                    row.value_json = value_json
+                    row.updated_at = now
+
+            db.execute(delete(AIProviderConfigModel))
+            for provider in config.ai_providers:
+                db.add(
+                    AIProviderConfigModel(
+                        id=provider.id,
+                        provider_id=provider.provider_id.value,
+                        model=provider.model,
+                        base_url=provider.base_url,
+                        credential_ref=provider.credential_ref,
+                        enabled=provider.enabled,
+                        is_default=provider.is_default,
+                        created_at=now,
+                        updated_at=now,
+                    )
+                )
+
+            db.commit()
