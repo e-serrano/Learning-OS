@@ -110,8 +110,11 @@ Implementar adapters separados; Anthropic no se trata como OpenAI-compatible; NV
 **Nota de división:** T017 se solapaba con T051–T056 (un adapter real por provider, Fase 4). Para no anticipar Fase 4, T017 entrega: protocolo `AIProvider` (`app/ai/protocol.py`), `AIRequest`, excepciones (`app/ai/errors.py`) y `MockProvider` completo y determinista (`app/ai/adapters/mock.py`), que ya cubre "Anthropic no se trata como OpenAI-compatible" al exigir clases de adapter separadas por diseño del protocolo. Los adapters de red reales (Ollama/OpenAI/Anthropic/OpenRouter/NVIDIA/OpenAI-compatible) se implementan en sus tareas T051–T056 dedicadas.
 
 ### T018 — Health/capability check
+**Estado:** DONE (validación estructural; ver nota)
 **Dep:** T017  
 Validar endpoint, credencial, modelo y capacidad mínima de structured output sin enviar contenido del vault.
+
+**Nota de alcance:** `check_provider_capability` (`app/ai/capability_check.py`) valida localmente credencial/base_url/model requeridos según el registro de providers y nunca toca red ni vault. La validación en vivo (conexión real + round-trip de structured output) se añade cuando los adapters reales (T051–T056) existan; hasta entonces `ok=True` significa "configuración bien formada", no "provider confirmado alcanzable".
 
 ### T019 — Máquina de estados de onboarding
 **Dep:** T013  
