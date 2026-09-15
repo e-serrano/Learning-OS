@@ -24,6 +24,7 @@ from app.ai.provider_registry import (
     get_provider_descriptor,
     list_providers,
 )
+from app.ai.retry_policy import RetryingProvider
 
 __all__ = [
     "PROVIDER_REGISTRY",
@@ -47,6 +48,7 @@ __all__ = [
     "ProgressResponse",
     "ProviderDescriptor",
     "ProviderId",
+    "RetryingProvider",
     "TutorResponse",
     "UnknownProviderError",
     "check_provider_capability",

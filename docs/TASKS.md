@@ -375,8 +375,11 @@ API key, endpoint y model configurables.
 **Nota:** `app/ai/adapters/openai_compatible.py`, sobre la base compartida. `_openai_compatible_base.py` (T052/T054/T055/T056 comparten esta implementación — mismo wire format Chat Completions; Ollama y Anthropic usan protocolos nativos propios). Probado con `httpx.MockTransport` (sin credenciales reales) por cada camino: éxito, error HTTP, JSON malformado, schema no coincidente y ausencia de campos esperados. Validación contra APIs reales en vivo queda para T122 (`AGENTS.md` §17: el suite normal no depende de un modelo externo).
 
 ### T057 — Retry policy
+**Estado:** DONE
 **Dep:** T049  
 `validate → retry once → fallback → surface failure`; invalid output nunca muta estado.
+
+**Nota:** `app/ai/retry_policy.py` (`RetryingProvider`, satisface `AIProvider` — compone de forma transparente con `AIOrchestrator`). Reintento incluye el error de validación en `constraints.previous_validation_error` para que el modelo pueda autocorregirse. Fallo de red (`AIProviderUnavailableError`) va directo a fallback sin reintento (no hay error de validación que reenviar). Si todo falla, se relanza la excepción original — nunca se devuelve un resultado sin validar.
 
 ### T058 — Prompt versioning
 **Dep:** T049  
