@@ -1,3 +1,9 @@
+from app.obsidian.markdown_scanner import (
+    DEFAULT_IGNORED_DIRS,
+    ScannedFile,
+    ScanResult,
+    scan_markdown_files,
+)
 from app.obsidian.onboarding_scan import VaultScanResult, scan_vault_readonly
 from app.obsidian.vault_resolver import (
     VaultPathTraversalError,
@@ -6,9 +12,13 @@ from app.obsidian.vault_resolver import (
 )
 
 __all__ = [
-    "VaultScanResult",
-    "scan_vault_readonly",
+    "DEFAULT_IGNORED_DIRS",
+    "ScanResult",
+    "ScannedFile",
     "VaultPathTraversalError",
     "VaultResolver",
+    "VaultScanResult",
     "VaultUnavailableError",
+    "scan_markdown_files",
+    "scan_vault_readonly",
 ]

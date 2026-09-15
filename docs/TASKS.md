@@ -240,8 +240,11 @@ Validar root y bloquear path traversal fuera del vault.
 **Nota:** `app/obsidian/vault_resolver.py`. Falla rápido en construcción si el root no existe/no es directorio/no es legible (distinto del check "suave" de `onboarding_scan.py`, que muestra errores en la UI en vez de lanzar). `resolve()` bloquea tanto `../` como inyección de rutas absolutas (un solo `relative_to()` cubre ambos, por cómo pathlib ancla rutas absolutas al unir).
 
 ### T038 — Markdown scanner
+**Estado:** DONE
 **Dep:** T037  
 Scan recursivo read-only; ignorar `.obsidian/`.
+
+**Nota:** `app/obsidian/markdown_scanner.py`, sobre `VaultResolver`. Ignora también `Attachments/`/`Templates/` por defecto (configurable), tal como `OBSIDIAN_SCHEMA.md` §14 documenta como default. Este scanner alimenta el índice de vault (T042); el scan resumido de onboarding (`onboarding_scan.py`, T025) queda como está — sirve una necesidad distinta (feedback de UI) y ya está probado en navegador real.
 
 ### T039 — Frontmatter parser
 **Dep:** T038  
