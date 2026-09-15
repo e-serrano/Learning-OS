@@ -2,6 +2,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.domain.value_objects import NormalizedScore
+
 
 class Evaluation(BaseModel):
     """AI evaluations are evidence, not absolute truth -- see docs/DOMAIN_MODEL.md #9.
@@ -13,11 +15,11 @@ class Evaluation(BaseModel):
 
     id: str
     attempt_id: str
-    correctness: float
-    reasoning: float
-    completeness: float
-    independence: float
-    transfer: float
+    correctness: NormalizedScore
+    reasoning: NormalizedScore
+    completeness: NormalizedScore
+    independence: NormalizedScore
+    transfer: NormalizedScore
     misconceptions: list[str] = Field(default_factory=list)
     feedback: str
     recommended_action: str

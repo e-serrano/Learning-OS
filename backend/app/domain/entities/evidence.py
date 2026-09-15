@@ -4,6 +4,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.domain.enums import EvidenceSourceType
+from app.domain.value_objects import FiveLevelScale, NormalizedScore
 
 
 class Evidence(BaseModel):
@@ -22,11 +23,11 @@ class Evidence(BaseModel):
     session_id: str | None = None
     activity_id: str
     source_type: EvidenceSourceType
-    difficulty: int
-    correctness: float | None = None
-    reasoning: float | None = None
-    independence: float | None = None
-    transfer: float | None = None
-    confidence: float | None = None
+    difficulty: FiveLevelScale
+    correctness: NormalizedScore | None = None
+    reasoning: NormalizedScore | None = None
+    independence: NormalizedScore | None = None
+    transfer: NormalizedScore | None = None
+    confidence: NormalizedScore | None = None
     timestamp: datetime
     metadata: dict[str, Any] = Field(default_factory=dict)

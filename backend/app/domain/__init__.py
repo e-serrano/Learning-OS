@@ -33,6 +33,13 @@ from app.domain.enums import (
     SessionStatus,
     TargetLevel,
 )
+from app.domain.value_objects import (
+    ConfidencePercent,
+    FiveLevelScale,
+    Mastery,
+    NormalizedScore,
+    RetentionPercent,
+)
 
 __all__ = [
     "Activity",
@@ -44,19 +51,24 @@ __all__ = [
     "ConceptRelation",
     "ConceptRelationType",
     "ConceptStatus",
+    "ConfidencePercent",
     "Evaluation",
     "Evidence",
     "EvidenceSourceType",
     "Exercise",
     "ExerciseAttempt",
     "ExerciseType",
+    "FiveLevelScale",
     "GoalStatus",
     "LearningGoal",
+    "Mastery",
     "Mistake",
     "MistakeSeverity",
     "MistakeType",
+    "NormalizedScore",
     "Project",
     "ProjectStatus",
+    "RetentionPercent",
     "Review",
     "ReviewStatus",
     "Roadmap",

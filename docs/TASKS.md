@@ -189,6 +189,7 @@ Todos los enums de `DOMAIN_MODEL.md` como valores string canónicos.
 Goal, Concept, Skill, Evidence, Exercise, Attempt, Evaluation, Mistake, Review, Session, Activity, Project, Assessment.
 
 ### T031 — Value objects
+**Estado:** DONE
 **Dep:** T030  
 Mastery 0..5, confidence/retention 0..100, importance/difficulty 1..5.
 

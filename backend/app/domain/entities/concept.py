@@ -3,6 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel
 
 from app.domain.enums import ConceptRelationType, ConceptStatus
+from app.domain.value_objects import ConfidencePercent, FiveLevelScale, Mastery, RetentionPercent
 
 
 class Concept(BaseModel):
@@ -10,10 +11,10 @@ class Concept(BaseModel):
     title: str
     domain: str
     status: ConceptStatus
-    mastery: float
-    confidence: float
-    importance: int
-    retention: float
+    mastery: Mastery
+    confidence: ConfidencePercent
+    importance: FiveLevelScale
+    retention: RetentionPercent
     last_practiced: datetime | None = None
     next_review: datetime | None = None
     obsidian_path: str | None = None

@@ -3,12 +3,13 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.domain.enums import ExerciseType
+from app.domain.value_objects import ConfidencePercent, FiveLevelScale
 
 
 class Exercise(BaseModel):
     id: str
     type: ExerciseType
-    difficulty: int
+    difficulty: FiveLevelScale
     goal_id: str
     concept_ids: list[str] = Field(default_factory=list)
     skill_ids: list[str] = Field(default_factory=list)
@@ -31,6 +32,6 @@ class ExerciseAttempt(BaseModel):
     exercise_id: str
     session_id: str
     answer: str
-    confidence: float
+    confidence: ConfidencePercent
     submitted_at: datetime
     evaluation_id: str | None = None
