@@ -1,4 +1,5 @@
 from app.obsidian.frontmatter import ParsedFrontmatter, parse_frontmatter
+from app.obsidian.hashing import hash_content, hash_file
 from app.obsidian.managed_sections import ManagedSectionError, get_section, replace_section
 from app.obsidian.markdown_scanner import (
     DEFAULT_IGNORED_DIRS,
@@ -24,6 +25,8 @@ __all__ = [
     "VaultScanResult",
     "VaultUnavailableError",
     "get_section",
+    "hash_content",
+    "hash_file",
     "parse_frontmatter",
     "replace_section",
     "scan_markdown_files",

@@ -261,6 +261,7 @@ Parseo YAML tolerante a errores sin abortar todo el scan.
 **Nota:** `app/obsidian/managed_sections.py`. `replace_section` añade la sección si no existe; lanza `ManagedSectionError` si hay BEGIN sin END (en vez de adivinar y arriesgar corromper el archivo). Contenido fuera de marcadores nunca se toca (verificado con test que confirma texto de usuario intacto tras un replace).
 
 ### T041 — Hashing
+**Estado:** DONE
 **Dep:** T038  
 SHA-256 por archivo.
 
