@@ -11,6 +11,11 @@ from app.services.context_builder import (
 )
 from app.services.curator_service import CuratorService
 from app.services.diagnostic_service import DiagnosticService
+from app.services.diff_approval_service import (
+    DiffApprovalService,
+    InvalidProposalStatusError,
+    ProposalNotFoundError,
+)
 from app.services.evaluator_service import AttemptNotFoundError, EvaluatorService
 from app.services.evidence_creation_service import (
     EvaluationNotFoundError,
@@ -56,6 +61,7 @@ __all__ = [
     "ContextBuilder",
     "CuratorService",
     "DiagnosticService",
+    "DiffApprovalService",
     "EvaluationNotFoundError",
     "EvaluatorService",
     "EvidenceCreationService",
@@ -65,6 +71,7 @@ __all__ = [
     "GoalNotFoundError",
     "InactiveSessionError",
     "InvalidGoalError",
+    "InvalidProposalStatusError",
     "InvalidSessionError",
     "MasteryEngine",
     "MasteryUpdateService",
@@ -75,6 +82,7 @@ __all__ = [
     "NoActivityCandidatesError",
     "PlannerService",
     "PlanningResult",
+    "ProposalNotFoundError",
     "ProposalValidator",
     "RejectedOperation",
     "ReviewCreationService",

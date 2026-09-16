@@ -564,8 +564,11 @@ Validar operation, path, section, concept ID y límites.
 **Nota:** `app/services/proposal_validator.py`. `ProposalValidator.validate_and_persist(operations: list[CuratorOperation], concept: Concept) -> ValidationResult` (`accepted: list[ChangeProposal]`, `rejected: list[RejectedOperation]` con motivo). "operation" como enum ya lo valida el schema de `CuratorOperation` antes de llegar aquí (un valor inválido nunca pasaría de `AIInvalidOutputError`/T057) — lo que sí valida este servicio: `path` resuelve dentro del vault (reusa `VaultResolver`, sin traversal), no apunta a un directorio ignorado (`.obsidian/`/`Attachments/`/`Templates/`, mismo set que `markdown_scanner.DEFAULT_IGNORED_DIRS`), y termina en `.md`; "concept ID" se interpreta como que el path debe pertenecer de verdad al concept que se curó (coincide con `concept.obsidian_path` si existe, o con la convención `f"{concept.id}.md"` de `CuratorService` si no); `section` es obligatoria solo para `replace_managed_section`; límites `MAX_CONTENT_LENGTH=20000` y `MAX_OPERATIONS_PER_BATCH=20` (valores MVP razonables, sin cifra normativa en los docs). Las operaciones rechazadas se descartan, no se persisten — no son lo mismo que un `ChangeProposal` con `status=rejected` (eso es un humano rechazando un diff válido que sí llegó a existir).
 
 ### T082 — Diff approval API
+**Estado:** DONE
 **Dep:** T081  
 Aprobar/rechazar propuestas.
+
+**Nota:** `app/services/diff_approval_service.py`. `DiffApprovalService.approve(proposal_id)`/`.reject(proposal_id) -> ChangeProposal`: transición `pending → approved`/`pending → rejected` vía `ChangeProposalRepository.update_status()` (T046). "API" aquí es la capa de aplicación, no una ruta HTTP — `API_SPEC.md` §2 solo expone `apply`/`reject` como rutas (sin `/approve` separado) y esas rutas HTTP en sí son Fase 10 (T096-T108), todavía no construida. Solo se puede aprobar/rechazar una propuesta en `pending` — cualquier otro estado (`approved/rejected/applied/conflicted/failed`) levanta `InvalidProposalStatusError`, ya que son transiciones ya decididas.
 
 ### T083 — Apply approved change
 **Dep:** T082, T044  
