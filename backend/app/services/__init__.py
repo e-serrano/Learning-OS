@@ -1,3 +1,4 @@
+from app.services.activity_selector import ActivityCandidate, ActivitySelector
 from app.services.context_builder import (
     ConceptNotFoundError,
     ContextBuilder,
@@ -13,6 +14,8 @@ from app.services.review_scheduler import (
 )
 
 __all__ = [
+    "ActivityCandidate",
+    "ActivitySelector",
     "ConceptNotFoundError",
     "ContextBuilder",
     "GoalNotFoundError",
