@@ -21,6 +21,7 @@ from app.services.roadmap_service import (
     RoadmapService,
     RoadmapValidationError,
 )
+from app.services.session_service import InvalidSessionError, SessionApplicationService
 
 __all__ = [
     "ActivityCandidate",
@@ -31,6 +32,7 @@ __all__ = [
     "GoalApplicationService",
     "GoalNotFoundError",
     "InvalidGoalError",
+    "InvalidSessionError",
     "MasteryEngine",
     "MasteryWeights",
     "MistakeTracker",
@@ -43,6 +45,7 @@ __all__ = [
     "RoadmapValidationError",
     "SchedulingResult",
     "SchedulingStrategy",
+    "SessionApplicationService",
     "SimpleSpacedRepetitionScheduler",
     "normalize",
 ]

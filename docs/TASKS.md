@@ -467,8 +467,11 @@ Nodos/dependencias; validar IDs, self-relations y ciclos.
 # Fase 6 — Vertical slice de aprendizaje
 
 ### T069 — Session creation
+**Estado:** DONE
 **Dep:** T065, T068  
 Crear sesión, modo y duración.
+
+**Nota:** `app/services/session_service.py`. `SessionApplicationService.create_session(goal_id, mode, duration_minutes, objective=None) -> Session`. `duration_minutes` viene de `API_SPEC.md` §6 (`POST /goals/{goal_id}/sessions` body: `mode`+`duration_minutes`) pero `DATABASE_SCHEMA.md` no tiene columna para ello en `sessions` — se valida (`InvalidSessionError` si no es positivo) pero no se persiste; es input de planificación para T070 (next activity), no estado durable de la sesión. No hay ningún endpoint/tarea de "start session" separado en todo el backlog de Fase 6, así que crear la sesión la arranca directamente: `status=active`, `started_at=now` (no `planned`). `objective` es opcional — si no se da, se deriva del título del goal.
 
 ### T070 — Next activity
 **Dep:** T064, T069  
