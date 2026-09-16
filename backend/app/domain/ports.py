@@ -18,6 +18,7 @@ from app.domain.entities import (
     Activity,
     Concept,
     ConceptRelation,
+    Evaluation,
     Evidence,
     Exercise,
     ExerciseAttempt,
@@ -118,6 +119,16 @@ class ExerciseAttemptRepository(Protocol):
 
     def add(self, attempt: ExerciseAttempt) -> None: ...
     def get(self, attempt_id: str) -> ExerciseAttempt | None: ...
+
+
+class EvaluationRepository(Protocol):
+    """evaluations -- immutable like Evidence (docs/AGENTS.md #23), no
+    update/delete. Table/model existed since T033; this port/adapter was
+    added in T073 for the evaluator to have somewhere to persist its
+    judgment."""
+
+    def add(self, evaluation: Evaluation) -> None: ...
+    def get(self, evaluation_id: str) -> Evaluation | None: ...
 
 
 class ReviewRepository(Protocol):

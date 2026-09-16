@@ -9,6 +9,7 @@ from app.services.context_builder import (
     GoalNotFoundError,
 )
 from app.services.diagnostic_service import DiagnosticService
+from app.services.evaluator_service import AttemptNotFoundError, EvaluatorService
 from app.services.exercise_generator_service import ExerciseGeneratorService
 from app.services.goal_service import GoalApplicationService, InvalidGoalError
 from app.services.mastery_engine import MasteryEngine, MasteryWeights
@@ -38,9 +39,11 @@ __all__ = [
     "ActivityCandidate",
     "ActivitySelector",
     "AnswerSubmissionService",
+    "AttemptNotFoundError",
     "ConceptNotFoundError",
     "ContextBuilder",
     "DiagnosticService",
+    "EvaluatorService",
     "ExerciseGeneratorService",
     "ExerciseNotFoundError",
     "GoalApplicationService",

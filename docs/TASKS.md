@@ -495,8 +495,11 @@ Persistir attempt y confidence.
 **Nota:** `app/services/answer_submission_service.py`. `AnswerSubmissionService.submit_answer(exercise_id, session_id, answer, confidence) -> ExerciseAttempt`: valida que exercise y session existan y que la session esté `active` (reutiliza `SessionNotFoundError`/`InactiveSessionError` de T070), genera id/timestamp y persiste. Gap encontrado: `exercise_attempts` (tabla/`ExerciseAttemptModel`) existía desde T033 sin puerto ni repositorio — añadido `ExerciseAttemptRepository` (`add`/`get`) y `SqlExerciseAttemptRepository`. Discrepancia de schema notada, no corregida (no bloquea nada): la entidad `ExerciseAttempt` tiene `evaluation_id` pero `exercise_attempts` no tiene esa columna — el FK real va al revés (`evaluations.attempt_id`, `DATABASE_SCHEMA.md` #evaluations); el repositorio siempre devuelve `evaluation_id=None`. Solo persiste el intento crudo — calificarlo es trabajo del Evaluator (T073), no de este servicio.
 
 ### T073 — Evaluator
+**Estado:** DONE
 **Dep:** T048, T072  
 Evaluar correctness, reasoning, completeness, independence y transfer.
+
+**Nota:** `app/services/evaluator_service.py`. `EvaluatorService.evaluate(attempt_id) -> Evaluation`. Llama al rol `evaluator` (`AI_CONTRACTS.md` §8, `prompt_version="evaluator.v1"`) con el prompt/solution/success_criteria del exercise + la respuesta/confidence del attempt. Gap encontrado: `evaluations` (tabla/`EvaluationModel`) existía desde T033 sin puerto ni repositorio — añadido `EvaluationRepository` (`add`/`get`, append-only como `Evidence`) y `SqlEvaluationRepository`. `Evaluation.provider`/`model` se rellenan leyendo `AIOrchestrator.provider_name`/`.model` — añadidas como properties públicas del orchestrator (antes privadas) para que un caller pueda sellar la misma procedencia que ya se loguea en `ai_runs` sobre sus propios registros evidenciales. Este servicio solo guarda el juicio de la AI como evidencia inmutable (`DOMAIN_MODEL.md` §9: "AI evaluations are evidence, not absolute truth") — convertirlo en `Evidence` que afecta mastery es trabajo de T074.
 
 ### T074 — Evidence creation
 **Dep:** T073  

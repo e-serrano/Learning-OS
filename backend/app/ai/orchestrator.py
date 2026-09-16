@@ -33,6 +33,17 @@ class AIOrchestrator:
         self._provider_name = provider_name
         self._model = model
 
+    @property
+    def provider_name(self) -> str:
+        """Exposed so callers can stamp the same provenance (provider,
+        model) they already log to ai_runs onto their own evidentiary
+        records -- e.g. Evaluation.provider (docs/TASKS.md T073)."""
+        return self._provider_name
+
+    @property
+    def model(self) -> str:
+        return self._model
+
     async def generate(
         self,
         request: AIRequest,
