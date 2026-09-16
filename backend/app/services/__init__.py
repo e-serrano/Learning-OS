@@ -4,6 +4,7 @@ from app.services.context_builder import (
     GoalNotFoundError,
 )
 from app.services.mastery_engine import MasteryEngine, MasteryWeights
+from app.services.mistake_tracker import MistakeTracker, normalize
 
 __all__ = [
     "ConceptNotFoundError",
@@ -11,4 +12,6 @@ __all__ = [
     "GoalNotFoundError",
     "MasteryEngine",
     "MasteryWeights",
+    "MistakeTracker",
+    "normalize",
 ]
