@@ -382,8 +382,11 @@ API key, endpoint y model configurables.
 **Nota:** `app/ai/retry_policy.py` (`RetryingProvider`, satisface `AIProvider` — compone de forma transparente con `AIOrchestrator`). Reintento incluye el error de validación en `constraints.previous_validation_error` para que el modelo pueda autocorregirse. Fallo de red (`AIProviderUnavailableError`) va directo a fallback sin reintento (no hay error de validación que reenviar). Si todo falla, se relanza la excepción original — nunca se devuelve un resultado sin validar.
 
 ### T058 — Prompt versioning
+**Estado:** DONE
 **Dep:** T049  
 Crear `planner.v1`, `diagnostician.v1`, `tutor.v1`, `exercise_generator.v1`, `evaluator.v1`, `curator.v1`.
+
+**Nota:** `app/ai/prompts.py`. Progress analyst no tiene versión (`AI_CONTRACTS.md` §10 no muestra un `prompt_version` de ejemplo, y T058 solo pide estos 6). Conectado de verdad: `_prompt.py` (usado por todos los adapters) busca la plantilla por `request.prompt_version` y usa sus instrucciones específicas de la tarea; si la versión no existe, degrada con un prompt genérico en vez de fallar. Política de versionado: nunca editar una versión publicada — añadir `tutor.v2`, etc.
 
 ### T059 — AI security tests
 **Dep:** T050, T057  

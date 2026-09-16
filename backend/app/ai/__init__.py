@@ -15,6 +15,8 @@ from app.ai.contracts import (
 )
 from app.ai.errors import AIInvalidOutputError, AIProviderError, AIProviderUnavailableError
 from app.ai.orchestrator import AIOrchestrator
+from app.ai.prompts import PROMPT_REGISTRY as PROMPT_TEMPLATES
+from app.ai.prompts import PromptTemplate, get_prompt
 from app.ai.protocol import AIProvider, AIRequest
 from app.ai.provider_registry import (
     PROVIDER_REGISTRY,
@@ -48,7 +50,10 @@ __all__ = [
     "ProgressResponse",
     "ProviderDescriptor",
     "ProviderId",
+    "PROMPT_TEMPLATES",
+    "PromptTemplate",
     "RetryingProvider",
+    "get_prompt",
     "TutorResponse",
     "UnknownProviderError",
     "check_provider_capability",
