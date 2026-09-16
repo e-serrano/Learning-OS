@@ -400,8 +400,11 @@ Prompt injection desde vault se trata como datos; probar output inválido y prov
 # Fase 5 — Learning engine
 
 ### T060 — Context builder
+**Estado:** DONE
 **Dep:** T035, T038  
 Seleccionar contexto por goal, concept, prerequisites, mistakes y práctica; nunca vault completo por defecto.
+
+**Nota:** `app/services/context_builder.py` (`ContextBuilder.build(goal_id, concept_id)` → `list[dict]` apto para `AIRequest.context`). Señales implementadas de `AI_CONTRACTS.md` §12: goal, concept, prerequisite relationship, recent mistakes, recent practice (semantic similarity queda fuera del MVP — no hay infraestructura de embeddings). Sin dependencia de `VaultPort`: por diseño nunca puede tirar del vault completo. Mistakes filtra `resolved_at is None` y ordena por `last_seen` desc; practice (evidence) ordena por `timestamp` desc; ambos con cap configurable (`max_mistakes`, `max_recent_evidence`, `max_prerequisites`, default 5). Gap descubierto e implementado en el camino: `concept_relations` (tabla y `ConceptRelationModel` ya existían desde T033/migración inicial) no tenía puerto ni repositorio — añadido `ConceptRelationRepository` a `app/domain/ports.py` (`add`, `list_prerequisites_of`) y `SqlConceptRelationRepository`, con tests de repositorio dedicados en `tests/persistence/repositories/test_concept_relation.py`.
 
 ### T061 — Mastery engine
 **Dep:** T035, T048  

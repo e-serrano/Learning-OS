@@ -16,6 +16,7 @@ from pydantic import BaseModel
 
 from app.domain.entities import (
     Concept,
+    ConceptRelation,
     Evidence,
     Exercise,
     LearningGoal,
@@ -64,6 +65,15 @@ class ConceptRepository(Protocol):
     def list_by_goal(self, goal_id: str) -> list[Concept]: ...
     def list_due_for_review(self, before: datetime) -> list[Concept]: ...
     def update(self, concept: Concept) -> None: ...
+
+
+class ConceptRelationRepository(Protocol):
+    """concept_relations -- see docs/DATABASE_SCHEMA.md #2. Table already
+    existed since T033; this port/adapter was added in T060 for the
+    context builder's prerequisite-relationship signal."""
+
+    def add(self, relation: ConceptRelation) -> None: ...
+    def list_prerequisites_of(self, concept_id: str) -> list[ConceptRelation]: ...
 
 
 class EvidenceRepository(Protocol):

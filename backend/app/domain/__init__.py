@@ -36,6 +36,7 @@ from app.domain.enums import (
 )
 from app.domain.ports import (
     ClockPort,
+    ConceptRelationRepository,
     ConceptRepository,
     EvidenceRepository,
     ExerciseRepository,
@@ -64,6 +65,7 @@ __all__ = [
     "Concept",
     "ClockPort",
     "ConceptRelation",
+    "ConceptRelationRepository",
     "ConceptRelationType",
     "ConceptRepository",
     "ConceptStatus",
