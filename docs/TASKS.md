@@ -389,8 +389,11 @@ Crear `planner.v1`, `diagnostician.v1`, `tutor.v1`, `exercise_generator.v1`, `ev
 **Nota:** `app/ai/prompts.py`. Progress analyst no tiene versión (`AI_CONTRACTS.md` §10 no muestra un `prompt_version` de ejemplo, y T058 solo pide estos 6). Conectado de verdad: `_prompt.py` (usado por todos los adapters) busca la plantilla por `request.prompt_version` y usa sus instrucciones específicas de la tarea; si la versión no existe, degrada con un prompt genérico en vez de fallar. Política de versionado: nunca editar una versión publicada — añadir `tutor.v2`, etc.
 
 ### T059 — AI security tests
+**Estado:** DONE
 **Dep:** T050, T057  
 Prompt injection desde vault se trata como datos; probar output inválido y provider unavailable.
+
+**Nota:** `tests/ai/test_security.py`. Tres bloques: (1) inyección como datos — `system_prompt()` se deriva solo de `role`+`prompt_version` vía `PROMPT_REGISTRY`, nunca de `context`/`goal`/`task`/`constraints`, así que un payload de inyección puesto ahí nunca aparece en el system prompt; `user_prompt()` serializa con `json.dumps`, así que un payload que intenta romper la sintaxis JSON (comillas, llaves) queda contenido como valor string dentro de su campo, verificado con roundtrip `json.loads`. (2) Output inválido — reutiliza `AIOrchestrator`+`_AlwaysWrongShapeProvider` para confirmar que un fallo de validación se loguea en `ai_runs` con `success=False` y nunca se coacciona a una respuesta válida; test adicional confirma que Pydantic ignora atributos extra por construcción (no hay riesgo de inyección de atributos arbitrarios). (3) Provider unavailable — `RetryingProvider` con primary+fallback caídos re-lanza el error original en vez de fabricar cualquier dato por defecto.
 
 ---
 
