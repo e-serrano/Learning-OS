@@ -57,6 +57,11 @@ class SqlReviewRepository:
             stmt = select(ReviewModel).where(ReviewModel.scheduled_at <= dt_to_str(before))
             return [_to_entity(m) for m in db.scalars(stmt)]
 
+    def list_by_concept(self, concept_id: str) -> list[Review]:
+        with DbSession(self._engine) as db:
+            stmt = select(ReviewModel).where(ReviewModel.concept_id == concept_id)
+            return [_to_entity(m) for m in db.scalars(stmt)]
+
     def update(self, review: Review) -> None:
         with DbSession(self._engine) as db:
             db.merge(_to_model(review))

@@ -57,3 +57,11 @@ def test_list_due_filters_by_scheduled_at(engine: Engine, seeded: dict) -> None:
 
     due = {r.id for r in repo.list_due(NOW)}
     assert due == {"due"}
+
+
+def test_list_by_concept_returns_only_that_concepts_reviews(engine: Engine, seeded: dict) -> None:  # type: ignore[type-arg]
+    repo = SqlReviewRepository(engine)
+    repo.add(_make_review(seeded, id="review_1"))
+
+    assert [r.id for r in repo.list_by_concept(seeded["concept_id"])] == ["review_1"]
+    assert repo.list_by_concept("some_other_concept") == []

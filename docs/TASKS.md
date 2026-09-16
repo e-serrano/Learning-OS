@@ -523,8 +523,11 @@ Crear/incrementar misconception.
 **Nota:** `app/services/mistake_update_service.py`. `MistakeUpdateService.record_from_evaluation(evaluation_id) -> list[Mistake]`: recorre `Evaluation → ExerciseAttempt → Exercise` (mismo patrón que T074) para obtener `goal_id`/`concept_ids`, y delega en `MistakeTracker.record()` (T062) por cada misconception reportada — la normalización/recurrencia ya vive ahí, este servicio solo hace la wiring. Sin misconceptions reportadas devuelve `[]` sin tocar nada. Exercise multi-concept: cada misconception se registra contra TODOS los concepts del exercise (no hay mapeo misconception→concept en `EvaluatorResponse`, que es `list[str]` plano).
 
 ### T077 — Review creation
+**Estado:** DONE
 **Dep:** T075, T063  
 Programar review futura.
+
+**Nota:** `app/services/review_creation_service.py`. `ReviewCreationService.schedule_review(concept_id, goal_id, correctness) -> Review`: busca la `Review` completada más reciente del concept (nuevo `ReviewRepository.list_by_concept`, gap encontrado igual que en T073/T074/T076 — tabla/`ReviewModel` ya existían desde T033) como `previous` para `ReviewScheduler.schedule_next()` (T063), y persiste el resultado. Reviews sin completar (`completed_at is None`) se ignoran al buscar "previous" — no representan un ciclo de repaso ya vivido. `correctness` lo pasa el caller (mismo score que produjo el Evaluator, T073) para no repetir un tercer recorrido `Evaluation → ExerciseAttempt → Exercise` (T074 y T076 ya hacen ese recorrido cada uno por su cuenta).
 
 ### T078 — Adaptive next activity
 **Dep:** T075–T077  
