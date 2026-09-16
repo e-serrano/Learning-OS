@@ -3,16 +3,20 @@ and the diagnostic focus to test first for a goal (docs/TASKS.md T067,
 docs/AI_CONTRACTS.md #4: "distinguish high-leverage fundamentals from
 advanced optional knowledge").
 
-`PlannerResponse` also carries `roadmap_nodes`/`roadmap_edges`, but
-turning those into persisted concepts/relations is T068's job (Roadmap
+`PlannerResponse` also carries `roadmap_nodes`/`roadmap_edges`, passed
+through here unvalidated (raw dicts, same shape the AI returned).
+Turning those into persisted concepts/relations is T068's job (Roadmap
 service), which validates the graph -- IDs, self-relations, cycles --
-before anything is written. This service only calls the AI and surfaces
-its proposal; it never persists a roadmap or concepts itself
-(docs/AGENTS.md #5: AI output never directly mutates application state
-without going through validation).
+before anything is written; this service never persists a roadmap or
+concepts itself (docs/AGENTS.md #5: AI output never directly mutates
+application state without going through validation). They are still
+surfaced on `PlanningResult` -- without them, no caller could chain
+planner -> roadmap without a second, redundant AI call for data this
+one already received.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Any
 
 from app.ai.contracts import HighLeverageConcept, PlannerResponse
 from app.ai.orchestrator import AIOrchestrator
@@ -28,6 +32,8 @@ class PlanningResult:
     high_leverage_concepts: list[HighLeverageConcept]
     deferred_topics: list[str]
     diagnostic_focus: list[str]
+    roadmap_nodes: list[dict[str, Any]] = field(default_factory=list)
+    roadmap_edges: list[dict[str, Any]] = field(default_factory=list)
 
 
 class PlannerService:
@@ -77,4 +83,6 @@ class PlannerService:
             high_leverage_concepts=response.high_leverage_concepts,
             deferred_topics=response.deferred_topics,
             diagnostic_focus=response.diagnostic_focus,
+            roadmap_nodes=response.roadmap_nodes,
+            roadmap_edges=response.roadmap_edges,
         )

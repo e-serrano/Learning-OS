@@ -82,6 +82,8 @@ async def test_plan_returns_the_three_planner_fields(tmp_path: Path) -> None:
     assert result.high_leverage_concepts == expected.high_leverage_concepts
     assert result.deferred_topics == expected.deferred_topics
     assert result.diagnostic_focus == expected.diagnostic_focus
+    assert result.roadmap_nodes == expected.roadmap_nodes
+    assert result.roadmap_edges == expected.roadmap_edges
 
 
 @pytest.mark.asyncio
