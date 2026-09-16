@@ -35,6 +35,7 @@ from app.domain.enums import (
     TargetLevel,
 )
 from app.domain.ports import (
+    ActivityRepository,
     ClockPort,
     ConceptRelationRepository,
     ConceptRepository,
@@ -59,6 +60,7 @@ from app.domain.value_objects import (
 
 __all__ = [
     "Activity",
+    "ActivityRepository",
     "ActivityStatus",
     "ActivityType",
     "Assessment",

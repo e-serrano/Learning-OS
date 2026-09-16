@@ -474,8 +474,11 @@ Crear sesión, modo y duración.
 **Nota:** `app/services/session_service.py`. `SessionApplicationService.create_session(goal_id, mode, duration_minutes, objective=None) -> Session`. `duration_minutes` viene de `API_SPEC.md` §6 (`POST /goals/{goal_id}/sessions` body: `mode`+`duration_minutes`) pero `DATABASE_SCHEMA.md` no tiene columna para ello en `sessions` — se valida (`InvalidSessionError` si no es positivo) pero no se persiste; es input de planificación para T070 (next activity), no estado durable de la sesión. No hay ningún endpoint/tarea de "start session" separado en todo el backlog de Fase 6, así que crear la sesión la arranca directamente: `status=active`, `started_at=now` (no `planned`). `objective` es opcional — si no se da, se deriva del título del goal.
 
 ### T070 — Next activity
+**Estado:** DONE
 **Dep:** T064, T069  
 Seleccionar objetivo/actividad y persistirla.
+
+**Nota:** `app/services/next_activity_service.py`. `NextActivityService.select_next(session_id) -> Activity`: valida sesión existe y está `active`, usa `ActivitySelector.rank(goal_id)` (T064) y toma el concept top-1, crea un `Activity` (`type=exercise`, `status=active`, `sequence` = nº de activities existentes de la sesión + 1, `concept_ids=[top]`) y lo persiste. Gap encontrado: `activities` (tabla/`ActivityModel`) existía desde T033 pero no tenía puerto ni repositorio — añadido `ActivityRepository` (`add`/`get`/`list_by_session`/`update`) y `SqlActivityRepository` (empaqueta `concept_ids` en `payload_json`, igual que `SqlExerciseRepository` con sus campos extra). Esta es la selección *inicial* de actividad de una sesión — la readaptación tras cada respuesta (con señales de mastery/mistake/review recién actualizadas) es explícitamente el trabajo de T078 (Adaptive next activity), no de este servicio.
 
 ### T071 — Exercise generator
 **Dep:** T048, T070  

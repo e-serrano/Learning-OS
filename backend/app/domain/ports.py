@@ -15,6 +15,7 @@ from typing import Protocol
 from pydantic import BaseModel
 
 from app.domain.entities import (
+    Activity,
     Concept,
     ConceptRelation,
     Evidence,
@@ -91,6 +92,17 @@ class SessionRepository(Protocol):
     def add(self, session: Session) -> None: ...
     def get(self, session_id: str) -> Session | None: ...
     def update(self, session: Session) -> None: ...
+
+
+class ActivityRepository(Protocol):
+    """activities -- see docs/DATABASE_SCHEMA.md. Table/model existed
+    since T033; this port/adapter was added in T070 for next-activity
+    selection to have somewhere to persist its pick."""
+
+    def add(self, activity: Activity) -> None: ...
+    def get(self, activity_id: str) -> Activity | None: ...
+    def list_by_session(self, session_id: str) -> list[Activity]: ...
+    def update(self, activity: Activity) -> None: ...
 
 
 class ExerciseRepository(Protocol):

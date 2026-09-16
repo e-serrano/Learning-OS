@@ -8,6 +8,12 @@ from app.services.diagnostic_service import DiagnosticService
 from app.services.goal_service import GoalApplicationService, InvalidGoalError
 from app.services.mastery_engine import MasteryEngine, MasteryWeights
 from app.services.mistake_tracker import MistakeTracker, normalize
+from app.services.next_activity_service import (
+    InactiveSessionError,
+    NextActivityService,
+    NoActivityCandidatesError,
+    SessionNotFoundError,
+)
 from app.services.planner_service import PlannerService, PlanningResult
 from app.services.review_scheduler import (
     ReviewScheduler,
@@ -31,11 +37,14 @@ __all__ = [
     "DiagnosticService",
     "GoalApplicationService",
     "GoalNotFoundError",
+    "InactiveSessionError",
     "InvalidGoalError",
     "InvalidSessionError",
     "MasteryEngine",
     "MasteryWeights",
     "MistakeTracker",
+    "NextActivityService",
+    "NoActivityCandidatesError",
     "PlannerService",
     "PlanningResult",
     "ReviewScheduler",
@@ -46,6 +55,7 @@ __all__ = [
     "SchedulingResult",
     "SchedulingStrategy",
     "SessionApplicationService",
+    "SessionNotFoundError",
     "SimpleSpacedRepetitionScheduler",
     "normalize",
 ]
