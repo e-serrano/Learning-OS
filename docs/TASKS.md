@@ -516,8 +516,11 @@ Recalcular mastery.
 **Nota:** `app/services/mastery_update_service.py`. `MasteryUpdateService.update_mastery(concept_id) -> Concept`: wiring mínimo entre `MasteryEngine.compute()` (T061, que nunca persiste por diseño) y `ConceptRepository.update()`. Se llama tras crear Evidence (T074) para reflejar la evidencia nueva en `mastery`/`status`. No toca `last_practiced`/`next_review` — no lo pide el texto de la tarea y `next_review` es responsabilidad del review scheduler (T077).
 
 ### T076 — Mistake update
+**Estado:** DONE
 **Dep:** T074, T062  
 Crear/incrementar misconception.
+
+**Nota:** `app/services/mistake_update_service.py`. `MistakeUpdateService.record_from_evaluation(evaluation_id) -> list[Mistake]`: recorre `Evaluation → ExerciseAttempt → Exercise` (mismo patrón que T074) para obtener `goal_id`/`concept_ids`, y delega en `MistakeTracker.record()` (T062) por cada misconception reportada — la normalización/recurrencia ya vive ahí, este servicio solo hace la wiring. Sin misconceptions reportadas devuelve `[]` sin tocar nada. Exercise multi-concept: cada misconception se registra contra TODOS los concepts del exercise (no hay mapeo misconception→concept en `EvaluatorResponse`, que es `list[str]` plano).
 
 ### T077 — Review creation
 **Dep:** T075, T063  
