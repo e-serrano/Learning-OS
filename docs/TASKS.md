@@ -509,8 +509,11 @@ Convertir evaluación válida en evidence inmutable.
 **Nota:** `app/services/evidence_creation_service.py`. `EvidenceCreationService.create_evidence(evaluation_id, activity_id) -> list[Evidence]`. Encadena `Evaluation → ExerciseAttempt → Exercise` para reunir los campos que faltan (`concept_ids`, `goal_id`, `difficulty`, `session_id`). Un exercise puede apuntar a varios concepts (`concept_ids: list[str]`) pero `Evidence` solo tiene un `concept_id` — este servicio genera un `Evidence` por concept (fan-out), todos comparten scores/activity/session. `activity_id` no es derivable de la cadena evaluation→attempt→exercise (ni `ExerciseAttempt` ni `exercise_attempts` lo registran) — lo da el caller, igual que `API_SPEC.md` §6 lo lleva en la URL (`/sessions/{id}/activities/{activity_id}/answer`), no en el attempt. Conversión de escala: `attempt.confidence` es `ConfidencePercent` (0..100) pero `Evidence.confidence` es `NormalizedScore` (0..1) — se divide entre 100. `evaluation.completeness` no tiene equivalente en `Evidence` (solo existe en `Evaluation`) — se queda fuera, correcto por diseño. `metadata` guarda `evaluation_id`/`attempt_id` para trazabilidad.
 
 ### T075 — Derived mastery update
+**Estado:** DONE
 **Dep:** T074, T061  
 Recalcular mastery.
+
+**Nota:** `app/services/mastery_update_service.py`. `MasteryUpdateService.update_mastery(concept_id) -> Concept`: wiring mínimo entre `MasteryEngine.compute()` (T061, que nunca persiste por diseño) y `ConceptRepository.update()`. Se llama tras crear Evidence (T074) para reflejar la evidencia nueva en `mastery`/`status`. No toca `last_practiced`/`next_review` — no lo pide el texto de la tarea y `next_review` es responsabilidad del review scheduler (T077).
 
 ### T076 — Mistake update
 **Dep:** T074, T062  
