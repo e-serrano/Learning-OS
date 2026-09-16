@@ -5,6 +5,7 @@ from app.services.context_builder import (
     GoalNotFoundError,
 )
 from app.services.diagnostic_service import DiagnosticService
+from app.services.exercise_generator_service import ExerciseGeneratorService
 from app.services.goal_service import GoalApplicationService, InvalidGoalError
 from app.services.mastery_engine import MasteryEngine, MasteryWeights
 from app.services.mistake_tracker import MistakeTracker, normalize
@@ -35,6 +36,7 @@ __all__ = [
     "ConceptNotFoundError",
     "ContextBuilder",
     "DiagnosticService",
+    "ExerciseGeneratorService",
     "GoalApplicationService",
     "GoalNotFoundError",
     "InactiveSessionError",

@@ -481,8 +481,11 @@ Seleccionar objetivo/actividad y persistirla.
 **Nota:** `app/services/next_activity_service.py`. `NextActivityService.select_next(session_id) -> Activity`: valida sesión existe y está `active`, usa `ActivitySelector.rank(goal_id)` (T064) y toma el concept top-1, crea un `Activity` (`type=exercise`, `status=active`, `sequence` = nº de activities existentes de la sesión + 1, `concept_ids=[top]`) y lo persiste. Gap encontrado: `activities` (tabla/`ActivityModel`) existía desde T033 pero no tenía puerto ni repositorio — añadido `ActivityRepository` (`add`/`get`/`list_by_session`/`update`) y `SqlActivityRepository` (empaqueta `concept_ids` en `payload_json`, igual que `SqlExerciseRepository` con sus campos extra). Esta es la selección *inicial* de actividad de una sesión — la readaptación tras cada respuesta (con señales de mastery/mistake/review recién actualizadas) es explícitamente el trabajo de T078 (Adaptive next activity), no de este servicio.
 
 ### T071 — Exercise generator
+**Estado:** DONE
 **Dep:** T048, T070  
 Exercise con type, difficulty, concepts, success criteria, hints, solution, mistakes y transfer.
+
+**Nota:** `app/services/exercise_generator_service.py`. `ExerciseGeneratorService.generate(goal_id, concept_id) -> Exercise`. Llama al rol `exercise_generator` (`AI_CONTRACTS.md` §7, `prompt_version="exercise_generator.v1"`) con contexto de `ContextBuilder` (T060) para el concept. `ExerciseGeneratorResponse` no incluye `id`/`goal_id`/`concept_ids` — los asigna este servicio (AI nunca asigna identidad/asociaciones, `AGENTS.md` #5), copiando el resto de campos (`type`, `difficulty`, `prompt`, `success_criteria`, `hints`, `solution`, `common_mistakes`, `transfer_variant`) 1:1 al `Exercise` de dominio y persistiendo vía `ExerciseRepository` (T035, sin cambios). `prerequisite_ids`/`skill_ids` quedan vacíos — la tarea no pide poblarlos y no hay lógica de inferencia de skills todavía.
 
 ### T072 — Answer submission
 **Dep:** T071  
