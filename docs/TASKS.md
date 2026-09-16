@@ -502,8 +502,11 @@ Evaluar correctness, reasoning, completeness, independence y transfer.
 **Nota:** `app/services/evaluator_service.py`. `EvaluatorService.evaluate(attempt_id) -> Evaluation`. Llama al rol `evaluator` (`AI_CONTRACTS.md` §8, `prompt_version="evaluator.v1"`) con el prompt/solution/success_criteria del exercise + la respuesta/confidence del attempt. Gap encontrado: `evaluations` (tabla/`EvaluationModel`) existía desde T033 sin puerto ni repositorio — añadido `EvaluationRepository` (`add`/`get`, append-only como `Evidence`) y `SqlEvaluationRepository`. `Evaluation.provider`/`model` se rellenan leyendo `AIOrchestrator.provider_name`/`.model` — añadidas como properties públicas del orchestrator (antes privadas) para que un caller pueda sellar la misma procedencia que ya se loguea en `ai_runs` sobre sus propios registros evidenciales. Este servicio solo guarda el juicio de la AI como evidencia inmutable (`DOMAIN_MODEL.md` §9: "AI evaluations are evidence, not absolute truth") — convertirlo en `Evidence` que afecta mastery es trabajo de T074.
 
 ### T074 — Evidence creation
+**Estado:** DONE
 **Dep:** T073  
 Convertir evaluación válida en evidence inmutable.
+
+**Nota:** `app/services/evidence_creation_service.py`. `EvidenceCreationService.create_evidence(evaluation_id, activity_id) -> list[Evidence]`. Encadena `Evaluation → ExerciseAttempt → Exercise` para reunir los campos que faltan (`concept_ids`, `goal_id`, `difficulty`, `session_id`). Un exercise puede apuntar a varios concepts (`concept_ids: list[str]`) pero `Evidence` solo tiene un `concept_id` — este servicio genera un `Evidence` por concept (fan-out), todos comparten scores/activity/session. `activity_id` no es derivable de la cadena evaluation→attempt→exercise (ni `ExerciseAttempt` ni `exercise_attempts` lo registran) — lo da el caller, igual que `API_SPEC.md` §6 lo lleva en la URL (`/sessions/{id}/activities/{activity_id}/answer`), no en el attempt. Conversión de escala: `attempt.confidence` es `ConfidencePercent` (0..100) pero `Evidence.confidence` es `NormalizedScore` (0..1) — se divide entre 100. `evaluation.completeness` no tiene equivalente en `Evidence` (solo existe en `Evaluation`) — se queda fuera, correcto por diseño. `metadata` guarda `evaluation_id`/`attempt_id` para trazabilidad.
 
 ### T075 — Derived mastery update
 **Dep:** T074, T061  
