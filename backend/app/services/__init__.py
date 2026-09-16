@@ -4,6 +4,7 @@ from app.services.context_builder import (
     ContextBuilder,
     GoalNotFoundError,
 )
+from app.services.diagnostic_service import DiagnosticService
 from app.services.goal_service import GoalApplicationService, InvalidGoalError
 from app.services.mastery_engine import MasteryEngine, MasteryWeights
 from app.services.mistake_tracker import MistakeTracker, normalize
@@ -19,6 +20,7 @@ __all__ = [
     "ActivitySelector",
     "ConceptNotFoundError",
     "ContextBuilder",
+    "DiagnosticService",
     "GoalApplicationService",
     "GoalNotFoundError",
     "InvalidGoalError",
