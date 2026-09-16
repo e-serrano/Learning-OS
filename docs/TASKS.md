@@ -488,8 +488,11 @@ Exercise con type, difficulty, concepts, success criteria, hints, solution, mist
 **Nota:** `app/services/exercise_generator_service.py`. `ExerciseGeneratorService.generate(goal_id, concept_id) -> Exercise`. Llama al rol `exercise_generator` (`AI_CONTRACTS.md` §7, `prompt_version="exercise_generator.v1"`) con contexto de `ContextBuilder` (T060) para el concept. `ExerciseGeneratorResponse` no incluye `id`/`goal_id`/`concept_ids` — los asigna este servicio (AI nunca asigna identidad/asociaciones, `AGENTS.md` #5), copiando el resto de campos (`type`, `difficulty`, `prompt`, `success_criteria`, `hints`, `solution`, `common_mistakes`, `transfer_variant`) 1:1 al `Exercise` de dominio y persistiendo vía `ExerciseRepository` (T035, sin cambios). `prerequisite_ids`/`skill_ids` quedan vacíos — la tarea no pide poblarlos y no hay lógica de inferencia de skills todavía.
 
 ### T072 — Answer submission
+**Estado:** DONE
 **Dep:** T071  
 Persistir attempt y confidence.
+
+**Nota:** `app/services/answer_submission_service.py`. `AnswerSubmissionService.submit_answer(exercise_id, session_id, answer, confidence) -> ExerciseAttempt`: valida que exercise y session existan y que la session esté `active` (reutiliza `SessionNotFoundError`/`InactiveSessionError` de T070), genera id/timestamp y persiste. Gap encontrado: `exercise_attempts` (tabla/`ExerciseAttemptModel`) existía desde T033 sin puerto ni repositorio — añadido `ExerciseAttemptRepository` (`add`/`get`) y `SqlExerciseAttemptRepository`. Discrepancia de schema notada, no corregida (no bloquea nada): la entidad `ExerciseAttempt` tiene `evaluation_id` pero `exercise_attempts` no tiene esa columna — el FK real va al revés (`evaluations.attempt_id`, `DATABASE_SCHEMA.md` #evaluations); el repositorio siempre devuelve `evaluation_id=None`. Solo persiste el intento crudo — calificarlo es trabajo del Evaluator (T073), no de este servicio.
 
 ### T073 — Evaluator
 **Dep:** T048, T072  

@@ -1,4 +1,8 @@
 from app.services.activity_selector import ActivityCandidate, ActivitySelector
+from app.services.answer_submission_service import (
+    AnswerSubmissionService,
+    ExerciseNotFoundError,
+)
 from app.services.context_builder import (
     ConceptNotFoundError,
     ContextBuilder,
@@ -33,10 +37,12 @@ from app.services.session_service import InvalidSessionError, SessionApplication
 __all__ = [
     "ActivityCandidate",
     "ActivitySelector",
+    "AnswerSubmissionService",
     "ConceptNotFoundError",
     "ContextBuilder",
     "DiagnosticService",
     "ExerciseGeneratorService",
+    "ExerciseNotFoundError",
     "GoalApplicationService",
     "GoalNotFoundError",
     "InactiveSessionError",

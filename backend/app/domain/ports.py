@@ -20,6 +20,7 @@ from app.domain.entities import (
     ConceptRelation,
     Evidence,
     Exercise,
+    ExerciseAttempt,
     LearningGoal,
     Mistake,
     Review,
@@ -108,6 +109,15 @@ class ActivityRepository(Protocol):
 class ExerciseRepository(Protocol):
     def add(self, exercise: Exercise) -> None: ...
     def get(self, exercise_id: str) -> Exercise | None: ...
+
+
+class ExerciseAttemptRepository(Protocol):
+    """exercise_attempts -- see docs/DATABASE_SCHEMA.md. Table/model
+    existed since T033; this port/adapter was added in T072 for answer
+    submission to have somewhere to persist an attempt."""
+
+    def add(self, attempt: ExerciseAttempt) -> None: ...
+    def get(self, attempt_id: str) -> ExerciseAttempt | None: ...
 
 
 class ReviewRepository(Protocol):
