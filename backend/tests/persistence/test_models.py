@@ -60,6 +60,7 @@ def test_expected_indexes_are_present() -> None:
         "idx_reviews_schedule",
         "idx_mistakes_concept",
         "idx_vault_files_hash",
+        "idx_roadmaps_goal_version",
     }
 
 

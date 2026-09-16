@@ -5,6 +5,7 @@ from app.persistence.repositories.exercise import SqlExerciseRepository
 from app.persistence.repositories.goal import SqlGoalRepository
 from app.persistence.repositories.mistake import SqlMistakeRepository
 from app.persistence.repositories.review import SqlReviewRepository
+from app.persistence.repositories.roadmap import SqlRoadmapRepository
 from app.persistence.repositories.session import SqlSessionRepository
 
 __all__ = [
@@ -15,5 +16,6 @@ __all__ = [
     "SqlGoalRepository",
     "SqlMistakeRepository",
     "SqlReviewRepository",
+    "SqlRoadmapRepository",
     "SqlSessionRepository",
 ]

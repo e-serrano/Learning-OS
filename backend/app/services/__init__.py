@@ -15,6 +15,12 @@ from app.services.review_scheduler import (
     SchedulingStrategy,
     SimpleSpacedRepetitionScheduler,
 )
+from app.services.roadmap_service import (
+    RoadmapEdge,
+    RoadmapNode,
+    RoadmapService,
+    RoadmapValidationError,
+)
 
 __all__ = [
     "ActivityCandidate",
@@ -31,6 +37,10 @@ __all__ = [
     "PlannerService",
     "PlanningResult",
     "ReviewScheduler",
+    "RoadmapEdge",
+    "RoadmapNode",
+    "RoadmapService",
+    "RoadmapValidationError",
     "SchedulingResult",
     "SchedulingStrategy",
     "SimpleSpacedRepetitionScheduler",

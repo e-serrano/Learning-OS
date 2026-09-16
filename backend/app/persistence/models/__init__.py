@@ -12,6 +12,7 @@ from app.persistence.models.exercise import (
 from app.persistence.models.goal import GoalConceptModel, GoalModel
 from app.persistence.models.mistake import MistakeModel
 from app.persistence.models.review import ReviewModel
+from app.persistence.models.roadmap import RoadmapModel
 from app.persistence.models.session import ActivityModel, SessionModel
 from app.persistence.models.skill import SkillConceptModel, SkillModel
 from app.persistence.models.vault_file import VaultFileModel
@@ -33,6 +34,7 @@ __all__ = [
     "GoalModel",
     "MistakeModel",
     "ReviewModel",
+    "RoadmapModel",
     "SessionModel",
     "SkillConceptModel",
     "SkillModel",

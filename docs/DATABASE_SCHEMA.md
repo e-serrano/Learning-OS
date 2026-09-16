@@ -95,6 +95,22 @@ CONTRASTS_WITH
 APPLIED_BY
 ```
 
+### roadmaps
+
+Gap found while implementing T068: `DOMAIN_MODEL.md` §16 documents the `Roadmap` entity (`id`, `goal_id`, `version`, `status`) but this table was never added here. A roadmap version does not duplicate the graph itself -- "nodes reference concepts and skills, edges contain a relationship type" (`DOMAIN_MODEL.md` §16) already means the graph lives in `goal_concepts` (membership) and `concept_relations` (edges); this table is only the versioned active/superseded marker for a goal's roadmap lifecycle.
+
+```sql
+CREATE TABLE roadmaps (
+    id TEXT PRIMARY KEY,
+    goal_id TEXT NOT NULL,
+    version INTEGER NOT NULL,
+    status TEXT NOT NULL,
+    FOREIGN KEY (goal_id) REFERENCES goals(id)
+);
+
+CREATE UNIQUE INDEX idx_roadmaps_goal_version ON roadmaps(goal_id, version);
+```
+
 ### skills
 
 ```sql

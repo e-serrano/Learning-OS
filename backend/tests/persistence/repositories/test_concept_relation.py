@@ -86,3 +86,42 @@ def test_list_prerequisites_of_excludes_other_targets(engine: Engine) -> None:
     )
 
     assert relations.list_prerequisites_of("subqueries") == []
+
+
+def test_list_relations_from_returns_any_relation_type_originating_there(engine: Engine) -> None:
+    concepts = SqlConceptRepository(engine)
+    concepts.add(_make_concept("cte"))
+    concepts.add(_make_concept("window_functions"))
+    concepts.add(_make_concept("subqueries"))
+    relations = SqlConceptRelationRepository(engine)
+    relations.add(
+        ConceptRelation(
+            source_id="cte", target_id="window_functions", relation=ConceptRelationType.RELATED_TO
+        )
+    )
+    relations.add(
+        ConceptRelation(
+            source_id="cte", target_id="subqueries", relation=ConceptRelationType.PREREQUISITE_OF
+        )
+    )
+
+    found = {(r.target_id, r.relation) for r in relations.list_relations_from("cte")}
+
+    assert found == {
+        ("window_functions", ConceptRelationType.RELATED_TO),
+        ("subqueries", ConceptRelationType.PREREQUISITE_OF),
+    }
+
+
+def test_list_relations_from_excludes_other_sources(engine: Engine) -> None:
+    concepts = SqlConceptRepository(engine)
+    concepts.add(_make_concept("cte"))
+    concepts.add(_make_concept("window_functions"))
+    relations = SqlConceptRelationRepository(engine)
+    relations.add(
+        ConceptRelation(
+            source_id="cte", target_id="window_functions", relation=ConceptRelationType.RELATED_TO
+        )
+    )
+
+    assert relations.list_relations_from("window_functions") == []

@@ -46,3 +46,8 @@ class SqlConceptRelationRepository:
                 ConceptRelationModel.relation == ConceptRelationType.PREREQUISITE_OF.value,
             )
             return [_to_entity(m) for m in db.scalars(stmt)]
+
+    def list_relations_from(self, concept_id: str) -> list[ConceptRelation]:
+        with DbSession(self._engine) as db:
+            stmt = select(ConceptRelationModel).where(ConceptRelationModel.source_id == concept_id)
+            return [_to_entity(m) for m in db.scalars(stmt)]
