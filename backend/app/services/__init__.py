@@ -29,6 +29,7 @@ from app.services.next_activity_service import (
     SessionNotFoundError,
 )
 from app.services.planner_service import PlannerService, PlanningResult
+from app.services.proposal_validator import ProposalValidator, RejectedOperation, ValidationResult
 from app.services.review_creation_service import ReviewCreationService
 from app.services.review_scheduler import (
     ReviewScheduler,
@@ -74,6 +75,8 @@ __all__ = [
     "NoActivityCandidatesError",
     "PlannerService",
     "PlanningResult",
+    "ProposalValidator",
+    "RejectedOperation",
     "ReviewCreationService",
     "ReviewScheduler",
     "RoadmapEdge",
@@ -85,5 +88,6 @@ __all__ = [
     "SessionApplicationService",
     "SessionNotFoundError",
     "SimpleSpacedRepetitionScheduler",
+    "ValidationResult",
     "normalize",
 ]
