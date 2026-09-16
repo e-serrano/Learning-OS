@@ -5,6 +5,12 @@ from app.services.context_builder import (
 )
 from app.services.mastery_engine import MasteryEngine, MasteryWeights
 from app.services.mistake_tracker import MistakeTracker, normalize
+from app.services.review_scheduler import (
+    ReviewScheduler,
+    SchedulingResult,
+    SchedulingStrategy,
+    SimpleSpacedRepetitionScheduler,
+)
 
 __all__ = [
     "ConceptNotFoundError",
@@ -13,5 +19,9 @@ __all__ = [
     "MasteryEngine",
     "MasteryWeights",
     "MistakeTracker",
+    "ReviewScheduler",
+    "SchedulingResult",
+    "SchedulingStrategy",
+    "SimpleSpacedRepetitionScheduler",
     "normalize",
 ]

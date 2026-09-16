@@ -421,8 +421,11 @@ Agrupar misconceptions normalizadas y contar recurrencia.
 **Nota:** `app/services/mistake_tracker.py`. `MistakeTracker.record(concept_id, goal_id, description, type=MISCONCEPTION, severity=MEDIUM) -> Mistake`. La AI solo da texto libre (`EvaluatorResponse.misconceptions: list[str]`, `AI_CONTRACTS.md` §8), así que la misma misconception recurrente puede venir con distinto wording entre intentos — `normalize()` (minúsculas, sin puntuación, whitespace colapsado) antes de comparar contra las `Mistake` existentes del concepto; sin infraestructura de embeddings (misma decisión que T060), el match es exacto sobre el texto normalizado, no fuzzy/semántico. Si hay match: incrementa `occurrences`, actualiza `last_seen`, y reabre (`resolved_at=None`) si estaba resuelto — una recurrencia es evidencia de que no estaba realmente resuelto. Si no hay match: crea `Mistake` nueva vía `IdGeneratorPort`/`ClockPort` (ports ya existían desde T032, sin adapter concreto aún — se añadirá cuando algo los cablee de verdad, probablemente Fase 6).
 
 ### T063 — Review scheduler
+**Estado:** DONE
 **Dep:** T061  
 Scheduler MVP determinista; dejar interfaz preparada para FSRS.
+
+**Nota:** `app/services/review_scheduler.py`. `SchedulingStrategy` (Protocol) es el punto de swap para T130 (FSRS, Fase 13) — recibe el `Review` previo completo (no solo `interval_days`), así una futura `FsrsScheduler` puede leer `previous.stability`/`previous.difficulty` (campos ya existentes en la entidad `Review`, sin usar por esta strategy MVP) sin cambiar la interfaz ni el código que la llama. `SimpleSpacedRepetitionScheduler` (default, `SPECS.md` §17 "MVP uses simple spaced repetition"): determinista — sin review previa usa `INITIAL_INTERVAL_DAYS=1.0`; con `correctness >= SUCCESS_THRESHOLD(0.6)` dobla el intervalo anterior (cap `MAX_INTERVAL_DAYS=180.0`); si no, resetea a `MIN_INTERVAL_DAYS=1.0`. `ReviewScheduler.schedule_next(...)` no persiste — devuelve el próximo `Review` (status `scheduled`); guardar es responsabilidad del caller vía `ReviewRepository.add()`. Los umbrales/constantes son valores MVP razonables sin más guía normativa específica en los docs; documentados aquí por si se ajustan en Fase 6+.
 
 ### T064 — Activity selector
 **Dep:** T061–T063  
