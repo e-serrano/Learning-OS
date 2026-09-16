@@ -9,6 +9,7 @@ from app.services.context_builder import (
     ContextBuilder,
     GoalNotFoundError,
 )
+from app.services.curator_service import CuratorService
 from app.services.diagnostic_service import DiagnosticService
 from app.services.evaluator_service import AttemptNotFoundError, EvaluatorService
 from app.services.evidence_creation_service import (
@@ -52,6 +53,7 @@ __all__ = [
     "AttemptNotFoundError",
     "ConceptNotFoundError",
     "ContextBuilder",
+    "CuratorService",
     "DiagnosticService",
     "EvaluationNotFoundError",
     "EvaluatorService",

@@ -550,8 +550,11 @@ MockProvider ejecuta goal → diagnostic → roadmap → session → exercise �
 # Fase 7 — Consolidación Obsidian
 
 ### T080 — Curator service
+**Estado:** DONE
 **Dep:** T074, T046, T058  
 Generar propuesta de conocimiento.
+
+**Nota:** `app/services/curator_service.py`. `CuratorService.propose(goal_id, concept_id, session_outcome=None) -> list[CuratorOperation]`. Único rol de IA que toca el vault de verdad (vía `VaultResolver`, solo lectura) — el resto de servicios (T060-T078) nunca lo tocan. Input según `AI_CONTRACTS.md` §9 (proposed changes, target note, current note, evidence, session outcome): `target_note` = `concept.obsidian_path` o `f"{concept.id}.md"` si aún no tiene uno; `current_note` = contenido real del archivo (string vacío si el archivo no existe todavía — caso "crear nota nueva"); evidencia reciente (cap `MAX_RECENT_EVIDENCE=5`) como contexto; `session_outcome` lo pasa el caller (no existe todavía un resumidor de sesión). Devuelve las operaciones SIN validar ni persistir — `CuratorResponse` documenta explícitamente que "the application validates every operation" antes de convertirse en `ChangeProposal`, y eso es T081, no este servicio.
 
 ### T081 — Proposal validator
 **Dep:** T080  
