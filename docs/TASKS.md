@@ -530,8 +530,11 @@ Programar review futura.
 **Nota:** `app/services/review_creation_service.py`. `ReviewCreationService.schedule_review(concept_id, goal_id, correctness) -> Review`: busca la `Review` completada más reciente del concept (nuevo `ReviewRepository.list_by_concept`, gap encontrado igual que en T073/T074/T076 — tabla/`ReviewModel` ya existían desde T033) como `previous` para `ReviewScheduler.schedule_next()` (T063), y persiste el resultado. Reviews sin completar (`completed_at is None`) se ignoran al buscar "previous" — no representan un ciclo de repaso ya vivido. `correctness` lo pasa el caller (mismo score que produjo el Evaluator, T073) para no repetir un tercer recorrido `Evaluation → ExerciseAttempt → Exercise` (T074 y T076 ya hacen ese recorrido cada uno por su cuenta).
 
 ### T078 — Adaptive next activity
+**Estado:** DONE
 **Dep:** T075–T077  
 Seleccionar siguiente actividad con razón explicable.
+
+**Nota:** `app/services/adaptive_activity_service.py`. `AdaptiveActivityService.select_next(session_id, just_completed_concept_id=None) -> AdaptiveActivityResult` (`activity`, `reason: ActivityCandidate`). Reutiliza `ActivitySelector.rank()` (T064) igual que T070 — como lee `Concept`/`Mistake`/`Review` en vivo, automáticamente refleja lo que T075-T077 acaban de escribir tras la respuesta, sin lógica adicional de "refresco". Dos diferencias deliberadas frente a T070 (que se queda como selección inicial de sesión, sin cambios de comportamiento — solo se extrajo `create_and_persist_activity()` a `next_activity_service.py` para compartirla): (1) evita repetir inmediatamente el concept recién trabajado si hay alternativa (un solo punto de evidencia rara vez cambia el ranking, así que sin esto la misma actividad se repetiría); (2) devuelve el `ActivityCandidate` completo (con su breakdown de T064) junto al `Activity` persistido, para que la selección sea explicable de verdad y no un score opaco — cumple literalmente "razón explicable".
 
 ### T079 — Core session E2E
 **Dep:** T069–T078  

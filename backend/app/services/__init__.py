@@ -1,4 +1,5 @@
 from app.services.activity_selector import ActivityCandidate, ActivitySelector
+from app.services.adaptive_activity_service import AdaptiveActivityResult, AdaptiveActivityService
 from app.services.answer_submission_service import (
     AnswerSubmissionService,
     ExerciseNotFoundError,
@@ -45,6 +46,8 @@ from app.services.session_service import InvalidSessionError, SessionApplication
 __all__ = [
     "ActivityCandidate",
     "ActivitySelector",
+    "AdaptiveActivityResult",
+    "AdaptiveActivityService",
     "AnswerSubmissionService",
     "AttemptNotFoundError",
     "ConceptNotFoundError",

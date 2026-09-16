@@ -26,6 +26,25 @@ class NoActivityCandidatesError(Exception):
     pass
 
 
+def create_and_persist_activity(
+    activities: ActivityRepository, ids: IdGeneratorPort, session_id: str, concept_id: str
+) -> Activity:
+    """Shared by NextActivityService (T070) and AdaptiveActivityService
+    (T078) -- both persist an Activity the same way, they only differ in
+    how they pick `concept_id`."""
+    sequence = len(activities.list_by_session(session_id)) + 1
+    activity = Activity(
+        id=ids.new_id("activity"),
+        session_id=session_id,
+        type=ActivityType.EXERCISE,
+        sequence=sequence,
+        concept_ids=[concept_id],
+        status=ActivityStatus.ACTIVE,
+    )
+    activities.add(activity)
+    return activity
+
+
 class NextActivityService:
     def __init__(
         self,
@@ -49,16 +68,7 @@ class NextActivityService:
         ranked = self._activity_selector.rank(session.goal_id)
         if not ranked:
             raise NoActivityCandidatesError(session.goal_id)
-        top_concept_id = ranked[0].concept_id
 
-        sequence = len(self._activities.list_by_session(session_id)) + 1
-        activity = Activity(
-            id=self._ids.new_id("activity"),
-            session_id=session_id,
-            type=ActivityType.EXERCISE,
-            sequence=sequence,
-            concept_ids=[top_concept_id],
-            status=ActivityStatus.ACTIVE,
+        return create_and_persist_activity(
+            self._activities, self._ids, session_id, ranked[0].concept_id
         )
-        self._activities.add(activity)
-        return activity
