@@ -132,6 +132,27 @@ def test_apply_update_frontmatter_replaces_block_and_keeps_body(tmp_path: Path) 
     assert written == "---\nstatus: usable\nmastery: 3.5\n---\n# My notes\nHand-written.\n"
 
 
+def test_apply_marks_failed_when_semantic_verification_fails(tmp_path: Path) -> None:
+    """Malformed YAML frontmatter content is accepted by ProposalValidator
+    (T081 doesn't parse YAML) but write_verification (T084) catches it
+    after the write lands -- a real, reachable failure path, not a
+    contrived one."""
+    service, proposals, vault_root, _engine_instance = _service(tmp_path)
+    proposals.add(
+        _proposal(
+            operation=ProposalOperation.UPDATE_FRONTMATTER,
+            content="status: [unterminated",
+        )
+    )
+
+    result = service.apply("proposal_1")
+
+    assert result.status == ProposalStatus.FAILED
+    assert result.error is not None and "failed to parse" in result.error
+    # the write itself still landed -- verification is a check, not a rollback
+    assert (vault_root / "concept_1.md").exists()
+
+
 def test_apply_add_link_appends_to_the_end_of_the_file(tmp_path: Path) -> None:
     service, proposals, vault_root, _engine_instance = _service(tmp_path)
     (vault_root / "concept_1.md").write_text("# My notes\nSome text.\n", encoding="utf-8")

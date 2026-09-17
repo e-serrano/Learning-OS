@@ -54,6 +54,7 @@ from app.services.roadmap_service import (
     RoadmapValidationError,
 )
 from app.services.session_service import InvalidSessionError, SessionApplicationService
+from app.services.write_verification import WriteVerificationError, verify_write
 
 __all__ = [
     "ActivityCandidate",
@@ -105,5 +106,7 @@ __all__ = [
     "SessionNotFoundError",
     "SimpleSpacedRepetitionScheduler",
     "ValidationResult",
+    "WriteVerificationError",
     "normalize",
+    "verify_write",
 ]

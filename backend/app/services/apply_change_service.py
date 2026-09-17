@@ -20,10 +20,14 @@ allowed types, docs/AGENTS.md #6):
   the file. It is written exactly as the user already saw and approved
   in the diff -- no further interpretation here.
 
-The write itself (conflict check, atomic replace, reread-verify, index
-update) is entirely T044's `write_note()`; this service only computes
-*what* to write and reacts to the outcome -- a vault conflict marks the
-proposal `conflicted`, a verification failure marks it `failed`.
+The write itself (conflict check, atomic replace, byte-level
+reread-verify, index update) is entirely T044's `write_note()`; this
+service only computes *what* to write and reacts to the outcome -- a
+vault conflict marks the proposal `conflicted`. After a successful
+write, T084's `verify_write()` does a second, semantic check (does the
+written content actually parse back the way it should for this
+operation type); either kind of verification failure marks the proposal
+`failed`.
 """
 
 from sqlalchemy import Engine
@@ -36,6 +40,7 @@ from app.obsidian.frontmatter import parse_frontmatter
 from app.obsidian.managed_sections import replace_section
 from app.obsidian.vault_resolver import VaultResolver
 from app.services.diff_approval_service import ProposalNotFoundError
+from app.services.write_verification import WriteVerificationError, verify_write
 
 
 class ProposalNotApprovedError(Exception):
@@ -75,6 +80,12 @@ class ApplyChangeService:
             self._proposals.update_status(proposal_id, ProposalStatus.CONFLICTED, error=str(exc))
             return self._reload(proposal_id)
         except AtomicWriteVerificationError as exc:
+            self._proposals.update_status(proposal_id, ProposalStatus.FAILED, error=str(exc))
+            return self._reload(proposal_id)
+
+        try:
+            verify_write(proposal, new_content)
+        except WriteVerificationError as exc:
             self._proposals.update_status(proposal_id, ProposalStatus.FAILED, error=str(exc))
             return self._reload(proposal_id)
 

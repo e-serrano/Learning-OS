@@ -578,8 +578,11 @@ Escribir solo tras aprobación.
 **Nota:** `app/services/apply_change_service.py`. `ApplyChangeService.apply(proposal_id) -> ChangeProposal`: exige `status=approved` (`ProposalNotApprovedError` si no) — nunca escribe una propuesta meramente `pending`. Calcula el contenido final según operación: `create_file` (falla si el path ya existe — nunca sobreescribe silenciosamente), `replace_managed_section` (`managed_sections.replace_section`, que ya maneja archivo/sección ausente creándola), `update_frontmatter` (reemplaza el bloque YAML completo, preserva el body vía `parse_frontmatter` — no existe un serializador de frontmatter que preserve comentarios/formato, eso es alcance mayor que "aplicar un cambio aprobado"), `add_link` (añade `proposal.content` como línea nueva al final, tal cual lo vio y aprobó el usuario en el diff). La escritura real (conflicto, atomic replace, reread-verify, índice) es enteramente `write_note` de T044 — este servicio solo decide QUÉ escribir y reacciona al resultado: `VaultConflictError` → `status=conflicted`, `AtomicWriteVerificationError` o error de cómputo de contenido → `status=failed`, éxito → `status=applied`.
 
 ### T084 — Verify write
+**Estado:** DONE
 **Dep:** T083  
 Releer, verificar contenido y actualizar índice.
+
+**Nota:** `app/services/write_verification.py`. Releer/verificar-bytes/actualizar-índice ya es exactamente lo que hace `write_note` (T044) — `verify_write(proposal, written_content)` es una segunda comprobación, independiente y semántica: reparsea el contenido ya escrito (que `write_note` ya garantizó que coincide byte a byte con lo calculado) a través de los MISMOS helpers que el resto de la app usa para leer una nota (`get_section`/`parse_frontmatter`), por tipo de operación — detecta un bug en CÓMO se calculó el contenido nuevo (T083's `_compute_content`), no en cómo se escribió a disco. Cableado dentro de `ApplyChangeService.apply()` justo después de `write_note()`: si falla, `status=failed` igual que un fallo de verificación byte-a-byte. Camino de fallo real y alcanzable (no forzado): YAML mal formado en `proposal.content` para `update_frontmatter` pasa el validador de T081 (no parsea YAML) pero lo atrapa esta verificación tras escribirse.
 
 ### T085 — Knowledge E2E
 **Dep:** T080–T084  
