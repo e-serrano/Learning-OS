@@ -40,6 +40,12 @@ from app.services.next_activity_service import (
 )
 from app.services.planner_service import PlannerService, PlanningResult
 from app.services.proposal_validator import ProposalValidator, RejectedOperation, ValidationResult
+from app.services.review_completion_service import (
+    ReviewCompletionResult,
+    ReviewCompletionService,
+    ReviewNotDueError,
+    ReviewNotFoundError,
+)
 from app.services.review_creation_service import ReviewCreationService
 from app.services.review_scheduler import (
     ReviewScheduler,
@@ -96,7 +102,11 @@ __all__ = [
     "ProposalNotFoundError",
     "ProposalValidator",
     "RejectedOperation",
+    "ReviewCompletionResult",
+    "ReviewCompletionService",
     "ReviewCreationService",
+    "ReviewNotDueError",
+    "ReviewNotFoundError",
     "ReviewScheduler",
     "RoadmapEdge",
     "RoadmapNode",

@@ -603,8 +603,11 @@ Query de reviews vencidas.
 **Nota:** `app/services/todays_reviews_service.py`. `TodaysReviewsService.list_today() -> list[Review]`. `ReviewRepository.list_due(before)` (T035) solo filtra por `scheduled_at`, no por status — una review `completed`/`skipped` cuyo `scheduled_at` ya pasó seguiría "matcheando". Este servicio añade el filtro que falta: solo `scheduled`/`overdue` (los dos estados "todavía no resueltos") cuentan como "vencida hoy". No transiciona nada a `overdue` — eso sería un efecto secundario dentro de una query de solo lectura; `API_SPEC.md` §7 (`GET /reviews/today`) no lo pide.
 
 ### T087 — Review completion
+**Estado:** DONE
 **Dep:** T086  
 Responder, evaluar y reprogramar.
+
+**Nota:** `app/services/review_completion_service.py`. `ReviewCompletionService.complete_review(review_id, activity_id, answer, confidence) -> ReviewCompletionResult` (`completed_review`, `evidence`, `next_review`). `Review` no tiene exercise/prompt propio (`DOMAIN_MODEL.md` §11), así que "evaluar" no puede reusar el rol Evaluator (T073, que necesita prompt/solution/success_criteria reales) — se auto-reporta: `EvidenceSourceType.REVIEW` es su propia fuente dedicada, y `correctness = confidence/100` directamente (la confianza del usuario en su propio recall). Orden importa: marca la review vieja `completed` (con `completed_at`) ANTES de llamar a `ReviewCreationService.schedule_review()` (T077, reusado sin cambios) — así su búsqueda de "previous review completada" encuentra justo la que se acaba de completar y crece el intervalo desde ahí. `Evidence.difficulty` no tiene fuente natural en una review (el `difficulty` de `Review` es el parámetro FSRS, escala distinta, siempre `None` bajo el scheduler MVP) — usa `DEFAULT_REVIEW_DIFFICULTY=3` como valor medio razonable. `answer` se guarda en `evidence.metadata`, no se usa para calificar.
 
 ### T088 — Retention update
 **Dep:** T087  
