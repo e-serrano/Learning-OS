@@ -695,8 +695,11 @@ Implementar contratos de onboarding.
 **Nota:** Sin cambios de código. T025 ya implementó exactamente los 5 endpoints que `API_SPEC.md` §13 documenta (`GET /status`, `POST /vault`, `POST /ai-provider`, `POST /ai-provider/validate`, `POST /complete`) — adelantada respecto a la numeración de fases por la regla de `AGENTS.md` §2 (API antes que UI). §13 no menciona `FIRST_GOAL` en absoluto ni exige un goal para `/complete` (solo vault + provider validado, tal como T025 ya implementa) — el paso `FIRST_GOAL` es puramente interno a `app/onboarding/state_machine.py`, no una ruta, así que ahora que `GoalApplicationService`/`POST /goals` existen (T065/T096) no hay nada que enlazar aquí. T098 queda como referencia de fase, sin trabajo adicional.
 
 ### T099 — Provider configuration routes
+**Estado:** DONE
 **Dep:** T015–T018  
 Leer configuración sin secretos y validar provider/model.
+
+**Nota:** `app/api/providers.py`. `API_SPEC.md` §14 no define rutas propias, solo política ("nunca devolver API keys") + la lista de IDs soportados — sin ruta explícita que seguir, se interpreta el texto de la tarea literalmente: solo lectura + validación, sin ruta de guardado (los providers solo se escriben vía onboarding, T025; cambiar el provider por defecto post-onboarding queda fuera de alcance). Mismo patrón que T097 (`/vault/*` standalone junto a `/onboarding/vault`): `GET /providers` (registro estático, `list_providers()`, ya sin secretos por construcción), `GET /providers/config` (lee `AppConfig` vía `ConfigStore`, omitiendo `credential_ref` por completo del `ConfiguredProvider` de respuesta -- aunque solo es una referencia de keyring y no el secreto en sí, omitirlo entero es más simple de defender que razonar sobre qué podría filtrar), `POST /providers/validate` (reusa `check_provider_capability`, T018, igual que `POST /onboarding/ai-provider/validate` pero sin el acoplamiento al state machine de onboarding).
 
 ### T100 — Knowledge routes
 **Dep:** T061  
