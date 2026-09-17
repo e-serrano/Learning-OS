@@ -10,10 +10,13 @@ from app.config import ConfigStore, CredentialStore, Settings
 from app.obsidian.change_proposal import ChangeProposalRepository
 from app.obsidian.vault_resolver import VaultResolver, VaultUnavailableError
 from app.persistence.engine import create_sqlite_engine
+from app.persistence.repositories.concept import SqlConceptRepository
+from app.persistence.repositories.concept_relation import SqlConceptRelationRepository
 from app.persistence.repositories.goal import SqlGoalRepository
 from app.services.apply_change_service import ApplyChangeService
 from app.services.diff_approval_service import DiffApprovalService
 from app.services.goal_service import GoalApplicationService
+from app.services.knowledge_explorer_service import KnowledgeExplorerService
 from app.services.vault_scan_service import VaultScanService
 
 
@@ -109,3 +112,17 @@ def get_apply_change_service(
 
 def get_diff_approval_service() -> DiffApprovalService:
     return DiffApprovalService(get_change_proposal_repository())
+
+
+def get_concept_repository() -> SqlConceptRepository:
+    return SqlConceptRepository(get_engine())
+
+
+def get_concept_relation_repository() -> SqlConceptRelationRepository:
+    return SqlConceptRelationRepository(get_engine())
+
+
+def get_knowledge_explorer_service() -> KnowledgeExplorerService:
+    return KnowledgeExplorerService(
+        get_goal_repository(), get_concept_repository(), get_concept_relation_repository()
+    )

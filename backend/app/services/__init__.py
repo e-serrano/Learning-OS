@@ -31,7 +31,15 @@ from app.services.evidence_creation_service import (
     EvidenceCreationService,
 )
 from app.services.exercise_generator_service import ExerciseGeneratorService
-from app.services.goal_service import GoalApplicationService, InvalidGoalError
+from app.services.goal_service import (
+    GoalApplicationService,
+    InvalidGoalError,
+    InvalidGoalTransitionError,
+)
+from app.services.goal_service import (
+    GoalNotFoundError as GoalApplicationNotFoundError,
+)
+from app.services.knowledge_explorer_service import KnowledgeExplorerService
 from app.services.mastery_engine import MasteryEngine, MasteryWeights
 from app.services.mastery_update_service import MasteryUpdateService
 from app.services.mistake_tracker import MistakeTracker, normalize
@@ -107,12 +115,15 @@ __all__ = [
     "EvidenceCreationService",
     "ExerciseGeneratorService",
     "ExerciseNotFoundError",
+    "GoalApplicationNotFoundError",
     "GoalApplicationService",
     "GoalNotFoundError",
     "InactiveSessionError",
     "InvalidGoalError",
+    "InvalidGoalTransitionError",
     "InvalidProposalStatusError",
     "InvalidSessionError",
+    "KnowledgeExplorerService",
     "MasteryEngine",
     "MasteryUpdateService",
     "MasteryWeights",
