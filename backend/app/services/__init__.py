@@ -54,6 +54,7 @@ from app.services.roadmap_service import (
     RoadmapValidationError,
 )
 from app.services.session_service import InvalidSessionError, SessionApplicationService
+from app.services.todays_reviews_service import DUE_STATUSES, TodaysReviewsService
 from app.services.write_verification import WriteVerificationError, verify_write
 
 __all__ = [
@@ -68,6 +69,7 @@ __all__ = [
     "ConceptNotFoundError",
     "ContextBuilder",
     "CuratorService",
+    "DUE_STATUSES",
     "DiagnosticService",
     "DiffApprovalService",
     "EvaluationNotFoundError",
@@ -105,6 +107,7 @@ __all__ = [
     "SessionApplicationService",
     "SessionNotFoundError",
     "SimpleSpacedRepetitionScheduler",
+    "TodaysReviewsService",
     "ValidationResult",
     "WriteVerificationError",
     "normalize",

@@ -596,8 +596,11 @@ Session → proposal → diff → approval → Markdown actualizado sin perder t
 # Fase 8 — Reviews y transferencia
 
 ### T086 — Today's reviews
+**Estado:** DONE
 **Dep:** T063, T077  
 Query de reviews vencidas.
+
+**Nota:** `app/services/todays_reviews_service.py`. `TodaysReviewsService.list_today() -> list[Review]`. `ReviewRepository.list_due(before)` (T035) solo filtra por `scheduled_at`, no por status — una review `completed`/`skipped` cuyo `scheduled_at` ya pasó seguiría "matcheando". Este servicio añade el filtro que falta: solo `scheduled`/`overdue` (los dos estados "todavía no resueltos") cuentan como "vencida hoy". No transiciona nada a `overdue` — eso sería un efecto secundario dentro de una query de solo lectura; `API_SPEC.md` §7 (`GET /reviews/today`) no lo pide.
 
 ### T087 — Review completion
 **Dep:** T086  
