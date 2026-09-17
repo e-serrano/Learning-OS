@@ -28,6 +28,10 @@ write, T084's `verify_write()` does a second, semantic check (does the
 written content actually parse back the way it should for this
 operation type); either kind of verification failure marks the proposal
 `failed`.
+
+`compute_content()` is public and side-effect-free (only reads) so a
+diff preview can show before/after content for a still-pending proposal
+without writing anything -- see T085's knowledge E2E.
 """
 
 from sqlalchemy import Engine
@@ -69,7 +73,7 @@ class ApplyChangeService:
             )
 
         try:
-            new_content = self._compute_content(proposal)
+            new_content = self.compute_content(proposal)
         except ApplyChangeError as exc:
             self._proposals.update_status(proposal_id, ProposalStatus.FAILED, error=str(exc))
             return self._reload(proposal_id)
@@ -92,7 +96,10 @@ class ApplyChangeService:
         self._proposals.update_status(proposal_id, ProposalStatus.APPLIED)
         return self._reload(proposal_id)
 
-    def _compute_content(self, proposal: ChangeProposal) -> str:
+    def compute_content(self, proposal: ChangeProposal) -> str:
+        """Public and side-effect-free (only reads the vault) so a diff
+        preview (docs/API_SPEC.md #2: `GET /vault/changes`) can show
+        before/after without writing anything -- see docs/TASKS.md T085."""
         current = self._read_current(proposal.path)
 
         if proposal.operation == ProposalOperation.CREATE_FILE:

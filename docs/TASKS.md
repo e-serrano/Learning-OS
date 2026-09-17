@@ -585,8 +585,11 @@ Releer, verificar contenido y actualizar índice.
 **Nota:** `app/services/write_verification.py`. Releer/verificar-bytes/actualizar-índice ya es exactamente lo que hace `write_note` (T044) — `verify_write(proposal, written_content)` es una segunda comprobación, independiente y semántica: reparsea el contenido ya escrito (que `write_note` ya garantizó que coincide byte a byte con lo calculado) a través de los MISMOS helpers que el resto de la app usa para leer una nota (`get_section`/`parse_frontmatter`), por tipo de operación — detecta un bug en CÓMO se calculó el contenido nuevo (T083's `_compute_content`), no en cómo se escribió a disco. Cableado dentro de `ApplyChangeService.apply()` justo después de `write_note()`: si falla, `status=failed` igual que un fallo de verificación byte-a-byte. Camino de fallo real y alcanzable (no forzado): YAML mal formado en `proposal.content` para `update_frontmatter` pasa el validador de T081 (no parsea YAML) pero lo atrapa esta verificación tras escribirse.
 
 ### T085 — Knowledge E2E
+**Estado:** DONE
 **Dep:** T080–T084  
 Session → proposal → diff → approval → Markdown actualizado sin perder texto.
+
+**Nota:** `backend/tests/services/test_knowledge_e2e.py`. Vault real en disco + engine SQLite real + `MockProvider` para `curator`. Nota inicial con texto escrito a mano fuera de cualquier managed section (código de ejemplo, preguntas) — la aserción final confirma que sigue intacto tras aplicar. Corrección hecha aquí: `ApplyChangeService._compute_content` (privado) pasó a `compute_content` (público, sin efectos secundarios — solo lee) porque no había forma de previsualizar el diff de una propuesta `pending` sin ese método; el paso "diff" de este E2E (`generate_diff(before, after)` antes de aprobar) es precisamente lo que necesita. Flujo completo: `CuratorService.propose` (T080) → `ProposalValidator.validate_and_persist` (T081) → diff preview vía `compute_content`+`generate_diff` → `DiffApprovalService.approve` (T082) → `ApplyChangeService.apply` (T083, que internamente corre `verify_write` de T084) → `status=applied` y Markdown final con la sección nueva y todo el contenido humano preservado.
 
 ---
 
