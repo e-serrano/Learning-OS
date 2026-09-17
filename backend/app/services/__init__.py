@@ -44,6 +44,15 @@ from app.services.next_activity_service import (
 )
 from app.services.planner_service import PlannerService, PlanningResult
 from app.services.project_generation_service import ProjectGenerationService
+from app.services.project_submission_service import (
+    NotAProjectTaskError,
+    ProjectSubmissionResult,
+    ProjectSubmissionService,
+    TaskNotFoundError,
+)
+from app.services.project_submission_service import (
+    ProjectNotFoundError as ProjectSubmissionNotFoundError,
+)
 from app.services.project_task_service import (
     ProjectNotFoundError,
     ProjectTaskService,
@@ -110,10 +119,14 @@ __all__ = [
     "MistakeUpdateService",
     "NextActivityService",
     "NoActivityCandidatesError",
+    "NotAProjectTaskError",
     "PlannerService",
     "PlanningResult",
     "ProjectGenerationService",
     "ProjectNotFoundError",
+    "ProjectSubmissionNotFoundError",
+    "ProjectSubmissionResult",
+    "ProjectSubmissionService",
     "ProjectTaskService",
     "ProjectTasksResult",
     "ProposalNotApprovedError",
@@ -136,6 +149,7 @@ __all__ = [
     "SessionApplicationService",
     "SessionNotFoundError",
     "SimpleSpacedRepetitionScheduler",
+    "TaskNotFoundError",
     "TodaysReviewsService",
     "TransferAssessmentService",
     "ValidationResult",

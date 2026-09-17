@@ -656,8 +656,11 @@ Tareas y criterios de éxito.
 **Nota:** `app/services/project_task_service.py`. `ProjectTaskService.create_tasks(project_id) -> ProjectTasksResult` (`session`, `tasks: list[Activity]`). Confirma la decisión documentada en T092: `ProjectTask` no es una tabla nueva — es un `Activity` con `type=project_task`, dentro de una `Session` dedicada con `mode=project` (ambos valores de enum ya existían para exactamente esto). Cada `success_criteria` del proyecto se convierte en una tarea 1:1 — T092 reusa `exercise_generator`, que solo devuelve un prompt y una lista de criterios, así que no hay un desglose de tareas generado aparte por la IA, y un criterio de éxito ya es una unidad de trabajo concreta y verificable. `Activity` no tiene campo de texto libre para la descripción — convención: la tarea N corresponde a `project.success_criteria[N-1]` (mismo orden que `Activity.sequence`, 1-based). Efecto secundario razonable: un proyecto `proposed` pasa a `active` al generar sus tareas (mismo patrón que Session/Goal, aunque `Project` no tiene reglas de transición documentadas en `DOMAIN_MODEL.md` §17).
 
 ### T094 — Project submission
+**Estado:** DONE
 **Dep:** T093  
 Registrar entregables/evidence.
+
+**Nota:** `app/services/project_submission_service.py`. `ProjectSubmissionService.submit_task(project_id, task_id, deliverable) -> ProjectSubmissionResult` (`task`, `evidence: list[Evidence]`). Marca la task `Activity` como `completed` y crea una `Evidence` por concept (`source_type=project`) con todos los campos de score en `None` — solo registra que se entregó algo, calificarlo (independencia, transferencia) es T095, aparte, igual split que exercises (`AnswerSubmissionService`/T072 vs `EvaluatorService`/T073). `MasteryEngine` (T061) ya ignora campos `None`, así que esta evidencia no calificada es inerte hasta que T095 añada una segunda `Evidence` con scores reales para el mismo concept — nunca sesga nada por sí sola. El texto del deliverable (`Activity` sigue sin campo de texto libre, mismo gap de T093) va a `evidence.metadata`, igual que las respuestas de diagnostic/review (T066, T087).
 
 ### T095 — Project evaluation
 **Dep:** T094  
