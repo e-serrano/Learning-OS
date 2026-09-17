@@ -674,8 +674,11 @@ Evaluar independencia y transferencia.
 # Fase 10 — API completa
 
 ### T096 — Goal routes
+**Estado:** DONE
 **Dep:** T065  
 Implementar endpoints de goals.
+
+**Nota:** `app/api/goals.py` (`GoalResponse`/`CreateGoalRequest`) sobre `GoalApplicationService` (T065), vía `app/api/dependencies.py`. Exactamente los 5 endpoints de `API_SPEC.md` §1: `POST/GET /goals`, `GET/POST /goals/{id}`, `/pause`, `/complete`. `GoalApplicationService` no tenía `get_goal`/`list_goals`/`pause_goal`/`complete_goal` — solo `create_goal` (T065) — añadidos aquí, `pause`/`complete` validan la transición exacta de `DOMAIN_MODEL.md` §17 (`active -> paused`, `active -> completed`) y devuelven `SESSION_STATE_ERROR` (409) si no. Gap real detectado: nada en el código activa un goal (`draft -> active` no tiene disparador en ningún servicio existente) — así que hoy `pause`/`complete` sobre un goal recién creado (`draft`) siempre conflictúa; no se inventa una activación implícita aquí porque no es responsabilidad de esta tarea (candidato natural: T101 roadmap generate o T102 diagnostic start, el primer paso real de "trabajar el goal"). T096 es también la primera ruta real (aparte de onboarding, que no pasa por un `ApplicationService`) — no existía ninguna implementación concreta de `ClockPort`/`IdGeneratorPort` fuera de los fakes de test; añadidas `SystemClock`/`UuidIdGenerator` en `app/api/dependencies.py` junto con `get_engine` (cacheado) y `get_goal_repository`, mismo sitio donde ya vivían `get_config_store`/`get_credential_store`.
 
 ### T097 — Vault routes
 **Dep:** T046  

@@ -19,6 +19,14 @@ class InvalidGoalError(Exception):
     pass
 
 
+class GoalNotFoundError(Exception):
+    pass
+
+
+class InvalidGoalTransitionError(Exception):
+    pass
+
+
 class GoalApplicationService:
     def __init__(self, goals: GoalRepository, clock: ClockPort, ids: IdGeneratorPort) -> None:
         self._goals = goals
@@ -58,3 +66,37 @@ class GoalApplicationService:
         )
         self._goals.add(goal)
         return goal
+
+    def get_goal(self, goal_id: str) -> LearningGoal:
+        goal = self._goals.get(goal_id)
+        if goal is None:
+            raise GoalNotFoundError(goal_id)
+        return goal
+
+    def list_goals(self) -> list[LearningGoal]:
+        return self._goals.list_all()
+
+    def pause_goal(self, goal_id: str) -> LearningGoal:
+        """Only `active -> paused` is a valid transition
+        (docs/DOMAIN_MODEL.md #17); nothing in the codebase yet moves a
+        goal out of `draft` (see this task's TASKS.md note), so pausing a
+        still-draft goal correctly raises rather than silently accepting it."""
+        goal = self.get_goal(goal_id)
+        if goal.status != GoalStatus.ACTIVE:
+            raise InvalidGoalTransitionError(f"cannot pause a goal in status '{goal.status}'")
+        paused = goal.model_copy(
+            update={"status": GoalStatus.PAUSED, "updated_at": self._clock.now()}
+        )
+        self._goals.update(paused)
+        return paused
+
+    def complete_goal(self, goal_id: str) -> LearningGoal:
+        """Only `active -> completed` is a valid transition (docs/DOMAIN_MODEL.md #17)."""
+        goal = self.get_goal(goal_id)
+        if goal.status != GoalStatus.ACTIVE:
+            raise InvalidGoalTransitionError(f"cannot complete a goal in status '{goal.status}'")
+        completed = goal.model_copy(
+            update={"status": GoalStatus.COMPLETED, "updated_at": self._clock.now()}
+        )
+        self._goals.update(completed)
+        return completed

@@ -4,14 +4,20 @@ import pytest
 
 from app.domain.entities import LearningGoal
 from app.domain.enums import GoalStatus, TargetLevel
-from app.services.goal_service import GoalApplicationService, InvalidGoalError
+from app.services.goal_service import (
+    GoalApplicationService,
+    GoalNotFoundError,
+    InvalidGoalError,
+    InvalidGoalTransitionError,
+)
 
 NOW = datetime(2026, 1, 1, tzinfo=UTC)
+LATER = datetime(2026, 1, 2, tzinfo=UTC)
 
 
 class FakeGoalRepository:
-    def __init__(self) -> None:
-        self.added: list[LearningGoal] = []
+    def __init__(self, seed: list[LearningGoal] | None = None) -> None:
+        self.added: list[LearningGoal] = list(seed or [])
 
     def add(self, goal: LearningGoal) -> None:
         self.added.append(goal)
@@ -23,7 +29,7 @@ class FakeGoalRepository:
         return list(self.added)
 
     def update(self, goal: LearningGoal) -> None:
-        raise NotImplementedError
+        self.added = [goal if g.id == goal.id else g for g in self.added]
 
 
 class FakeClock:
@@ -45,9 +51,24 @@ class FakeIdGenerator:
 
 def _service(
     repo: FakeGoalRepository | None = None,
+    clock: FakeClock | None = None,
 ) -> tuple[GoalApplicationService, FakeGoalRepository]:
     goals = repo or FakeGoalRepository()
-    return GoalApplicationService(goals, FakeClock(NOW), FakeIdGenerator()), goals
+    return GoalApplicationService(goals, clock or FakeClock(NOW), FakeIdGenerator()), goals
+
+
+def _goal(**overrides: object) -> LearningGoal:
+    defaults: dict[str, object] = dict(
+        id="goal_1",
+        title="Learn BigQuery",
+        target_level=TargetLevel.PROFESSIONAL,
+        status=GoalStatus.ACTIVE,
+        priority=3,
+        created_at=NOW,
+        updated_at=NOW,
+    )
+    defaults.update(overrides)
+    return LearningGoal(**defaults)  # type: ignore[arg-type]
 
 
 def test_create_goal_persists_and_returns_it_as_draft() -> None:
@@ -119,3 +140,71 @@ def test_goal_application_service_has_no_vault_dependency() -> None:
 
     params = inspect.signature(GoalApplicationService.__init__).parameters
     assert "vault" not in params
+
+
+def test_get_goal_returns_it() -> None:
+    service, _ = _service(FakeGoalRepository(seed=[_goal()]))
+
+    assert service.get_goal("goal_1").id == "goal_1"
+
+
+def test_get_goal_raises_when_missing() -> None:
+    service, _ = _service()
+
+    with pytest.raises(GoalNotFoundError):
+        service.get_goal("missing")
+
+
+def test_list_goals_returns_all() -> None:
+    service, _ = _service(FakeGoalRepository(seed=[_goal(id="goal_1"), _goal(id="goal_2")]))
+
+    goals = service.list_goals()
+
+    assert {g.id for g in goals} == {"goal_1", "goal_2"}
+
+
+def test_pause_goal_transitions_active_to_paused() -> None:
+    service, goals = _service(
+        FakeGoalRepository(seed=[_goal(status=GoalStatus.ACTIVE)]),
+        clock=FakeClock(LATER),
+    )
+
+    paused = service.pause_goal("goal_1")
+
+    assert paused.status == GoalStatus.PAUSED
+    assert paused.updated_at == LATER
+    assert goals.get("goal_1").status == GoalStatus.PAUSED  # type: ignore[union-attr]
+
+
+def test_pause_goal_rejects_non_active_goal() -> None:
+    service, _ = _service(FakeGoalRepository(seed=[_goal(status=GoalStatus.DRAFT)]))
+
+    with pytest.raises(InvalidGoalTransitionError):
+        service.pause_goal("goal_1")
+
+
+def test_pause_goal_raises_when_missing() -> None:
+    service, _ = _service()
+
+    with pytest.raises(GoalNotFoundError):
+        service.pause_goal("missing")
+
+
+def test_complete_goal_transitions_active_to_completed() -> None:
+    service, goals = _service(
+        FakeGoalRepository(seed=[_goal(status=GoalStatus.ACTIVE)]),
+        clock=FakeClock(LATER),
+    )
+
+    completed = service.complete_goal("goal_1")
+
+    assert completed.status == GoalStatus.COMPLETED
+    assert completed.updated_at == LATER
+    assert goals.get("goal_1").status == GoalStatus.COMPLETED  # type: ignore[union-attr]
+
+
+def test_complete_goal_rejects_non_active_goal() -> None:
+    service, _ = _service(FakeGoalRepository(seed=[_goal(status=GoalStatus.PAUSED)]))
+
+    with pytest.raises(InvalidGoalTransitionError):
+        service.complete_goal("goal_1")
