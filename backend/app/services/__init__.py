@@ -4,6 +4,11 @@ from app.services.answer_submission_service import (
     AnswerSubmissionService,
     ExerciseNotFoundError,
 )
+from app.services.apply_change_service import (
+    ApplyChangeError,
+    ApplyChangeService,
+    ProposalNotApprovedError,
+)
 from app.services.context_builder import (
     ConceptNotFoundError,
     ContextBuilder,
@@ -56,6 +61,8 @@ __all__ = [
     "AdaptiveActivityResult",
     "AdaptiveActivityService",
     "AnswerSubmissionService",
+    "ApplyChangeError",
+    "ApplyChangeService",
     "AttemptNotFoundError",
     "ConceptNotFoundError",
     "ContextBuilder",
@@ -82,6 +89,7 @@ __all__ = [
     "NoActivityCandidatesError",
     "PlannerService",
     "PlanningResult",
+    "ProposalNotApprovedError",
     "ProposalNotFoundError",
     "ProposalValidator",
     "RejectedOperation",

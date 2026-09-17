@@ -571,8 +571,11 @@ Aprobar/rechazar propuestas.
 **Nota:** `app/services/diff_approval_service.py`. `DiffApprovalService.approve(proposal_id)`/`.reject(proposal_id) -> ChangeProposal`: transición `pending → approved`/`pending → rejected` vía `ChangeProposalRepository.update_status()` (T046). "API" aquí es la capa de aplicación, no una ruta HTTP — `API_SPEC.md` §2 solo expone `apply`/`reject` como rutas (sin `/approve` separado) y esas rutas HTTP en sí son Fase 10 (T096-T108), todavía no construida. Solo se puede aprobar/rechazar una propuesta en `pending` — cualquier otro estado (`approved/rejected/applied/conflicted/failed`) levanta `InvalidProposalStatusError`, ya que son transiciones ya decididas.
 
 ### T083 — Apply approved change
+**Estado:** DONE
 **Dep:** T082, T044  
 Escribir solo tras aprobación.
+
+**Nota:** `app/services/apply_change_service.py`. `ApplyChangeService.apply(proposal_id) -> ChangeProposal`: exige `status=approved` (`ProposalNotApprovedError` si no) — nunca escribe una propuesta meramente `pending`. Calcula el contenido final según operación: `create_file` (falla si el path ya existe — nunca sobreescribe silenciosamente), `replace_managed_section` (`managed_sections.replace_section`, que ya maneja archivo/sección ausente creándola), `update_frontmatter` (reemplaza el bloque YAML completo, preserva el body vía `parse_frontmatter` — no existe un serializador de frontmatter que preserve comentarios/formato, eso es alcance mayor que "aplicar un cambio aprobado"), `add_link` (añade `proposal.content` como línea nueva al final, tal cual lo vio y aprobó el usuario en el diff). La escritura real (conflicto, atomic replace, reread-verify, índice) es enteramente `write_note` de T044 — este servicio solo decide QUÉ escribir y reacciona al resultado: `VaultConflictError` → `status=conflicted`, `AtomicWriteVerificationError` o error de cómputo de contenido → `status=failed`, éxito → `status=applied`.
 
 ### T084 — Verify write
 **Dep:** T083  
