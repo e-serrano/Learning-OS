@@ -17,11 +17,18 @@ from app.config import ConfigStore, CredentialStore, Settings
 from app.obsidian.change_proposal import ChangeProposalRepository
 from app.obsidian.vault_resolver import VaultResolver, VaultUnavailableError
 from app.persistence.engine import create_sqlite_engine
+from app.persistence.repositories.activity import SqlActivityRepository
 from app.persistence.repositories.concept import SqlConceptRepository
 from app.persistence.repositories.concept_relation import SqlConceptRelationRepository
+from app.persistence.repositories.evidence import SqlEvidenceRepository
 from app.persistence.repositories.goal import SqlGoalRepository
+from app.persistence.repositories.mistake import SqlMistakeRepository
 from app.persistence.repositories.roadmap import SqlRoadmapRepository
+from app.persistence.repositories.session import SqlSessionRepository
 from app.services.apply_change_service import ApplyChangeService
+from app.services.context_builder import ContextBuilder
+from app.services.diagnostic_service import DiagnosticService
+from app.services.diagnostic_session_service import DiagnosticSessionService
 from app.services.diff_approval_service import DiffApprovalService
 from app.services.goal_service import GoalApplicationService
 from app.services.knowledge_explorer_service import KnowledgeExplorerService
@@ -185,3 +192,56 @@ def get_roadmap_generation_service(
     roadmaps: Annotated[RoadmapService, Depends(get_roadmap_service)],
 ) -> RoadmapGenerationService:
     return RoadmapGenerationService(planner, roadmaps)
+
+
+def get_evidence_repository() -> SqlEvidenceRepository:
+    return SqlEvidenceRepository(get_engine())
+
+
+def get_mistake_repository() -> SqlMistakeRepository:
+    return SqlMistakeRepository(get_engine())
+
+
+def get_session_repository() -> SqlSessionRepository:
+    return SqlSessionRepository(get_engine())
+
+
+def get_activity_repository() -> SqlActivityRepository:
+    return SqlActivityRepository(get_engine())
+
+
+def get_context_builder() -> ContextBuilder:
+    return ContextBuilder(
+        goals=get_goal_repository(),
+        concepts=get_concept_repository(),
+        concept_relations=get_concept_relation_repository(),
+        evidence=get_evidence_repository(),
+        mistakes=get_mistake_repository(),
+    )
+
+
+def get_diagnostic_service(
+    orchestrator: Annotated[AIOrchestrator, Depends(get_ai_orchestrator)],
+) -> DiagnosticService:
+    return DiagnosticService(
+        goals=get_goal_repository(),
+        evidence=get_evidence_repository(),
+        context_builder=get_context_builder(),
+        orchestrator=orchestrator,
+        clock=get_clock(),
+        ids=get_id_generator(),
+    )
+
+
+def get_diagnostic_session_service(
+    diagnostic: Annotated[DiagnosticService, Depends(get_diagnostic_service)],
+) -> DiagnosticSessionService:
+    return DiagnosticSessionService(
+        goals=get_goal_repository(),
+        concepts=get_concept_repository(),
+        sessions=get_session_repository(),
+        activities=get_activity_repository(),
+        diagnostic=diagnostic,
+        clock=get_clock(),
+        ids=get_id_generator(),
+    )

@@ -20,6 +20,12 @@ from app.services.context_builder import (
 )
 from app.services.curator_service import CuratorService
 from app.services.diagnostic_service import DiagnosticService
+from app.services.diagnostic_session_service import (
+    DiagnosticSessionItem,
+    DiagnosticSessionResult,
+    DiagnosticSessionService,
+    NoConceptsForGoalError,
+)
 from app.services.diff_approval_service import (
     DiffApprovalService,
     InvalidProposalStatusError,
@@ -112,6 +118,9 @@ __all__ = [
     "CuratorService",
     "DUE_STATUSES",
     "DiagnosticService",
+    "DiagnosticSessionItem",
+    "DiagnosticSessionResult",
+    "DiagnosticSessionService",
     "DiffApprovalService",
     "EvaluationNotFoundError",
     "EvaluatorService",
@@ -134,6 +143,7 @@ __all__ = [
     "MistakeUpdateService",
     "NextActivityService",
     "NoActivityCandidatesError",
+    "NoConceptsForGoalError",
     "NotAProjectTaskError",
     "PlannerService",
     "PlanningResult",
