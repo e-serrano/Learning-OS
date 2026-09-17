@@ -631,8 +631,11 @@ Evaluar transferencia e independencia.
 **Nota:** `app/services/assessment_completion_service.py`. `AssessmentCompletionService.complete_assessment(exercise_id, session_id, activity_id, answer, confidence) -> AssessmentCompletionResult`. Un transfer scenario ES un `Exercise` normal (T089 lo persiste igual que cualquier otro), así que calificarlo no necesita lógica nueva — encadena exactamente el pipeline ya construido: `AnswerSubmissionService` (T072) → `EvaluatorService` (T073) → `EvidenceCreationService` (T074). Lo que añade T090: convierte los scores crudos `transfer`/`independence` (ya presentes en toda evaluación, `AI_CONTRACTS.md` §8, no específicos de transfer) en un juicio explícito, con umbral, medible — `transfer_demonstrated`/`independence_demonstrated` (bool, umbral `0.6`, mismo valor que `ReviewScheduler.SUCCESS_THRESHOLD` de T063 — una sola barra "suficientemente bueno" consistente en el código en vez de un segundo número arbitrario). Responde directamente al texto de T091: "una transferencia posterior MEDIBLE", no un score enterrado dentro de un `Evaluation`.
 
 ### T091 — Review/transfer E2E
+**Estado:** DONE
 **Dep:** T086–T090  
 Concepto débil genera review y una transferencia posterior medible.
+
+**Nota:** `backend/tests/services/test_review_transfer_e2e.py`. Engine SQLite real + `MockProvider` para `exercise_generator` y `evaluator`. Narrativa: concept `weak` (mastery bajo, `next_review` ya pasado) con una review sembrada directamente (representa que ya se generó por estar débil — la lógica de CUÁNDO programar una review por debilidad es del activity selector, T064, ya cubierto en su propio test) → `TodaysReviewsService` la lista como vencida (T086) → `ReviewCompletionService` la completa con confidence alta, autoreportada (T087) → `RetentionUpdateService` deriva `retention=85.0` de esa misma evidencia (T088) → `TransferAssessmentService` genera un escenario nuevo para el mismo concept (T089) → `AssessmentCompletionService` lo califica y confirma `transfer_demonstrated=True`/`independence_demonstrated=True` (T090). Aserción final: la evidencia del concept incluye tanto `source_type=review` como `source_type=exercise` — cierra el círculo "weak → review → transferencia posterior medible" pedido literalmente por el texto de la tarea. Con esto termina la Fase 8 (Reviews y transferencia).
 
 ---
 
