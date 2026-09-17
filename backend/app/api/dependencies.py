@@ -1,13 +1,20 @@
 import uuid
 from datetime import UTC, datetime
 from functools import lru_cache
+from typing import Annotated
 
+from fastapi import Depends, HTTPException
 from sqlalchemy import Engine
 
 from app.config import ConfigStore, CredentialStore, Settings
+from app.obsidian.change_proposal import ChangeProposalRepository
+from app.obsidian.vault_resolver import VaultResolver, VaultUnavailableError
 from app.persistence.engine import create_sqlite_engine
 from app.persistence.repositories.goal import SqlGoalRepository
+from app.services.apply_change_service import ApplyChangeService
+from app.services.diff_approval_service import DiffApprovalService
 from app.services.goal_service import GoalApplicationService
+from app.services.vault_scan_service import VaultScanService
 
 
 class SystemClock:
@@ -52,3 +59,53 @@ def get_goal_repository() -> SqlGoalRepository:
 
 def get_goal_service() -> GoalApplicationService:
     return GoalApplicationService(get_goal_repository(), get_clock(), get_id_generator())
+
+
+def get_vault_resolver(store: Annotated[ConfigStore, Depends(get_config_store)]) -> VaultResolver:
+    """Raises HTTPException directly (rather than a plain error) -- FastAPI
+    resolves dependencies before the route body runs, so a route-level
+    try/except can never see an exception raised here (docs/TASKS.md T097).
+
+    Takes `store` through `Depends()` rather than calling
+    `get_config_store()` directly so `app.dependency_overrides` can
+    actually reach it in tests -- a plain internal call bypasses
+    FastAPI's override resolution entirely."""
+    config = store.load()
+    if config.vault_path is None:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": {
+                    "code": "VAULT_UNAVAILABLE",
+                    "message": "Vault is not configured",
+                    "details": {},
+                }
+            },
+        )
+    try:
+        return VaultResolver(config.vault_path)
+    except VaultUnavailableError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail={"error": {"code": "VAULT_UNAVAILABLE", "message": str(exc), "details": {}}},
+        ) from exc
+
+
+def get_change_proposal_repository() -> ChangeProposalRepository:
+    return ChangeProposalRepository(get_engine())
+
+
+def get_vault_scan_service(
+    vault: Annotated[VaultResolver, Depends(get_vault_resolver)],
+) -> VaultScanService:
+    return VaultScanService(get_engine(), vault)
+
+
+def get_apply_change_service(
+    vault: Annotated[VaultResolver, Depends(get_vault_resolver)],
+) -> ApplyChangeService:
+    return ApplyChangeService(get_engine(), get_change_proposal_repository(), vault)
+
+
+def get_diff_approval_service() -> DiffApprovalService:
+    return DiffApprovalService(get_change_proposal_repository())

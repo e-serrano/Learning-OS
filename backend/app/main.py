@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.goals import router as goals_router
 from app.api.onboarding import router as onboarding_router
+from app.api.vault import router as vault_router
 
 app = FastAPI(title="Learning OS API", version="0.1.0")
 
@@ -17,6 +18,7 @@ app.add_middleware(
 
 app.include_router(onboarding_router)
 app.include_router(goals_router)
+app.include_router(vault_router)
 
 
 @app.get("/api/v1/health")
