@@ -43,6 +43,7 @@ from app.services.next_activity_service import (
     SessionNotFoundError,
 )
 from app.services.planner_service import PlannerService, PlanningResult
+from app.services.project_generation_service import ProjectGenerationService
 from app.services.proposal_validator import ProposalValidator, RejectedOperation, ValidationResult
 from app.services.retention_update_service import RetentionUpdateService
 from app.services.review_completion_service import (
@@ -106,6 +107,7 @@ __all__ = [
     "NoActivityCandidatesError",
     "PlannerService",
     "PlanningResult",
+    "ProjectGenerationService",
     "ProposalNotApprovedError",
     "ProposalNotFoundError",
     "ProposalValidator",

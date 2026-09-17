@@ -11,5 +11,6 @@ class Project(BaseModel):
     objective: str
     difficulty: FiveLevelScale
     status: ProjectStatus
+    concept_ids: list[str] = Field(default_factory=list)
     success_criteria: list[str] = Field(default_factory=list)
     artifact_path: str | None = None

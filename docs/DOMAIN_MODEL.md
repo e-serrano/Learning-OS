@@ -279,9 +279,15 @@ title: string
 objective: string
 difficulty: 1..5
 status: proposed|active|completed|abandoned
+concept_ids: []
 success_criteria: []
 artifact_path: string?
 ```
+
+`concept_ids` was added during T092 -- a practical project must be
+linked to the concepts it exercises (docs/TASKS.md T092: "Proyecto
+práctico vinculado a conceptos"), and the entity had no field to record
+that link.
 
 ---
 

@@ -642,8 +642,11 @@ Concepto débil genera review y una transferencia posterior medible.
 # Fase 9 — Projects
 
 ### T092 — Project generation
+**Estado:** DONE
 **Dep:** T089  
 Proyecto práctico vinculado a conceptos.
+
+**Nota:** `app/services/project_generation_service.py`. `ProjectGenerationService.generate_project(goal_id, concept_ids) -> Project`. Gap notablemente más grande que los anteriores: `DATABASE_SCHEMA.md` nunca tuvo tabla `projects` (a diferencia de `Assessment`, `Project` sí necesita persistencia real — vida multi-día, `GET /projects/{id}`, `status` con transiciones) — añadidas `projects`+`project_concepts` (mirror de `exercise_concepts`) vía migración `82877dc3cd7c`, `ProjectRepository`+`SqlProjectRepository`. Corrección de entidad: `Project` no tenía forma de registrar a qué concepts está vinculado pese a que el propio texto de la tarea lo exige ("vinculado a conceptos") — añadido `concept_ids: list[str]` (documentado en `DOMAIN_MODEL.md` §14). Sin rol de IA dedicado a "project" entre los 7 de `AI_CONTRACTS.md` — reusa `exercise_generator` (mismo precedente que T089), con contexto fusionado entre todos los concepts (`_merged_context`, igual patrón que `DiagnosticService`/T066) y una instrucción explícita pidiendo un proyecto práctico multi-paso, no un exercise suelto. Compromiso documentado: `ExerciseGeneratorResponse` no tiene campo `title` (no fue diseñado para proyectos) — se deriva de la primera línea del `prompt`, truncada a `MAX_TITLE_LENGTH=80`; añadir un 8º rol de IA solo para esto habría sido un cambio mayor y más arriesgado a un contrato normativo cerrado de 7. `ProjectTask` (T093) queda fuera de este servicio — el diagrama de entidades lo menciona pero no tiene campos propios en ningún doc; se resuelve como `Activity` con `type=project_task` (el valor ya existe en `ActivityType`), no una tabla nueva.
 
 ### T093 — Project tasks
 **Dep:** T092  

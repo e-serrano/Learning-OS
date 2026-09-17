@@ -24,6 +24,7 @@ from app.domain.entities import (
     ExerciseAttempt,
     LearningGoal,
     Mistake,
+    Project,
     Review,
     Roadmap,
     Session,
@@ -144,6 +145,15 @@ class MistakeRepository(Protocol):
     def add(self, mistake: Mistake) -> None: ...
     def list_by_concept(self, concept_id: str) -> list[Mistake]: ...
     def update(self, mistake: Mistake) -> None: ...
+
+
+class ProjectRepository(Protocol):
+    """projects -- see docs/DATABASE_SCHEMA.md (T092 gap fix)."""
+
+    def add(self, project: Project) -> None: ...
+    def get(self, project_id: str) -> Project | None: ...
+    def list_by_goal(self, goal_id: str) -> list[Project]: ...
+    def update(self, project: Project) -> None: ...
 
 
 class RoadmapRepository(Protocol):

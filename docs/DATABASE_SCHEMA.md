@@ -368,6 +368,44 @@ CREATE TABLE change_proposals (
 `applied`, `conflicted`, `failed` (T046). Applying a proposal (T083) is
 a separate, later concern -- this table only stores the proposal itself.
 
+### projects
+
+Added while implementing T092 -- absent from the original schema
+despite docs/DOMAIN_MODEL.md #14 documenting the `Project` entity (the
+diagram's `ProjectTask` child, docs/DOMAIN_MODEL.md #2, has no fields
+of its own anywhere in the docs; see `activities` and `ActivityType.
+project_task` -- a project's tasks are `Activity` rows, not a separate
+table, added in T093).
+
+```sql
+CREATE TABLE projects (
+    id TEXT PRIMARY KEY,
+    goal_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    objective TEXT NOT NULL,
+    difficulty INTEGER NOT NULL,
+    status TEXT NOT NULL,
+    success_criteria_json TEXT NOT NULL,
+    artifact_path TEXT,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (goal_id) REFERENCES goals(id)
+);
+
+CREATE TABLE project_concepts (
+    project_id TEXT NOT NULL,
+    concept_id TEXT NOT NULL,
+    PRIMARY KEY (project_id, concept_id),
+    FOREIGN KEY (project_id) REFERENCES projects(id),
+    FOREIGN KEY (concept_id) REFERENCES concepts(id)
+);
+```
+
+`project_concepts` mirrors `exercise_concepts`/`goal_concepts` -- the
+concept links a project entity needs (docs/DOMAIN_MODEL.md #14:
+`concept_ids`, added in T092) live in a join table, not inline JSON.
+`created_at` is DB-only bookkeeping, same as `sessions`/`exercises` --
+the domain entity has no such field.
+
 ---
 
 ## 3. Indexes
