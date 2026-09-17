@@ -90,6 +90,7 @@ from app.services.review_completion_service import (
     ReviewNotFoundError,
 )
 from app.services.review_creation_service import ReviewCreationService
+from app.services.review_flow_service import ReviewFlowResult, ReviewFlowService
 from app.services.review_scheduler import (
     ReviewScheduler,
     SchedulingResult,
@@ -183,6 +184,8 @@ __all__ = [
     "ReviewCompletionResult",
     "ReviewCompletionService",
     "ReviewCreationService",
+    "ReviewFlowResult",
+    "ReviewFlowService",
     "ReviewNotDueError",
     "ReviewNotFoundError",
     "ReviewScheduler",

@@ -20,6 +20,7 @@ from datetime import datetime
 from app.domain.entities import Evidence, Review
 from app.domain.enums import EvidenceSourceType, ReviewStatus
 from app.domain.ports import ClockPort, EvidenceRepository, IdGeneratorPort, ReviewRepository
+from app.domain.value_objects import ConfidencePercent
 from app.services.review_creation_service import ReviewCreationService
 
 DEFAULT_REVIEW_DIFFICULTY = 3
@@ -61,7 +62,7 @@ class ReviewCompletionService:
         self._ids = ids
 
     def complete_review(
-        self, review_id: str, activity_id: str, answer: str, confidence: int
+        self, review_id: str, activity_id: str, answer: str, confidence: ConfidencePercent
     ) -> ReviewCompletionResult:
         review = self._reviews.get(review_id)
         if review is None:

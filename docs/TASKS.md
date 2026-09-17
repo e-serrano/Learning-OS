@@ -738,8 +738,16 @@ Decisión de diseño no derivada de ningún doc: el `content` de `/next` omite d
 Primera vez que se ensambla el grafo completo de dependencias de IA/sesión en `app/api/dependencies.py` (17 nuevos `get_*`) -- mismo patrón de `Depends()` anidados que T101/T102, mismo manejo de `AIProviderUnavailableError`/`AIInvalidOutputError` -> `AI_UNAVAILABLE`/`AI_INVALID_OUTPUT` (esta ruta llama IA dos veces: `ExerciseGeneratorService` en `/next` y en el `next_activity` embebido de `/answer`, y `EvaluatorService` en `/answer`).
 
 ### T104 — Review routes
+**Estado:** DONE
 **Dep:** T086–T088  
 Today/complete.
+
+**Nota:** `app/services/review_flow_service.py` (`ReviewFlowService`) + `app/api/reviews.py`, los 2 endpoints exactos de `API_SPEC.md` §7. `GET /reviews/today` es un passthrough directo a `TodaysReviewsService` (T086), sin cambios. `POST /reviews/{id}/complete` cierra dos gaps reales:
+
+1. `ReviewCompletionService.complete_review` (T087) exige un `activity_id` real, pero `evidence.activity_id` es FK `NOT NULL` a `activities`, que a su vez tiene FK `NOT NULL` a `sessions` -- y una review standalone (bajo `/reviews/*`, no `/sessions/*`) no tiene ninguno de los dos. `SessionMode.REVIEW`/`ActivityType.REVIEW` ya existían para exactamente este caso -- `ReviewFlowService` crea un Session+Activity mínimos, ya `completed`, solo para satisfacer la FK (mismo precedente que la sesión de diagnóstico de T102, pero de una sola vez en vez de multi-turno). El Session+Activity se persisten **antes** de llamar a `complete_review`, porque es esa llamada la que escribe la Evidence que apunta a ellos vía FK.
+2. La propia nota de T088 ya señalaba el hueco: "MasteryEngine ya lee Concept.retention... pero nada lo escribía hasta ahora" -- construyó la escritura, no quién la llama. `ReviewFlowService` es ese llamador, replicando lo que `AnswerFlowService` (T103) ya hace para evidence de exercises: actualiza retention (T088) y luego mastery (T075) justo después de crear la evidence que los alimenta -- retention primero porque `MasteryEngine` la lee como uno de sus inputs.
+
+De paso, corregido un tipo inconsistente entre tareas hermanas: `ReviewCompletionService.complete_review` (T087) tipaba `confidence: int` mientras que `AnswerSubmissionService.submit_answer` (T072) ya usaba `ConfidencePercent` -- alineado a `ConfidencePercent` en ambos servicios de reviews. La respuesta de `/complete` no tiene forma documentada en `API_SPEC.md` (solo el request) -- definida aquí como `completed_review`+`next_review`+`concept` (mastery/retention/status), mismo criterio que T103's `knowledge_updates`: lo que el cliente necesita sin una segunda llamada.
 
 ### T105 — Assessment routes
 **Dep:** T089–T090  

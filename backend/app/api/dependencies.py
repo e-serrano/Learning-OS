@@ -50,11 +50,15 @@ from app.services.mistake_tracker import MistakeTracker
 from app.services.mistake_update_service import MistakeUpdateService
 from app.services.next_activity_service import NextActivityService
 from app.services.planner_service import PlannerService
+from app.services.retention_update_service import RetentionUpdateService
+from app.services.review_completion_service import ReviewCompletionService
 from app.services.review_creation_service import ReviewCreationService
+from app.services.review_flow_service import ReviewFlowService
 from app.services.review_scheduler import ReviewScheduler
 from app.services.roadmap_generation_service import RoadmapGenerationService
 from app.services.roadmap_service import RoadmapService
 from app.services.session_service import SessionApplicationService
+from app.services.todays_reviews_service import TodaysReviewsService
 from app.services.vault_scan_service import VaultScanService
 
 
@@ -426,4 +430,41 @@ def get_answer_flow_service(
         review_creation=review_creation,
         adaptive_activity=adaptive_activity,
         activity_content=activity_content,
+    )
+
+
+def get_todays_reviews_service() -> TodaysReviewsService:
+    return TodaysReviewsService(get_review_repository(), get_clock())
+
+
+def get_review_completion_service(
+    review_creation: Annotated[ReviewCreationService, Depends(get_review_creation_service)],
+) -> ReviewCompletionService:
+    return ReviewCompletionService(
+        get_review_repository(),
+        get_evidence_repository(),
+        review_creation,
+        get_clock(),
+        get_id_generator(),
+    )
+
+
+def get_retention_update_service() -> RetentionUpdateService:
+    return RetentionUpdateService(get_concept_repository(), get_evidence_repository())
+
+
+def get_review_flow_service(
+    review_completion: Annotated[ReviewCompletionService, Depends(get_review_completion_service)],
+    mastery_update: Annotated[MasteryUpdateService, Depends(get_mastery_update_service)],
+    retention_update: Annotated[RetentionUpdateService, Depends(get_retention_update_service)],
+) -> ReviewFlowService:
+    return ReviewFlowService(
+        reviews=get_review_repository(),
+        sessions=get_session_repository(),
+        activities=get_activity_repository(),
+        review_completion=review_completion,
+        mastery_update=mastery_update,
+        retention_update=retention_update,
+        clock=get_clock(),
+        ids=get_id_generator(),
     )
