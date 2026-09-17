@@ -38,6 +38,10 @@ class RoadmapValidationError(Exception):
     pass
 
 
+class RoadmapNotFoundError(Exception):
+    pass
+
+
 @dataclass(frozen=True)
 class RoadmapNode:
     id: str
@@ -51,6 +55,13 @@ class RoadmapEdge:
     source: str
     target: str
     relation: ConceptRelationType = ConceptRelationType.PREREQUISITE_OF
+
+
+@dataclass(frozen=True)
+class RoadmapGraph:
+    roadmap: Roadmap
+    nodes: list[Concept]
+    edges: list[ConceptRelation]
 
 
 def _validate(nodes: list[RoadmapNode], edges: list[RoadmapEdge]) -> None:
@@ -135,6 +146,26 @@ class RoadmapService:
         )
         self._roadmaps.add(roadmap)
         return roadmap
+
+    def get_roadmap(self, goal_id: str) -> RoadmapGraph:
+        """Read side of T068 (docs/TASKS.md T101, docs/API_SPEC.md #4:
+        `GET /goals/{id}/roadmap`). The graph isn't stored on the
+        `Roadmap` row itself (see module docstring) -- it's reassembled
+        from every concept linked to the goal plus each one's outgoing
+        relations."""
+        if self._goals.get(goal_id) is None:
+            raise GoalNotFoundError(goal_id)
+
+        roadmap = self._roadmaps.get_active_for_goal(goal_id)
+        if roadmap is None:
+            raise RoadmapNotFoundError(goal_id)
+
+        nodes = self._concepts.list_by_goal(goal_id)
+        edges: list[ConceptRelation] = []
+        for node in nodes:
+            edges.extend(self._concept_relations.list_relations_from(node.id))
+
+        return RoadmapGraph(roadmap=roadmap, nodes=nodes, edges=edges)
 
     def _upsert_concept(self, node: RoadmapNode, goal_domain: str | None, now: datetime) -> None:
         domain = node.domain or goal_domain

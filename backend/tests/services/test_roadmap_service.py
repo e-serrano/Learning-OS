@@ -24,6 +24,7 @@ from app.services.context_builder import GoalNotFoundError
 from app.services.roadmap_service import (
     RoadmapEdge,
     RoadmapNode,
+    RoadmapNotFoundError,
     RoadmapService,
     RoadmapValidationError,
 )
@@ -251,3 +252,48 @@ def test_edge_relation_type_is_preserved(tmp_path: Path) -> None:
     relations = SqlConceptRelationRepository(engine)
     found = relations.list_relations_from("a")
     assert [(r.target_id, r.relation) for r in found] == [("b", ConceptRelationType.RELATED_TO)]
+
+
+def test_get_roadmap_returns_the_active_graph(tmp_path: Path) -> None:
+    engine = _engine(tmp_path)
+    _seed_goal(engine)
+    nodes = [RoadmapNode(id="a", title="A"), RoadmapNode(id="b", title="B")]
+    edges = [RoadmapEdge(source="a", target="b")]
+    service = _service(engine)
+    built = service.build_roadmap("goal_1", nodes, edges)
+
+    graph = service.get_roadmap("goal_1")
+
+    assert graph.roadmap == built
+    assert {c.id for c in graph.nodes} == {"a", "b"}
+    assert [(e.source_id, e.target_id) for e in graph.edges] == [("a", "b")]
+
+
+def test_get_roadmap_raises_when_goal_missing(tmp_path: Path) -> None:
+    engine = _engine(tmp_path)
+
+    with pytest.raises(GoalNotFoundError):
+        _service(engine).get_roadmap("missing")
+
+
+def test_get_roadmap_raises_when_no_roadmap_generated_yet(tmp_path: Path) -> None:
+    engine = _engine(tmp_path)
+    _seed_goal(engine)
+
+    with pytest.raises(RoadmapNotFoundError):
+        _service(engine).get_roadmap("goal_1")
+
+
+def test_get_roadmap_reflects_the_latest_version_after_recalculation(tmp_path: Path) -> None:
+    engine = _engine(tmp_path)
+    _seed_goal(engine)
+    service = _service(engine)
+    service.build_roadmap("goal_1", [RoadmapNode(id="a", title="A")], [])
+    second = service.build_roadmap(
+        "goal_1", [RoadmapNode(id="a", title="A"), RoadmapNode(id="b", title="B")], []
+    )
+
+    graph = service.get_roadmap("goal_1")
+
+    assert graph.roadmap == second
+    assert graph.roadmap.version == 2

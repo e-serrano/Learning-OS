@@ -5,6 +5,7 @@ from app.api.goals import router as goals_router
 from app.api.knowledge import router as knowledge_router
 from app.api.onboarding import router as onboarding_router
 from app.api.providers import router as providers_router
+from app.api.roadmap import router as roadmap_router
 from app.api.vault import router as vault_router
 
 app = FastAPI(title="Learning OS API", version="0.1.0")
@@ -23,6 +24,7 @@ app.include_router(goals_router)
 app.include_router(vault_router)
 app.include_router(providers_router)
 app.include_router(knowledge_router)
+app.include_router(roadmap_router)
 
 
 @app.get("/api/v1/health")

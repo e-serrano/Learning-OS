@@ -82,9 +82,12 @@ from app.services.review_scheduler import (
     SchedulingStrategy,
     SimpleSpacedRepetitionScheduler,
 )
+from app.services.roadmap_generation_service import RoadmapGenerationService
 from app.services.roadmap_service import (
     RoadmapEdge,
+    RoadmapGraph,
     RoadmapNode,
+    RoadmapNotFoundError,
     RoadmapService,
     RoadmapValidationError,
 )
@@ -154,7 +157,10 @@ __all__ = [
     "ReviewNotFoundError",
     "ReviewScheduler",
     "RoadmapEdge",
+    "RoadmapGenerationService",
+    "RoadmapGraph",
     "RoadmapNode",
+    "RoadmapNotFoundError",
     "RoadmapService",
     "RoadmapValidationError",
     "SchedulingResult",
