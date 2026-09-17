@@ -624,8 +624,11 @@ Generar situaciones nuevas, no copias del ejercicio.
 **Nota:** `app/services/transfer_assessment_service.py`. `TransferAssessmentService.generate_transfer_scenario(goal_id, concept_id) -> Exercise`. No hay rol de IA dedicado a "transfer" entre los 7 de `AI_CONTRACTS.md` — reusa `exercise_generator` (T071, `prompt_version="exercise_generator.v1"`) pero mete en `task` los prompts de los exercises previos del concept (`ExerciseRepository.list_by_concept`, gap encontrado — no existía, añadido igual que otros repos de esta fase) como contenido a NO repetir, más una instrucción explícita pidiendo transferir a un contexto nuevo. Gap documentado igual que en T066: no existe tabla `Assessment`/`AssessmentAttempt` (`DOMAIN_MODEL.md` §15 la describe, `DATABASE_SCHEMA.md` nunca la tuvo) — el MVP no la necesita aquí tampoco, el artefacto observable es el `Exercise` generado + la `Evidence` que T090 producirá al calificarlo, no un registro de assessment separado.
 
 ### T090 — Assessment completion
+**Estado:** DONE
 **Dep:** T089  
 Evaluar transferencia e independencia.
+
+**Nota:** `app/services/assessment_completion_service.py`. `AssessmentCompletionService.complete_assessment(exercise_id, session_id, activity_id, answer, confidence) -> AssessmentCompletionResult`. Un transfer scenario ES un `Exercise` normal (T089 lo persiste igual que cualquier otro), así que calificarlo no necesita lógica nueva — encadena exactamente el pipeline ya construido: `AnswerSubmissionService` (T072) → `EvaluatorService` (T073) → `EvidenceCreationService` (T074). Lo que añade T090: convierte los scores crudos `transfer`/`independence` (ya presentes en toda evaluación, `AI_CONTRACTS.md` §8, no específicos de transfer) en un juicio explícito, con umbral, medible — `transfer_demonstrated`/`independence_demonstrated` (bool, umbral `0.6`, mismo valor que `ReviewScheduler.SUCCESS_THRESHOLD` de T063 — una sola barra "suficientemente bueno" consistente en el código en vez de un segundo número arbitrario). Responde directamente al texto de T091: "una transferencia posterior MEDIBLE", no un score enterrado dentro de un `Evaluation`.
 
 ### T091 — Review/transfer E2E
 **Dep:** T086–T090  

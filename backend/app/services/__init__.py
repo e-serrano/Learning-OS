@@ -9,6 +9,10 @@ from app.services.apply_change_service import (
     ApplyChangeService,
     ProposalNotApprovedError,
 )
+from app.services.assessment_completion_service import (
+    AssessmentCompletionResult,
+    AssessmentCompletionService,
+)
 from app.services.context_builder import (
     ConceptNotFoundError,
     ContextBuilder,
@@ -73,6 +77,8 @@ __all__ = [
     "AnswerSubmissionService",
     "ApplyChangeError",
     "ApplyChangeService",
+    "AssessmentCompletionResult",
+    "AssessmentCompletionService",
     "AttemptNotFoundError",
     "ConceptNotFoundError",
     "ContextBuilder",
