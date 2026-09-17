@@ -43,6 +43,7 @@ from app.services.next_activity_service import (
     SessionNotFoundError,
 )
 from app.services.planner_service import PlannerService, PlanningResult
+from app.services.project_evaluation_service import ProjectEvaluationService
 from app.services.project_generation_service import ProjectGenerationService
 from app.services.project_submission_service import (
     NotAProjectTaskError,
@@ -122,6 +123,7 @@ __all__ = [
     "NotAProjectTaskError",
     "PlannerService",
     "PlanningResult",
+    "ProjectEvaluationService",
     "ProjectGenerationService",
     "ProjectNotFoundError",
     "ProjectSubmissionNotFoundError",

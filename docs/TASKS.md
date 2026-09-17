@@ -663,8 +663,11 @@ Registrar entregables/evidence.
 **Nota:** `app/services/project_submission_service.py`. `ProjectSubmissionService.submit_task(project_id, task_id, deliverable) -> ProjectSubmissionResult` (`task`, `evidence: list[Evidence]`). Marca la task `Activity` como `completed` y crea una `Evidence` por concept (`source_type=project`) con todos los campos de score en `None` — solo registra que se entregó algo, calificarlo (independencia, transferencia) es T095, aparte, igual split que exercises (`AnswerSubmissionService`/T072 vs `EvaluatorService`/T073). `MasteryEngine` (T061) ya ignora campos `None`, así que esta evidencia no calificada es inerte hasta que T095 añada una segunda `Evidence` con scores reales para el mismo concept — nunca sesga nada por sí sola. El texto del deliverable (`Activity` sigue sin campo de texto libre, mismo gap de T093) va a `evidence.metadata`, igual que las respuestas de diagnostic/review (T066, T087).
 
 ### T095 — Project evaluation
+**Estado:** DONE
 **Dep:** T094  
 Evaluar independencia y transferencia.
+
+**Nota:** `app/services/project_evaluation_service.py`. `ProjectEvaluationService.evaluate_submission(project_id, task_id, session_id, deliverable) -> list[Evidence]`. `Project` no tiene `Exercise`/`ExerciseAttempt` (ver nota T092), así que `EvaluatorService` (T073) no es reusable tal cual — construye su propio `AIRequest` (`role=evaluator`, mismo contrato `EvaluatorResponse`, mismo precedente de reuso que T089/T092) usando `objective`/`success_criteria` del proyecto como `prompt`/`success_criteria` y el deliverable como `answer` (`solution=""`, no hay solución de referencia para un proyecto abierto). Crea una segunda `Evidence` por concept, esta vez con scores reales (`correctness`, `reasoning`, `independence`, `transfer`) — complementa la `Evidence` sin calificar de T094, que queda inerte (`MasteryEngine` ignora `None`) hasta esta llamada. Con esto cierra la Fase 9: `Project` completo tiene generación (T092) → tasks (T093) → submission (T094) → evaluation (T095), igual split submit/evaluate que exercises (T072/T073) y reviews (T087).
 
 ---
 
