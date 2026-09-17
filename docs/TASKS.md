@@ -610,8 +610,11 @@ Responder, evaluar y reprogramar.
 **Nota:** `app/services/review_completion_service.py`. `ReviewCompletionService.complete_review(review_id, activity_id, answer, confidence) -> ReviewCompletionResult` (`completed_review`, `evidence`, `next_review`). `Review` no tiene exercise/prompt propio (`DOMAIN_MODEL.md` §11), así que "evaluar" no puede reusar el rol Evaluator (T073, que necesita prompt/solution/success_criteria reales) — se auto-reporta: `EvidenceSourceType.REVIEW` es su propia fuente dedicada, y `correctness = confidence/100` directamente (la confianza del usuario en su propio recall). Orden importa: marca la review vieja `completed` (con `completed_at`) ANTES de llamar a `ReviewCreationService.schedule_review()` (T077, reusado sin cambios) — así su búsqueda de "previous review completada" encuentra justo la que se acaba de completar y crece el intervalo desde ahí. `Evidence.difficulty` no tiene fuente natural en una review (el `difficulty` de `Review` es el parámetro FSRS, escala distinta, siempre `None` bajo el scheduler MVP) — usa `DEFAULT_REVIEW_DIFFICULTY=3` como valor medio razonable. `answer` se guarda en `evidence.metadata`, no se usa para calificar.
 
 ### T088 — Retention update
+**Estado:** DONE
 **Dep:** T087  
 Usar evidencia de review para retention.
+
+**Nota:** `app/services/retention_update_service.py`. `RetentionUpdateService.update_retention(concept_id) -> Concept`: promedia `correctness` de evidencia `source_type=review` (ventana de las últimas 5, igual patrón que `MasteryEngine`, T061) y la escribe como `Concept.retention` (0..100). Solo evidencia de tipo review cuenta — deliberado: retention mide "cuánto se recuerda tras un hueco sin practicar", justo lo que mide un review espaciado, a diferencia de un exercise normal (que mide aplicación inmediata). Cierra el círculo con T061: `MasteryEngine` ya lee `Concept.retention` como uno de sus 5 inputs, pero nada lo escribía hasta ahora. Sin evidencia de review, deja el concept sin tocar (no persiste) — la retención decayendo con el tiempo sin evidencia no está modelada aquí, así que no tiene sentido escribir un valor arbitrario cuando no hay señal.
 
 ### T089 — Transfer assessment
 **Dep:** T068, T073  

@@ -40,6 +40,7 @@ from app.services.next_activity_service import (
 )
 from app.services.planner_service import PlannerService, PlanningResult
 from app.services.proposal_validator import ProposalValidator, RejectedOperation, ValidationResult
+from app.services.retention_update_service import RetentionUpdateService
 from app.services.review_completion_service import (
     ReviewCompletionResult,
     ReviewCompletionService,
@@ -102,6 +103,7 @@ __all__ = [
     "ProposalNotFoundError",
     "ProposalValidator",
     "RejectedOperation",
+    "RetentionUpdateService",
     "ReviewCompletionResult",
     "ReviewCompletionService",
     "ReviewCreationService",
