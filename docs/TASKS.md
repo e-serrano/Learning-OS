@@ -617,8 +617,11 @@ Usar evidencia de review para retention.
 **Nota:** `app/services/retention_update_service.py`. `RetentionUpdateService.update_retention(concept_id) -> Concept`: promedia `correctness` de evidencia `source_type=review` (ventana de las últimas 5, igual patrón que `MasteryEngine`, T061) y la escribe como `Concept.retention` (0..100). Solo evidencia de tipo review cuenta — deliberado: retention mide "cuánto se recuerda tras un hueco sin practicar", justo lo que mide un review espaciado, a diferencia de un exercise normal (que mide aplicación inmediata). Cierra el círculo con T061: `MasteryEngine` ya lee `Concept.retention` como uno de sus 5 inputs, pero nada lo escribía hasta ahora. Sin evidencia de review, deja el concept sin tocar (no persiste) — la retención decayendo con el tiempo sin evidencia no está modelada aquí, así que no tiene sentido escribir un valor arbitrario cuando no hay señal.
 
 ### T089 — Transfer assessment
+**Estado:** DONE
 **Dep:** T068, T073  
 Generar situaciones nuevas, no copias del ejercicio.
+
+**Nota:** `app/services/transfer_assessment_service.py`. `TransferAssessmentService.generate_transfer_scenario(goal_id, concept_id) -> Exercise`. No hay rol de IA dedicado a "transfer" entre los 7 de `AI_CONTRACTS.md` — reusa `exercise_generator` (T071, `prompt_version="exercise_generator.v1"`) pero mete en `task` los prompts de los exercises previos del concept (`ExerciseRepository.list_by_concept`, gap encontrado — no existía, añadido igual que otros repos de esta fase) como contenido a NO repetir, más una instrucción explícita pidiendo transferir a un contexto nuevo. Gap documentado igual que en T066: no existe tabla `Assessment`/`AssessmentAttempt` (`DOMAIN_MODEL.md` §15 la describe, `DATABASE_SCHEMA.md` nunca la tuvo) — el MVP no la necesita aquí tampoco, el artefacto observable es el `Exercise` generado + la `Evidence` que T090 producirá al calificarlo, no un registro de assessment separado.
 
 ### T090 — Assessment completion
 **Dep:** T089  

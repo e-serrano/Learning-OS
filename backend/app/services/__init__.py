@@ -62,6 +62,7 @@ from app.services.roadmap_service import (
 )
 from app.services.session_service import InvalidSessionError, SessionApplicationService
 from app.services.todays_reviews_service import DUE_STATUSES, TodaysReviewsService
+from app.services.transfer_assessment_service import TransferAssessmentService
 from app.services.write_verification import WriteVerificationError, verify_write
 
 __all__ = [
@@ -120,6 +121,7 @@ __all__ = [
     "SessionNotFoundError",
     "SimpleSpacedRepetitionScheduler",
     "TodaysReviewsService",
+    "TransferAssessmentService",
     "ValidationResult",
     "WriteVerificationError",
     "normalize",

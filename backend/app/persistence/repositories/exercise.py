@@ -72,9 +72,7 @@ class SqlExerciseRepository:
             db.add(_to_model(exercise))
             db.flush()  # exercise row must exist before exercise_concepts references it
             for concept_id in exercise.concept_ids:
-                db.add(
-                    ExerciseConceptModel(exercise_id=exercise.id, concept_id=concept_id)
-                )
+                db.add(ExerciseConceptModel(exercise_id=exercise.id, concept_id=concept_id))
             db.commit()
 
     def get(self, exercise_id: str) -> Exercise | None:
@@ -83,3 +81,15 @@ class SqlExerciseRepository:
             if model is None:
                 return None
             return _to_entity(model, self._concept_ids(db, exercise_id))
+
+    def list_by_concept(self, concept_id: str) -> list[Exercise]:
+        with DbSession(self._engine) as db:
+            stmt = (
+                select(ExerciseModel)
+                .join(ExerciseConceptModel, ExerciseConceptModel.exercise_id == ExerciseModel.id)
+                .where(ExerciseConceptModel.concept_id == concept_id)
+                .order_by(ExerciseModel.created_at.desc())
+            )
+            return [
+                _to_entity(model, self._concept_ids(db, model.id)) for model in db.scalars(stmt)
+            ]
