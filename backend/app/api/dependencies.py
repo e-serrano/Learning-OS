@@ -20,21 +20,41 @@ from app.persistence.engine import create_sqlite_engine
 from app.persistence.repositories.activity import SqlActivityRepository
 from app.persistence.repositories.concept import SqlConceptRepository
 from app.persistence.repositories.concept_relation import SqlConceptRelationRepository
+from app.persistence.repositories.evaluation import SqlEvaluationRepository
 from app.persistence.repositories.evidence import SqlEvidenceRepository
+from app.persistence.repositories.exercise import SqlExerciseRepository
+from app.persistence.repositories.exercise_attempt import SqlExerciseAttemptRepository
 from app.persistence.repositories.goal import SqlGoalRepository
 from app.persistence.repositories.mistake import SqlMistakeRepository
+from app.persistence.repositories.review import SqlReviewRepository
 from app.persistence.repositories.roadmap import SqlRoadmapRepository
 from app.persistence.repositories.session import SqlSessionRepository
+from app.services.activity_content_service import ActivityContentService
+from app.services.activity_selector import ActivitySelector
+from app.services.adaptive_activity_service import AdaptiveActivityService
+from app.services.answer_flow_service import AnswerFlowService
+from app.services.answer_submission_service import AnswerSubmissionService
 from app.services.apply_change_service import ApplyChangeService
 from app.services.context_builder import ContextBuilder
 from app.services.diagnostic_service import DiagnosticService
 from app.services.diagnostic_session_service import DiagnosticSessionService
 from app.services.diff_approval_service import DiffApprovalService
+from app.services.evaluator_service import EvaluatorService
+from app.services.evidence_creation_service import EvidenceCreationService
+from app.services.exercise_generator_service import ExerciseGeneratorService
 from app.services.goal_service import GoalApplicationService
 from app.services.knowledge_explorer_service import KnowledgeExplorerService
+from app.services.mastery_engine import MasteryEngine
+from app.services.mastery_update_service import MasteryUpdateService
+from app.services.mistake_tracker import MistakeTracker
+from app.services.mistake_update_service import MistakeUpdateService
+from app.services.next_activity_service import NextActivityService
 from app.services.planner_service import PlannerService
+from app.services.review_creation_service import ReviewCreationService
+from app.services.review_scheduler import ReviewScheduler
 from app.services.roadmap_generation_service import RoadmapGenerationService
 from app.services.roadmap_service import RoadmapService
+from app.services.session_service import SessionApplicationService
 from app.services.vault_scan_service import VaultScanService
 
 
@@ -244,4 +264,166 @@ def get_diagnostic_session_service(
         diagnostic=diagnostic,
         clock=get_clock(),
         ids=get_id_generator(),
+    )
+
+
+def get_session_service() -> SessionApplicationService:
+    return SessionApplicationService(
+        get_goal_repository(), get_session_repository(), get_clock(), get_id_generator()
+    )
+
+
+def get_activity_selector() -> ActivitySelector:
+    return ActivitySelector(
+        get_concept_repository(),
+        get_concept_relation_repository(),
+        get_mistake_repository(),
+        get_evidence_repository(),
+        get_clock(),
+    )
+
+
+def get_next_activity_service(
+    activity_selector: Annotated[ActivitySelector, Depends(get_activity_selector)],
+) -> NextActivityService:
+    return NextActivityService(
+        get_session_repository(), get_activity_repository(), activity_selector, get_id_generator()
+    )
+
+
+def get_adaptive_activity_service(
+    activity_selector: Annotated[ActivitySelector, Depends(get_activity_selector)],
+) -> AdaptiveActivityService:
+    return AdaptiveActivityService(
+        get_session_repository(), get_activity_repository(), activity_selector, get_id_generator()
+    )
+
+
+def get_exercise_repository() -> SqlExerciseRepository:
+    return SqlExerciseRepository(get_engine())
+
+
+def get_exercise_attempt_repository() -> SqlExerciseAttemptRepository:
+    return SqlExerciseAttemptRepository(get_engine())
+
+
+def get_evaluation_repository() -> SqlEvaluationRepository:
+    return SqlEvaluationRepository(get_engine())
+
+
+def get_review_repository() -> SqlReviewRepository:
+    return SqlReviewRepository(get_engine())
+
+
+def get_exercise_generator_service(
+    orchestrator: Annotated[AIOrchestrator, Depends(get_ai_orchestrator)],
+) -> ExerciseGeneratorService:
+    return ExerciseGeneratorService(
+        goals=get_goal_repository(),
+        context_builder=get_context_builder(),
+        exercises=get_exercise_repository(),
+        orchestrator=orchestrator,
+        clock=get_clock(),
+        ids=get_id_generator(),
+    )
+
+
+def get_activity_content_service(
+    exercise_generator: Annotated[
+        ExerciseGeneratorService, Depends(get_exercise_generator_service)
+    ],
+) -> ActivityContentService:
+    return ActivityContentService(get_activity_repository(), exercise_generator)
+
+
+def get_answer_submission_service() -> AnswerSubmissionService:
+    return AnswerSubmissionService(
+        get_exercise_repository(),
+        get_session_repository(),
+        get_exercise_attempt_repository(),
+        get_clock(),
+        get_id_generator(),
+    )
+
+
+def get_evaluator_service(
+    orchestrator: Annotated[AIOrchestrator, Depends(get_ai_orchestrator)],
+) -> EvaluatorService:
+    return EvaluatorService(
+        get_exercise_attempt_repository(),
+        get_exercise_repository(),
+        get_evaluation_repository(),
+        orchestrator,
+        get_clock(),
+        get_id_generator(),
+    )
+
+
+def get_evidence_creation_service() -> EvidenceCreationService:
+    return EvidenceCreationService(
+        get_evaluation_repository(),
+        get_exercise_attempt_repository(),
+        get_exercise_repository(),
+        get_evidence_repository(),
+        get_clock(),
+        get_id_generator(),
+    )
+
+
+def get_mistake_tracker() -> MistakeTracker:
+    return MistakeTracker(get_mistake_repository(), get_clock(), get_id_generator())
+
+
+def get_mistake_update_service(
+    mistake_tracker: Annotated[MistakeTracker, Depends(get_mistake_tracker)],
+) -> MistakeUpdateService:
+    return MistakeUpdateService(
+        get_evaluation_repository(),
+        get_exercise_attempt_repository(),
+        get_exercise_repository(),
+        mistake_tracker,
+    )
+
+
+def get_mastery_engine() -> MasteryEngine:
+    return MasteryEngine(get_evidence_repository())
+
+
+def get_mastery_update_service(
+    mastery_engine: Annotated[MasteryEngine, Depends(get_mastery_engine)],
+) -> MasteryUpdateService:
+    return MasteryUpdateService(get_concept_repository(), mastery_engine)
+
+
+def get_review_scheduler() -> ReviewScheduler:
+    return ReviewScheduler(get_clock(), get_id_generator())
+
+
+def get_review_creation_service(
+    review_scheduler: Annotated[ReviewScheduler, Depends(get_review_scheduler)],
+) -> ReviewCreationService:
+    return ReviewCreationService(get_review_repository(), review_scheduler)
+
+
+def get_answer_flow_service(
+    answer_submission: Annotated[AnswerSubmissionService, Depends(get_answer_submission_service)],
+    evaluator: Annotated[EvaluatorService, Depends(get_evaluator_service)],
+    evidence_creation: Annotated[EvidenceCreationService, Depends(get_evidence_creation_service)],
+    mistake_update: Annotated[MistakeUpdateService, Depends(get_mistake_update_service)],
+    mastery_update: Annotated[MasteryUpdateService, Depends(get_mastery_update_service)],
+    review_creation: Annotated[ReviewCreationService, Depends(get_review_creation_service)],
+    adaptive_activity: Annotated[AdaptiveActivityService, Depends(get_adaptive_activity_service)],
+    activity_content: Annotated[ActivityContentService, Depends(get_activity_content_service)],
+) -> AnswerFlowService:
+    return AnswerFlowService(
+        sessions=get_session_repository(),
+        activities=get_activity_repository(),
+        answer_submission=answer_submission,
+        evaluator=evaluator,
+        evidence_creation=evidence_creation,
+        mistake_update=mistake_update,
+        mastery_update=mastery_update,
+        review_creation=review_creation,
+        adaptive_activity=adaptive_activity,
+        activity_content=activity_content,
     )

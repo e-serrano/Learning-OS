@@ -15,7 +15,9 @@ def _to_model(activity: Activity, created_at: str) -> ActivityModel:
         type=activity.type.value,
         sequence=activity.sequence,
         status=activity.status.value,
-        payload_json=json.dumps({"concept_ids": activity.concept_ids}),
+        payload_json=json.dumps(
+            {"concept_ids": activity.concept_ids, "exercise_id": activity.exercise_id}
+        ),
         created_at=created_at,
     )
 
@@ -29,6 +31,7 @@ def _to_entity(model: ActivityModel) -> Activity:
         sequence=model.sequence,
         concept_ids=payload.get("concept_ids", []),
         status=model.status,  # type: ignore[arg-type]
+        exercise_id=payload.get("exercise_id"),
     )
 
 
@@ -40,6 +43,13 @@ class SqlActivityRepository:
     dedicated column for it, matching how SqlExerciseRepository packs its
     own extra fields (docs/TASKS.md T035 note). `created_at` is a DB-only
     bookkeeping column not present on the Activity domain entity.
+
+    `exercise_id` packs into the same `payload_json` blob (T103) -- an
+    `exercise`-type Activity has no other way to remember which
+    AI-generated Exercise it was paired with once `/next` hands it back
+    to the caller; `POST .../activities/{id}/answer` needs it to call
+    `AnswerSubmissionService`, which takes `exercise_id`, not
+    `activity_id`.
     """
 
     def __init__(self, engine: Engine) -> None:

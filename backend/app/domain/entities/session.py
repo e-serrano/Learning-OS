@@ -22,3 +22,4 @@ class Activity(BaseModel):
     sequence: int
     concept_ids: list[str] = Field(default_factory=list)
     status: ActivityStatus
+    exercise_id: str | None = None

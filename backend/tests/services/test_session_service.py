@@ -5,9 +5,15 @@ import pytest
 from app.domain.entities import LearningGoal, Session
 from app.domain.enums import GoalStatus, SessionMode, SessionStatus, TargetLevel
 from app.services.context_builder import GoalNotFoundError
-from app.services.session_service import InvalidSessionError, SessionApplicationService
+from app.services.next_activity_service import SessionNotFoundError
+from app.services.session_service import (
+    InvalidSessionError,
+    InvalidSessionTransitionError,
+    SessionApplicationService,
+)
 
 NOW = datetime(2026, 1, 1, tzinfo=UTC)
+LATER = datetime(2026, 1, 2, tzinfo=UTC)
 
 
 class FakeGoalRepository:
@@ -28,8 +34,8 @@ class FakeGoalRepository:
 
 
 class FakeSessionRepository:
-    def __init__(self) -> None:
-        self.added: list[Session] = []
+    def __init__(self, seed: list[Session] | None = None) -> None:
+        self.added: list[Session] = list(seed or [])
 
     def add(self, session: Session) -> None:
         self.added.append(session)
@@ -38,7 +44,7 @@ class FakeSessionRepository:
         return next((s for s in self.added if s.id == session_id), None)
 
     def update(self, session: Session) -> None:
-        raise NotImplementedError
+        self.added = [session if s.id == session.id else s for s in self.added]
 
 
 class FakeClock:
@@ -72,14 +78,32 @@ def _goal(**overrides: object) -> LearningGoal:
     return LearningGoal(**defaults)  # type: ignore[arg-type]
 
 
+def _session(**overrides: object) -> Session:
+    defaults: dict[str, object] = dict(
+        id="session_1",
+        goal_id="goal_1",
+        mode=SessionMode.GUIDED,
+        objective="Practice",
+        status=SessionStatus.ACTIVE,
+        started_at=NOW,
+    )
+    defaults.update(overrides)
+    return Session(**defaults)  # type: ignore[arg-type]
+
+
 def _service(
     goals: list[LearningGoal] | None = None,
+    sessions: FakeSessionRepository | None = None,
+    clock: FakeClock | None = None,
 ) -> tuple[SessionApplicationService, FakeSessionRepository]:
-    sessions = FakeSessionRepository()
+    session_repo = sessions or FakeSessionRepository()
     service = SessionApplicationService(
-        FakeGoalRepository(goals or [_goal()]), sessions, FakeClock(NOW), FakeIdGenerator()
+        FakeGoalRepository(goals or [_goal()]),
+        session_repo,
+        clock or FakeClock(NOW),
+        FakeIdGenerator(),
     )
-    return service, sessions
+    return service, session_repo
 
 
 def test_create_session_persists_active_session_started_now() -> None:
@@ -138,3 +162,45 @@ def test_create_session_rejects_non_positive_duration(duration_minutes: int) -> 
         service.create_session("goal_1", SessionMode.GUIDED, duration_minutes=duration_minutes)
 
     assert sessions.added == []
+
+
+def test_get_session_returns_it() -> None:
+    service, _ = _service(sessions=FakeSessionRepository(seed=[_session()]))
+
+    assert service.get_session("session_1").id == "session_1"
+
+
+def test_get_session_raises_when_missing() -> None:
+    service, _ = _service()
+
+    with pytest.raises(SessionNotFoundError):
+        service.get_session("missing")
+
+
+def test_complete_session_transitions_active_to_completed() -> None:
+    service, sessions = _service(
+        sessions=FakeSessionRepository(seed=[_session(status=SessionStatus.ACTIVE)]),
+        clock=FakeClock(LATER),
+    )
+
+    completed = service.complete_session("session_1")
+
+    assert completed.status == SessionStatus.COMPLETED
+    assert completed.ended_at == LATER
+    assert sessions.get("session_1").status == SessionStatus.COMPLETED  # type: ignore[union-attr]
+
+
+def test_complete_session_rejects_non_active_session() -> None:
+    service, _ = _service(
+        sessions=FakeSessionRepository(seed=[_session(status=SessionStatus.COMPLETED)])
+    )
+
+    with pytest.raises(InvalidSessionTransitionError):
+        service.complete_session("session_1")
+
+
+def test_complete_session_raises_when_missing() -> None:
+    service, _ = _service()
+
+    with pytest.raises(SessionNotFoundError):
+        service.complete_session("missing")

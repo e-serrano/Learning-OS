@@ -266,7 +266,15 @@ type: recall|explanation|example|exercise|feedback|reflection|review|project_tas
 sequence: integer
 concept_ids: []
 status: pending|active|completed|skipped
+exercise_id: string?
 ```
+
+`exercise_id` was added during T103 -- an `exercise`-type Activity is
+paired with an AI-generated `Exercise` when `POST /sessions/{id}/next`
+creates it, but nothing recorded which one; `POST
+/sessions/{id}/activities/{id}/answer` needs the `exercise_id` to call
+`AnswerSubmissionService` (which takes `exercise_id`, not `activity_id`)
+and the entity had no field to carry that link across the two requests.
 
 ---
 

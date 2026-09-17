@@ -18,11 +18,16 @@ from app.domain.entities import Session
 from app.domain.enums import SessionMode, SessionStatus
 from app.domain.ports import ClockPort, GoalRepository, IdGeneratorPort, SessionRepository
 from app.services.context_builder import GoalNotFoundError
+from app.services.next_activity_service import SessionNotFoundError
 
 DEFAULT_OBJECTIVE_TEMPLATE = "Practice session for {goal_title}"
 
 
 class InvalidSessionError(Exception):
+    pass
+
+
+class InvalidSessionTransitionError(Exception):
     pass
 
 
@@ -63,3 +68,23 @@ class SessionApplicationService:
         )
         self._sessions.add(session)
         return session
+
+    def get_session(self, session_id: str) -> Session:
+        session = self._sessions.get(session_id)
+        if session is None:
+            raise SessionNotFoundError(session_id)
+        return session
+
+    def complete_session(self, session_id: str) -> Session:
+        """Only `active -> completed` is valid (docs/DOMAIN_MODEL.md #17:
+        "Invalid transitions must be rejected by the domain layer")."""
+        session = self.get_session(session_id)
+        if session.status != SessionStatus.ACTIVE:
+            raise InvalidSessionTransitionError(
+                f"cannot complete a session in status '{session.status}'"
+            )
+        completed = session.model_copy(
+            update={"status": SessionStatus.COMPLETED, "ended_at": self._clock.now()}
+        )
+        self._sessions.update(completed)
+        return completed

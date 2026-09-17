@@ -1,5 +1,13 @@
+from app.services.activity_content_service import ActivityContent, ActivityContentService
 from app.services.activity_selector import ActivityCandidate, ActivitySelector
 from app.services.adaptive_activity_service import AdaptiveActivityResult, AdaptiveActivityService
+from app.services.answer_flow_service import (
+    ActivityHasNoExerciseError,
+    ActivityNotFoundError,
+    AnswerFlowService,
+    AnswerResult,
+    KnowledgeUpdate,
+)
 from app.services.answer_submission_service import (
     AnswerSubmissionService,
     ExerciseNotFoundError,
@@ -97,16 +105,26 @@ from app.services.roadmap_service import (
     RoadmapService,
     RoadmapValidationError,
 )
-from app.services.session_service import InvalidSessionError, SessionApplicationService
+from app.services.session_service import (
+    InvalidSessionError,
+    InvalidSessionTransitionError,
+    SessionApplicationService,
+)
 from app.services.todays_reviews_service import DUE_STATUSES, TodaysReviewsService
 from app.services.transfer_assessment_service import TransferAssessmentService
 from app.services.write_verification import WriteVerificationError, verify_write
 
 __all__ = [
     "ActivityCandidate",
+    "ActivityContent",
+    "ActivityContentService",
+    "ActivityHasNoExerciseError",
+    "ActivityNotFoundError",
     "ActivitySelector",
     "AdaptiveActivityResult",
     "AdaptiveActivityService",
+    "AnswerFlowService",
+    "AnswerResult",
     "AnswerSubmissionService",
     "ApplyChangeError",
     "ApplyChangeService",
@@ -135,7 +153,9 @@ __all__ = [
     "InvalidGoalTransitionError",
     "InvalidProposalStatusError",
     "InvalidSessionError",
+    "InvalidSessionTransitionError",
     "KnowledgeExplorerService",
+    "KnowledgeUpdate",
     "MasteryEngine",
     "MasteryUpdateService",
     "MasteryWeights",
