@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppRoutes } from './routes'
 
 function renderAt(path: string) {
@@ -12,10 +12,23 @@ function renderAt(path: string) {
 }
 
 describe('AppRoutes', () => {
-  it('renders the dashboard placeholder at the root route', () => {
+  beforeEach(() => {
+    // Dashboard (T111) fetches goals on mount even when the route under
+    // test isn't "/" -- MemoryRouter still mounts the whole route tree.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, json: async () => ({ goals: [] }) }),
+    )
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('renders the dashboard at the root route', async () => {
     renderAt('/')
 
-    expect(screen.getByRole('heading', { name: 'Dashboard' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument()
   })
 
   it('renders the reviews placeholder at /reviews', () => {
@@ -30,10 +43,10 @@ describe('AppRoutes', () => {
     expect(screen.getByRole('heading', { name: 'Goal' })).toBeInTheDocument()
   })
 
-  it('redirects an unknown path back to the dashboard', () => {
+  it('redirects an unknown path back to the dashboard', async () => {
     renderAt('/does-not-exist')
 
-    expect(screen.getByRole('heading', { name: 'Dashboard' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument()
   })
 
   it('keeps the nav visible across routes', () => {

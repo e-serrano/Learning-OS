@@ -1,0 +1,140 @@
+.dashboard {
+  max-width: 800px;
+}
+
+.dashboard h2 {
+  margin-top: 0;
+}
+
+.dashboard .message {
+  margin: 16px 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: #fdecec;
+  color: #a3231d;
+}
+
+.dashboard .message.success {
+  background: #eafaf0;
+  color: #1a7a3c;
+}
+
+.next-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #1e3a8a;
+}
+
+.next-action a {
+  color: #1e3a8a;
+  font-weight: 600;
+}
+
+.goal-cards {
+  display: grid;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.goal-card {
+  display: block;
+  border: 1px solid rgba(128, 128, 128, 0.3);
+  border-radius: 8px;
+  padding: 14px 16px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.goal-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.status-tag {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(128, 128, 128, 0.2);
+}
+
+.goal-card-mastery {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.mastery-bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(128, 128, 128, 0.2);
+  overflow: hidden;
+}
+
+.mastery-bar-fill {
+  height: 100%;
+  background: #2563eb;
+}
+
+.goal-card-stats {
+  display: flex;
+  gap: 12px;
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+
+.create-goal-form {
+  max-width: 360px;
+  margin-top: 16px;
+}
+
+.create-goal-form label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+  margin-top: 16px;
+}
+
+.create-goal-form input,
+.create-goal-form select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+  border-radius: 6px;
+  font-size: 1rem;
+  box-sizing: border-box;
+  background: transparent;
+  color: inherit;
+}
+
+.dashboard button {
+  margin-top: 20px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 6px;
+  background: #222;
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.dashboard button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dashboard button.secondary {
+  background: transparent;
+  color: inherit;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+}

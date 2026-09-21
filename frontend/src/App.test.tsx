@@ -44,13 +44,22 @@ describe('App', () => {
   })
 
   it('shows the routed app shell once onboarding is already complete', async () => {
-    vi.mocked(fetch).mockResolvedValue(mockStatusResponse('COMPLETE') as Response)
+    vi.mocked(fetch).mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/onboarding/status')) {
+        return Promise.resolve(mockStatusResponse('COMPLETE') as Response)
+      }
+      if (url.includes('/goals')) {
+        return Promise.resolve({ ok: true, json: async () => ({ goals: [] }) } as Response)
+      }
+      return Promise.reject(new Error(`unexpected fetch: ${url}`))
+    })
 
     render(<App />)
 
     expect(await screen.findByRole('link', { name: 'Dashboard' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Reviews' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Vault' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Dashboard' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument()
   })
 })
