@@ -8,6 +8,11 @@ function FakeSessionPage() {
   return <p>session id: {sessionId}</p>
 }
 
+function FakeProjectPage() {
+  const { projectId } = useParams<{ projectId: string }>()
+  return <p>project id: {projectId}</p>
+}
+
 function jsonResponse(body: unknown) {
   return { ok: true, json: async () => body } as Response
 }
@@ -41,12 +46,17 @@ function renderGoalView() {
       <Routes>
         <Route path="/goals/:goalId" element={<GoalView />} />
         <Route path="/sessions/:sessionId" element={<FakeSessionPage />} />
+        <Route path="/projects/:projectId" element={<FakeProjectPage />} />
       </Routes>
     </MemoryRouter>,
   )
 }
 
-function mockFetchFor(goal: typeof ACTIVE_GOAL, progress: typeof PROGRESS) {
+function mockFetchFor(
+  goal: typeof ACTIVE_GOAL,
+  progress: typeof PROGRESS,
+  extra?: { concepts?: unknown[]; onCreateProject?: () => unknown; projects?: unknown[] },
+) {
   vi.stubGlobal(
     'fetch',
     vi.fn().mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
@@ -72,6 +82,15 @@ function mockFetchFor(goal: typeof ACTIVE_GOAL, progress: typeof PROGRESS) {
             ended_at: null,
           }),
         )
+      }
+      if (url.match(/\/goals\/[^/]+\/projects$/) && init?.method === 'POST') {
+        return Promise.resolve(jsonResponse(extra?.onCreateProject?.() ?? {}))
+      }
+      if (url.match(/\/goals\/[^/]+\/projects$/)) {
+        return Promise.resolve(jsonResponse({ projects: extra?.projects ?? [] }))
+      }
+      if (url.match(/\/goals\/[^/]+\/knowledge$/)) {
+        return Promise.resolve(jsonResponse({ concepts: extra?.concepts ?? [] }))
       }
       if (url.match(/\/goals\/[^/]+$/)) {
         return Promise.resolve(jsonResponse(goal))
@@ -143,5 +162,58 @@ describe('GoalView', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Start session' }))
 
     await waitFor(() => expect(screen.getByText('session id: session_1')).toBeInTheDocument())
+  })
+
+  it('lists existing projects for the goal', async () => {
+    mockFetchFor(ACTIVE_GOAL, PROGRESS, {
+      projects: [
+        {
+          id: 'project_1',
+          goal_id: 'goal_1',
+          title: 'Build an ETL pipeline',
+          objective: 'obj',
+          difficulty: 3,
+          status: 'active',
+          concept_ids: ['window_functions'],
+          success_criteria: [],
+          artifact_path: null,
+        },
+      ],
+    })
+
+    renderGoalView()
+
+    expect(await screen.findByRole('link', { name: 'Build an ETL pipeline' })).toHaveAttribute(
+      'href',
+      '/projects/project_1',
+    )
+  })
+
+  it('starts a project using the goal concepts and navigates to it', async () => {
+    mockFetchFor(ACTIVE_GOAL, PROGRESS, {
+      concepts: [{ id: 'window_functions' }],
+      onCreateProject: () => ({
+        project: {
+          id: 'project_1',
+          goal_id: 'goal_1',
+          title: 'Build an ETL pipeline',
+          objective: 'obj',
+          difficulty: 3,
+          status: 'active',
+          concept_ids: ['window_functions'],
+          success_criteria: ['Uses a window function'],
+          artifact_path: null,
+        },
+        session_id: 'session_1',
+        tasks: [{ task_id: 'task_1', sequence: 1, description: 'Uses a window function', status: 'pending' }],
+      }),
+    })
+
+    renderGoalView()
+
+    await screen.findByRole('heading', { name: 'Learn SQL' })
+    fireEvent.click(screen.getByRole('button', { name: 'Start project' }))
+
+    await waitFor(() => expect(screen.getByText('project id: project_1')).toBeInTheDocument())
   })
 })

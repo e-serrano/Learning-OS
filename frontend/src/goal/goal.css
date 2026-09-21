@@ -71,6 +71,28 @@
 .goal-view-actions {
   display: flex;
   gap: 12px;
+  margin-bottom: 16px;
+}
+
+.goal-projects {
+  margin: 20px 0;
+}
+
+.goal-projects h3 {
+  margin-bottom: 8px;
+}
+
+.goal-projects ul {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.goal-projects li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .goal-view button {

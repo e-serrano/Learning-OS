@@ -1,0 +1,124 @@
+.project-view {
+  max-width: 700px;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 16px;
+  font-size: 0.85rem;
+  color: inherit;
+  opacity: 0.75;
+  text-decoration: none;
+}
+
+.project-view .message {
+  margin: 16px 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: #fdecec;
+  color: #a3231d;
+}
+
+.project-view .subtitle {
+  opacity: 0.75;
+}
+
+.project-view-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.project-view-header h2 {
+  margin: 0;
+}
+
+.status-tag {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(128, 128, 128, 0.2);
+}
+
+.task-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.task {
+  border: 1px solid rgba(128, 128, 128, 0.3);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 14px;
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 0.95rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.task-header:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.task-form {
+  padding: 0 14px 14px;
+}
+
+.task-form label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.task-form textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+  border-radius: 6px;
+  font: inherit;
+  background: transparent;
+  color: inherit;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+.task-form button {
+  margin-top: 10px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  background: #222;
+  color: #fff;
+  cursor: pointer;
+}
+
+.task-form button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.task-result {
+  padding: 0 14px 14px;
+  font-size: 0.9rem;
+}
+
+.task-result .evaluation-scores {
+  display: flex;
+  gap: 16px;
+  opacity: 0.75;
+  margin-top: 6px;
+}

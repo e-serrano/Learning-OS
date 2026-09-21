@@ -9,6 +9,8 @@ import {
   getGoalProgress,
   pauseGoal,
 } from '../api/goals'
+import { listKnowledge } from '../api/knowledge'
+import { type Project, createProject, listProjects } from '../api/projects'
 import { createSession } from '../api/sessions'
 import { MasteryBar } from '../shared/MasteryBar'
 import './goal.css'
@@ -31,18 +33,21 @@ export function GoalView() {
   const navigate = useNavigate()
   const [goal, setGoal] = useState<Goal | null>(null)
   const [progress, setProgress] = useState<GoalProgress | null>(null)
+  const [projects, setProjects] = useState<Project[]>([])
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
   const load = useCallback(async () => {
     if (!goalId) return
     try {
-      const [goalResult, progressResult] = await Promise.all([
+      const [goalResult, progressResult, projectsResult] = await Promise.all([
         getGoal(goalId),
         getGoalProgress(goalId),
+        listProjects(goalId),
       ])
       setGoal(goalResult)
       setProgress(progressResult)
+      setProjects(projectsResult.projects)
       setError(null)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
@@ -83,6 +88,28 @@ export function GoalView() {
     try {
       const session = await createSession(goalId, 'guided', DEFAULT_SESSION_DURATION_MINUTES)
       navigate(`/sessions/${session.id}`)
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+      setBusy(false)
+    }
+  }
+
+  async function handleStartProject() {
+    if (!goalId) return
+    setBusy(true)
+    setError(null)
+    try {
+      const { concepts } = await listKnowledge(goalId)
+      if (concepts.length === 0) {
+        setError('This goal has no concepts yet -- generate a roadmap first.')
+        setBusy(false)
+        return
+      }
+      const created = await createProject(
+        goalId,
+        concepts.map((c) => c.id),
+      )
+      navigate(`/projects/${created.project.id}`, { state: { tasks: created.tasks } })
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
       setBusy(false)
@@ -146,9 +173,28 @@ export function GoalView() {
       </div>
 
       {(goal.status === 'draft' || goal.status === 'active') && (
-        <button type="button" onClick={handleStartSession} disabled={busy}>
-          Start session
-        </button>
+        <div className="goal-view-actions">
+          <button type="button" onClick={handleStartSession} disabled={busy}>
+            Start session
+          </button>
+          <button type="button" className="secondary" onClick={handleStartProject} disabled={busy}>
+            Start project
+          </button>
+        </div>
+      )}
+
+      {projects.length > 0 && (
+        <div className="goal-projects">
+          <h3>Projects</h3>
+          <ul>
+            {projects.map((p) => (
+              <li key={p.id}>
+                <Link to={`/projects/${p.id}`}>{p.title}</Link>{' '}
+                <span className={`status-tag status-${p.status}`}>{p.status}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
       {goal.status === 'active' && (

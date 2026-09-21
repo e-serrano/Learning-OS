@@ -32,6 +32,9 @@ describe('AppRoutes', () => {
             }),
           })
         }
+        if (url.match(/\/goals\/[^/]+\/projects$/)) {
+          return Promise.resolve({ ok: true, json: async () => ({ projects: [] }) })
+        }
         if (url.match(/\/goals\/[^/]+$/)) {
           return Promise.resolve({
             ok: true,
