@@ -42,4 +42,15 @@ describe('App', () => {
 
     expect(screen.getByText('Loading…')).toBeInTheDocument()
   })
+
+  it('shows the routed app shell once onboarding is already complete', async () => {
+    vi.mocked(fetch).mockResolvedValue(mockStatusResponse('COMPLETE') as Response)
+
+    render(<App />)
+
+    expect(await screen.findByRole('link', { name: 'Dashboard' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Reviews' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Vault' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Dashboard' })).toBeInTheDocument()
+  })
 })

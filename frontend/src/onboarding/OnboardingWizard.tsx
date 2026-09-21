@@ -6,7 +6,14 @@ import { FinishStep } from './steps/FinishStep'
 import { ProviderStep } from './steps/ProviderStep'
 import { VaultStep } from './steps/VaultStep'
 
-export function OnboardingWizard() {
+interface OnboardingWizardProps {
+  /** Called once onboarding reaches `COMPLETE` -- either because it was
+   * already complete on load, or because the user just finished it.
+   * The app shell (T109) uses this to swap into the routed app. */
+  onFinished?: () => void
+}
+
+export function OnboardingWizard({ onFinished }: OnboardingWizardProps = {}) {
   const [status, setStatus] = useState<OnboardingStatus | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [pendingProvider, setPendingProvider] = useState<{
@@ -21,6 +28,12 @@ export function OnboardingWizard() {
         setLoadError(err instanceof ApiError ? err.message : 'Could not reach the backend'),
       )
   }, [])
+
+  useEffect(() => {
+    if (status?.onboarding_step === 'COMPLETE') {
+      onFinished?.()
+    }
+  }, [status, onFinished])
 
   if (loadError) {
     return (
