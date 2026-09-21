@@ -36,7 +36,6 @@ export function CredentialModelStep({
       const validation = await validateAIProvider(credential.trim() || null)
       setResult({ ok: validation.ok, reason: validation.reason })
       if (validation.ok) {
-        setCredential('') // never keep the secret around once it's no longer needed
         onValidated(await getStatus())
       }
     } catch (err) {
@@ -45,6 +44,7 @@ export function CredentialModelStep({
         reason: err instanceof ApiError ? err.message : 'Could not reach the backend',
       })
     } finally {
+      setCredential('') // never keep the secret around once it's no longer needed, pass or fail
       setBusy(false)
     }
   }
