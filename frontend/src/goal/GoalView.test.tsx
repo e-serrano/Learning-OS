@@ -1,7 +1,12 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useParams } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { GoalView } from './GoalView'
+
+function FakeSessionPage() {
+  const { sessionId } = useParams<{ sessionId: string }>()
+  return <p>session id: {sessionId}</p>
+}
 
 function jsonResponse(body: unknown) {
   return { ok: true, json: async () => body } as Response
@@ -35,6 +40,7 @@ function renderGoalView() {
     <MemoryRouter initialEntries={['/goals/goal_1']}>
       <Routes>
         <Route path="/goals/:goalId" element={<GoalView />} />
+        <Route path="/sessions/:sessionId" element={<FakeSessionPage />} />
       </Routes>
     </MemoryRouter>,
   )
@@ -53,6 +59,19 @@ function mockFetchFor(goal: typeof ACTIVE_GOAL, progress: typeof PROGRESS) {
       }
       if (url.match(/\/goals\/[^/]+\/progress$/)) {
         return Promise.resolve(jsonResponse(progress))
+      }
+      if (url.match(/\/goals\/[^/]+\/sessions$/) && init?.method === 'POST') {
+        return Promise.resolve(
+          jsonResponse({
+            id: 'session_1',
+            goal_id: goal.id,
+            mode: 'guided',
+            objective: 'Practice',
+            status: 'active',
+            started_at: '2026-01-01T00:00:00Z',
+            ended_at: null,
+          }),
+        )
       }
       if (url.match(/\/goals\/[^/]+$/)) {
         return Promise.resolve(jsonResponse(goal))
@@ -113,5 +132,16 @@ describe('GoalView', () => {
 
     await screen.findByRole('heading', { name: 'Learn SQL' })
     expect(screen.queryByRole('button', { name: 'Pause goal' })).not.toBeInTheDocument()
+  })
+
+  it('starts a session and navigates to it', async () => {
+    mockFetchFor(ACTIVE_GOAL, PROGRESS)
+
+    renderGoalView()
+
+    await screen.findByRole('heading', { name: 'Learn SQL' })
+    fireEvent.click(screen.getByRole('button', { name: 'Start session' }))
+
+    await waitFor(() => expect(screen.getByText('session id: session_1')).toBeInTheDocument())
   })
 })

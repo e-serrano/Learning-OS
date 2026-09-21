@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ApiError } from '../api/client'
 import {
   type Goal,
@@ -9,8 +9,11 @@ import {
   getGoalProgress,
   pauseGoal,
 } from '../api/goals'
+import { createSession } from '../api/sessions'
 import { MasteryBar } from '../shared/MasteryBar'
 import './goal.css'
+
+const DEFAULT_SESSION_DURATION_MINUTES = 30
 
 /** Goal view (docs/TASKS.md T112, dep T096+T107): mastery, weak-concept
  * and due-review counts, and links out to the roadmap (T113) and
@@ -25,6 +28,7 @@ import './goal.css'
  * T101), so this page doesn't invent one. */
 export function GoalView() {
   const { goalId } = useParams<{ goalId: string }>()
+  const navigate = useNavigate()
   const [goal, setGoal] = useState<Goal | null>(null)
   const [progress, setProgress] = useState<GoalProgress | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -69,6 +73,18 @@ export function GoalView() {
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
     } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleStartSession() {
+    if (!goalId) return
+    setBusy(true)
+    try {
+      const session = await createSession(goalId, 'guided', DEFAULT_SESSION_DURATION_MINUTES)
+      navigate(`/sessions/${session.id}`)
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
       setBusy(false)
     }
   }
@@ -128,6 +144,12 @@ export function GoalView() {
         <Link to={`/goals/${goal.id}/roadmap`}>Roadmap</Link>
         <Link to={`/goals/${goal.id}/knowledge`}>Knowledge explorer</Link>
       </div>
+
+      {(goal.status === 'draft' || goal.status === 'active') && (
+        <button type="button" onClick={handleStartSession} disabled={busy}>
+          Start session
+        </button>
+      )}
 
       {goal.status === 'active' && (
         <div className="goal-view-actions">
