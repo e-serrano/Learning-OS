@@ -5,12 +5,13 @@ new identifier (docs/TASKS.md T105 note, mirroring T103/T104's
 precedent of the Activity being the addressable unit for a piece of
 session content).
 
-`/answer` reuses T90's `AssessmentCompletionService.complete_assessment`
-unchanged; `/complete` reuses T103's `SessionApplicationService.
-complete_session` unchanged -- same "answer = full grade, complete =
-close session" split T103 established, cited directly by T104 and now
-this task as precedent, so neither of those already-tested services
-needed touching for this task.
+`/answer` calls `AssessmentFlowService` (wraps T90's
+`AssessmentCompletionService.complete_assessment` unchanged, then closes
+the mastery/review gap the raw completion service leaves open -- see
+that module's docstring); `/complete` reuses T103's
+`SessionApplicationService.complete_session` unchanged -- same "answer =
+full grade, complete = close session" split T103 established, cited
+directly by T104 and now this task as precedent.
 """
 
 from typing import Annotated
@@ -20,16 +21,13 @@ from pydantic import BaseModel
 
 from app.ai.errors import AIInvalidOutputError, AIProviderUnavailableError
 from app.api.dependencies import (
-    get_assessment_completion_service,
+    get_assessment_flow_service,
     get_assessment_session_service,
     get_session_service,
 )
-from app.domain.enums import ActivityStatus, ExerciseType, SessionStatus
+from app.domain.enums import ActivityStatus, ConceptStatus, ExerciseType, SessionStatus
 from app.domain.value_objects import ConfidencePercent, FiveLevelScale
-from app.services.assessment_completion_service import (
-    AssessmentCompletionResult,
-    AssessmentCompletionService,
-)
+from app.services.assessment_flow_service import AssessmentFlowResult, AssessmentFlowService
 from app.services.assessment_session_service import (
     ActivityNotAnAssessmentError,
     AssessmentNotFoundError,
@@ -45,9 +43,7 @@ router = APIRouter(tags=["assessments"])
 AssessmentSessionServiceDep = Annotated[
     AssessmentSessionService, Depends(get_assessment_session_service)
 ]
-AssessmentCompletionServiceDep = Annotated[
-    AssessmentCompletionService, Depends(get_assessment_completion_service)
-]
+AssessmentFlowServiceDep = Annotated[AssessmentFlowService, Depends(get_assessment_flow_service)]
 SessionServiceDep = Annotated[SessionApplicationService, Depends(get_session_service)]
 
 
@@ -121,14 +117,21 @@ class AssessmentEvaluationResponse(BaseModel):
     recommended_action: str
 
 
+class AssessmentConceptUpdateResponse(BaseModel):
+    concept_id: str
+    mastery: float
+    status: ConceptStatus
+
+
 class AssessmentAnswerResponse(BaseModel):
     evaluation: AssessmentEvaluationResponse
     transfer_demonstrated: bool
     independence_demonstrated: bool
+    updated_concepts: list[AssessmentConceptUpdateResponse]
 
     @classmethod
-    def from_result(cls, result: AssessmentCompletionResult) -> "AssessmentAnswerResponse":
-        evaluation = result.evaluation
+    def from_result(cls, result: AssessmentFlowResult) -> "AssessmentAnswerResponse":
+        evaluation = result.completion.evaluation
         return cls(
             evaluation=AssessmentEvaluationResponse(
                 id=evaluation.id,
@@ -141,8 +144,12 @@ class AssessmentAnswerResponse(BaseModel):
                 feedback=evaluation.feedback,
                 recommended_action=evaluation.recommended_action,
             ),
-            transfer_demonstrated=result.transfer_demonstrated,
-            independence_demonstrated=result.independence_demonstrated,
+            transfer_demonstrated=result.completion.transfer_demonstrated,
+            independence_demonstrated=result.completion.independence_demonstrated,
+            updated_concepts=[
+                AssessmentConceptUpdateResponse(concept_id=c.id, mastery=c.mastery, status=c.status)
+                for c in result.concepts
+            ],
         )
 
 
@@ -182,7 +189,7 @@ async def answer_assessment(
     assessment_id: str,
     request: AnswerAssessmentRequest,
     assessment_session: AssessmentSessionServiceDep,
-    completion: AssessmentCompletionServiceDep,
+    assessment_flow: AssessmentFlowServiceDep,
 ) -> AssessmentAnswerResponse:
     try:
         assessment = assessment_session.get_assessment(assessment_id)
@@ -190,10 +197,11 @@ async def answer_assessment(
         raise _not_found(assessment_id) from exc
 
     try:
-        result = await completion.complete_assessment(
+        result = await assessment_flow.complete_assessment(
             assessment.exercise.id,
             assessment.session.id,
             assessment_id,
+            assessment.session.goal_id,
             request.answer,
             request.confidence,
         )
@@ -206,7 +214,6 @@ async def answer_assessment(
     except AIProviderUnavailableError as exc:
         raise _error("AI_UNAVAILABLE", str(exc), 503) from exc
 
-    assessment_session.mark_activity_completed(assessment.activity)
     return AssessmentAnswerResponse.from_result(result)
 
 

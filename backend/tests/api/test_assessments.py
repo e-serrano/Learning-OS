@@ -10,7 +10,7 @@ from app.ai.adapters.mock import MockProvider
 from app.ai.contracts import EvaluatorResponse, ExerciseGeneratorResponse
 from app.ai.orchestrator import AIOrchestrator
 from app.api.dependencies import (
-    get_assessment_completion_service,
+    get_assessment_flow_service,
     get_assessment_session_service,
     get_session_service,
 )
@@ -29,14 +29,20 @@ from app.persistence.repositories import (
     SqlExerciseRepository,
     SqlGoalRepository,
     SqlMistakeRepository,
+    SqlReviewRepository,
     SqlSessionRepository,
 )
 from app.services.answer_submission_service import AnswerSubmissionService
 from app.services.assessment_completion_service import AssessmentCompletionService
+from app.services.assessment_flow_service import AssessmentFlowService
 from app.services.assessment_session_service import AssessmentSessionService
 from app.services.context_builder import ContextBuilder
 from app.services.evaluator_service import EvaluatorService
 from app.services.evidence_creation_service import EvidenceCreationService
+from app.services.mastery_engine import MasteryEngine
+from app.services.mastery_update_service import MasteryUpdateService
+from app.services.review_creation_service import ReviewCreationService
+from app.services.review_scheduler import ReviewScheduler
 from app.services.session_service import SessionApplicationService
 from app.services.transfer_assessment_service import TransferAssessmentService
 
@@ -107,6 +113,7 @@ def client(engine: Engine) -> TestClient:
     exercises = SqlExerciseRepository(engine)
     attempts = SqlExerciseAttemptRepository(engine)
     evaluations = SqlEvaluationRepository(engine)
+    reviews = SqlReviewRepository(engine)
 
     context_builder = ContextBuilder(
         goals=goals,
@@ -143,10 +150,20 @@ def client(engine: Engine) -> TestClient:
     assessment_completion = AssessmentCompletionService(
         answer_submission, evaluator, evidence_creation
     )
+    mastery_update = MasteryUpdateService(concepts, MasteryEngine(evidence))
+    review_creation = ReviewCreationService(
+        reviews, ReviewScheduler(FakeClock(), UuidIdGenerator())
+    )
+    assessment_flow = AssessmentFlowService(
+        activities=activities,
+        completion=assessment_completion,
+        mastery_update=mastery_update,
+        review_creation=review_creation,
+    )
     session_service = SessionApplicationService(goals, sessions, FakeClock(), UuidIdGenerator())
 
     app.dependency_overrides[get_assessment_session_service] = lambda: assessment_session
-    app.dependency_overrides[get_assessment_completion_service] = lambda: assessment_completion
+    app.dependency_overrides[get_assessment_flow_service] = lambda: assessment_flow
     app.dependency_overrides[get_session_service] = lambda: session_service
 
     test_client = TestClient(app)
@@ -237,6 +254,9 @@ def test_full_assessment_flow(client: TestClient, engine: Engine) -> None:
     assert answer_body["evaluation"]["correctness"] == 0.9
     assert answer_body["transfer_demonstrated"] is True
     assert answer_body["independence_demonstrated"] is True
+    assert len(answer_body["updated_concepts"]) == 1
+    assert answer_body["updated_concepts"][0]["concept_id"] == "window_functions"
+    assert answer_body["updated_concepts"][0]["mastery"] > 0
 
     complete_response = client.post(f"/api/v1/assessments/{assessment_id}/complete")
     assert complete_response.status_code == 200

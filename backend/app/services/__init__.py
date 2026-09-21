@@ -21,6 +21,7 @@ from app.services.assessment_completion_service import (
     AssessmentCompletionResult,
     AssessmentCompletionService,
 )
+from app.services.assessment_flow_service import AssessmentFlowResult, AssessmentFlowService
 from app.services.assessment_session_service import (
     ActivityNotAnAssessmentError,
     AssessmentNotFoundError,
@@ -138,6 +139,8 @@ __all__ = [
     "ApplyChangeService",
     "AssessmentCompletionResult",
     "AssessmentCompletionService",
+    "AssessmentFlowResult",
+    "AssessmentFlowService",
     "AssessmentNotFoundError",
     "AssessmentSessionResult",
     "AssessmentSessionService",

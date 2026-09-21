@@ -36,6 +36,7 @@ from app.services.answer_flow_service import AnswerFlowService
 from app.services.answer_submission_service import AnswerSubmissionService
 from app.services.apply_change_service import ApplyChangeService
 from app.services.assessment_completion_service import AssessmentCompletionService
+from app.services.assessment_flow_service import AssessmentFlowService
 from app.services.assessment_session_service import AssessmentSessionService
 from app.services.context_builder import ContextBuilder
 from app.services.diagnostic_service import DiagnosticService
@@ -446,6 +447,19 @@ def get_review_creation_service(
     review_scheduler: Annotated[ReviewScheduler, Depends(get_review_scheduler)],
 ) -> ReviewCreationService:
     return ReviewCreationService(get_review_repository(), review_scheduler)
+
+
+def get_assessment_flow_service(
+    completion: Annotated[AssessmentCompletionService, Depends(get_assessment_completion_service)],
+    mastery_update: Annotated[MasteryUpdateService, Depends(get_mastery_update_service)],
+    review_creation: Annotated[ReviewCreationService, Depends(get_review_creation_service)],
+) -> AssessmentFlowService:
+    return AssessmentFlowService(
+        activities=get_activity_repository(),
+        completion=completion,
+        mastery_update=mastery_update,
+        review_creation=review_creation,
+    )
 
 
 def get_answer_flow_service(

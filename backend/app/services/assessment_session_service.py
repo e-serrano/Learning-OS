@@ -118,14 +118,3 @@ class AssessmentSessionService:
         assert exercise is not None
 
         return AssessmentSessionResult(session=session, activity=activity, exercise=exercise)
-
-    def mark_activity_completed(self, activity: Activity) -> Activity:
-        """Called by the `/answer` route once grading (T090's untouched
-        `AssessmentCompletionService`) succeeds -- that service has no
-        `ActivityRepository` dependency and never touches Activity status,
-        same split T103's `AnswerFlowService` makes for regular sessions.
-        Kept here rather than in the route so persistence access stays
-        inside the service layer (docs/AGENTS.md layering)."""
-        completed = activity.model_copy(update={"status": ActivityStatus.COMPLETED})
-        self._activities.update(completed)
-        return completed
