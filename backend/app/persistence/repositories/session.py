@@ -1,4 +1,4 @@
-from sqlalchemy import Engine
+from sqlalchemy import Engine, select
 from sqlalchemy.orm import Session as DbSession
 
 from app.domain.entities import Session
@@ -36,6 +36,9 @@ class SqlSessionRepository:
 
     `created_at` is a DB-only bookkeeping column not present on the Session
     domain entity -- this repository manages it transparently.
+
+    `list_by_goal` was added in T107 -- nothing before the progress
+    summary route needed to list a goal's sessions at all.
     """
 
     def __init__(self, engine: Engine) -> None:
@@ -50,6 +53,11 @@ class SqlSessionRepository:
         with DbSession(self._engine) as db:
             model = db.get(SessionModel, session_id)
             return _to_entity(model) if model is not None else None
+
+    def list_by_goal(self, goal_id: str) -> list[Session]:
+        with DbSession(self._engine) as db:
+            stmt = select(SessionModel).where(SessionModel.goal_id == goal_id)
+            return [_to_entity(m) for m in db.scalars(stmt)]
 
     def update(self, session: Session) -> None:
         with DbSession(self._engine) as db:

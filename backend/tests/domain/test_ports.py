@@ -90,6 +90,9 @@ class FakeSessionRepository:
     def get(self, session_id: str) -> Session | None:
         return self._store.get(session_id)
 
+    def list_by_goal(self, goal_id: str) -> list[Session]:
+        return [s for s in self._store.values() if s.goal_id == goal_id]
+
     def update(self, session: Session) -> None:
         self._store[session.id] = session
 

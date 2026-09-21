@@ -54,6 +54,7 @@ from app.services.mistake_tracker import MistakeTracker
 from app.services.mistake_update_service import MistakeUpdateService
 from app.services.next_activity_service import NextActivityService
 from app.services.planner_service import PlannerService
+from app.services.progress_service import ProgressService
 from app.services.project_evaluation_service import ProjectEvaluationService
 from app.services.project_flow_service import ProjectFlowService
 from app.services.project_generation_service import ProjectGenerationService
@@ -178,6 +179,16 @@ def get_concept_relation_repository() -> SqlConceptRelationRepository:
 def get_knowledge_explorer_service() -> KnowledgeExplorerService:
     return KnowledgeExplorerService(
         get_goal_repository(), get_concept_repository(), get_concept_relation_repository()
+    )
+
+
+def get_progress_service() -> ProgressService:
+    return ProgressService(
+        goals=get_goal_repository(),
+        concepts=get_concept_repository(),
+        reviews=get_review_repository(),
+        sessions=get_session_repository(),
+        clock=get_clock(),
     )
 
 

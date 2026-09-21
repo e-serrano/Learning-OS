@@ -72,6 +72,7 @@ from app.services.next_activity_service import (
     SessionNotFoundError,
 )
 from app.services.planner_service import PlannerService, PlanningResult
+from app.services.progress_service import GoalProgress, ProgressService
 from app.services.project_evaluation_service import ProjectEvaluationService
 from app.services.project_flow_service import ProjectFlowService, ProjectSubmissionFlowResult
 from app.services.project_generation_service import ProjectGenerationService
@@ -164,6 +165,7 @@ __all__ = [
     "GoalApplicationNotFoundError",
     "GoalApplicationService",
     "GoalNotFoundError",
+    "GoalProgress",
     "InactiveSessionError",
     "InvalidGoalError",
     "InvalidGoalTransitionError",
@@ -183,6 +185,7 @@ __all__ = [
     "NotAProjectTaskError",
     "PlannerService",
     "PlanningResult",
+    "ProgressService",
     "ProjectCreationResult",
     "ProjectEvaluationService",
     "ProjectFlowService",

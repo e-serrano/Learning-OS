@@ -6,6 +6,7 @@ from app.api.diagnostic import router as diagnostic_router
 from app.api.goals import router as goals_router
 from app.api.knowledge import router as knowledge_router
 from app.api.onboarding import router as onboarding_router
+from app.api.progress import router as progress_router
 from app.api.projects import router as projects_router
 from app.api.providers import router as providers_router
 from app.api.reviews import router as reviews_router
@@ -35,6 +36,7 @@ app.include_router(sessions_router)
 app.include_router(reviews_router)
 app.include_router(assessments_router)
 app.include_router(projects_router)
+app.include_router(progress_router)
 
 
 @app.get("/api/v1/health")
