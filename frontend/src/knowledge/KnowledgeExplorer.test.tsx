@@ -1,7 +1,12 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useParams } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { KnowledgeExplorer } from './KnowledgeExplorer'
+
+function FakeAssessmentPage() {
+  const { assessmentId } = useParams<{ assessmentId: string }>()
+  return <p>assessment id: {assessmentId}</p>
+}
 
 function jsonResponse(body: unknown) {
   return { ok: true, json: async () => body } as Response
@@ -30,6 +35,7 @@ function renderAt(path: string) {
     <MemoryRouter initialEntries={[path]}>
       <Routes>
         <Route path="/goals/:goalId/knowledge" element={<KnowledgeExplorer />} />
+        <Route path="/assessments/:assessmentId" element={<FakeAssessmentPage />} />
       </Routes>
     </MemoryRouter>,
   )
@@ -83,6 +89,45 @@ describe('KnowledgeExplorer', () => {
 
     expect(await screen.findByText('30% confidence')).toBeInTheDocument()
     await waitFor(() => expect(screen.getByText(/related to → Subqueries/)).toBeInTheDocument())
+  })
+
+  it('starts a transfer assessment and navigates to it', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+        if (url.endsWith('/assessments') && init?.method === 'POST') {
+          return Promise.resolve(
+            jsonResponse({
+              assessment_id: 'activity_1',
+              session_id: 'session_1',
+              goal_id: 'goal_1',
+              concept_id: 'a',
+              status: 'active',
+              exercise: {
+                exercise_id: 'exercise_1',
+                type: 'scenario',
+                difficulty: 3,
+                prompt: 'p',
+                success_criteria: [],
+                hints: [],
+              },
+            }),
+          )
+        }
+        return Promise.resolve(jsonResponse({ concepts: [CONCEPT_A, CONCEPT_B] }))
+      }),
+    )
+
+    renderAt('/goals/goal_1/knowledge')
+
+    const row = await screen.findByRole('button', { name: /Window Functions/ })
+    fireEvent.click(row)
+    fireEvent.click(await screen.findByRole('button', { name: 'Start transfer assessment' }))
+
+    await waitFor(() =>
+      expect(screen.getByText('assessment id: activity_1')).toBeInTheDocument(),
+    )
   })
 
   it('refetches when the status filter changes', async () => {

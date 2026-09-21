@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { createAssessment } from '../api/assessments'
 import { ApiError } from '../api/client'
 import {
   type Concept,
@@ -37,11 +38,13 @@ const STATUS_FILTERS: ConceptStatus[] = [
  * separate UI needed beyond exposing that filter, defaulted to `weak`. */
 export function KnowledgeExplorer() {
   const { goalId } = useParams<{ goalId: string }>()
+  const navigate = useNavigate()
   const [status, setStatus] = useState<ConceptStatus | ''>('')
   const [concepts, setConcepts] = useState<Concept[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [relationsById, setRelationsById] = useState<Record<string, ConceptRelation[]>>({})
+  const [assessing, setAssessing] = useState(false)
 
   const load = useCallback(async () => {
     if (!goalId) return
@@ -71,6 +74,19 @@ export function KnowledgeExplorer() {
       } catch {
         setRelationsById((prev) => ({ ...prev, [conceptId]: [] }))
       }
+    }
+  }
+
+  async function startAssessment(conceptId: string) {
+    if (!goalId) return
+    setAssessing(true)
+    setError(null)
+    try {
+      const assessment = await createAssessment(goalId, conceptId)
+      navigate(`/assessments/${assessment.assessment_id}`)
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+      setAssessing(false)
     }
   }
 
@@ -111,6 +127,8 @@ export function KnowledgeExplorer() {
               relations={relationsById[concept.id]}
               titleById={Object.fromEntries(concepts.map((c) => [c.id, c.title]))}
               onToggle={() => toggleExpand(concept.id)}
+              onStartAssessment={() => startAssessment(concept.id)}
+              assessing={assessing}
             />
           ))}
         </div>
@@ -125,12 +143,16 @@ function ConceptRow({
   relations,
   titleById,
   onToggle,
+  onStartAssessment,
+  assessing,
 }: {
   concept: Concept
   expanded: boolean
   relations: ConceptRelation[] | undefined
   titleById: Record<string, string>
   onToggle: () => void
+  onStartAssessment: () => void
+  assessing: boolean
 }) {
   return (
     <div className="concept-row">
@@ -166,6 +188,9 @@ function ConceptRow({
               ))}
             </ul>
           )}
+          <button type="button" className="secondary" onClick={onStartAssessment} disabled={assessing}>
+            {assessing ? 'Starting…' : 'Start transfer assessment'}
+          </button>
         </div>
       )}
     </div>
