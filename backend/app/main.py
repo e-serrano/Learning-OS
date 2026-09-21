@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.assessments import router as assessments_router
 from app.api.diagnostic import router as diagnostic_router
 from app.api.goals import router as goals_router
 from app.api.knowledge import router as knowledge_router
@@ -31,6 +32,7 @@ app.include_router(roadmap_router)
 app.include_router(diagnostic_router)
 app.include_router(sessions_router)
 app.include_router(reviews_router)
+app.include_router(assessments_router)
 
 
 @app.get("/api/v1/health")

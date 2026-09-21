@@ -21,6 +21,12 @@ from app.services.assessment_completion_service import (
     AssessmentCompletionResult,
     AssessmentCompletionService,
 )
+from app.services.assessment_session_service import (
+    ActivityNotAnAssessmentError,
+    AssessmentNotFoundError,
+    AssessmentSessionResult,
+    AssessmentSessionService,
+)
 from app.services.context_builder import (
     ConceptNotFoundError,
     ContextBuilder,
@@ -120,6 +126,7 @@ __all__ = [
     "ActivityContent",
     "ActivityContentService",
     "ActivityHasNoExerciseError",
+    "ActivityNotAnAssessmentError",
     "ActivityNotFoundError",
     "ActivitySelector",
     "AdaptiveActivityResult",
@@ -131,6 +138,9 @@ __all__ = [
     "ApplyChangeService",
     "AssessmentCompletionResult",
     "AssessmentCompletionService",
+    "AssessmentNotFoundError",
+    "AssessmentSessionResult",
+    "AssessmentSessionService",
     "AttemptNotFoundError",
     "ConceptNotFoundError",
     "ContextBuilder",

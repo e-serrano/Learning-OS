@@ -35,6 +35,8 @@ from app.services.adaptive_activity_service import AdaptiveActivityService
 from app.services.answer_flow_service import AnswerFlowService
 from app.services.answer_submission_service import AnswerSubmissionService
 from app.services.apply_change_service import ApplyChangeService
+from app.services.assessment_completion_service import AssessmentCompletionService
+from app.services.assessment_session_service import AssessmentSessionService
 from app.services.context_builder import ContextBuilder
 from app.services.diagnostic_service import DiagnosticService
 from app.services.diagnostic_session_service import DiagnosticSessionService
@@ -59,6 +61,7 @@ from app.services.roadmap_generation_service import RoadmapGenerationService
 from app.services.roadmap_service import RoadmapService
 from app.services.session_service import SessionApplicationService
 from app.services.todays_reviews_service import TodaysReviewsService
+from app.services.transfer_assessment_service import TransferAssessmentService
 from app.services.vault_scan_service import VaultScanService
 
 
@@ -332,6 +335,34 @@ def get_exercise_generator_service(
     )
 
 
+def get_transfer_assessment_service(
+    orchestrator: Annotated[AIOrchestrator, Depends(get_ai_orchestrator)],
+) -> TransferAssessmentService:
+    return TransferAssessmentService(
+        goals=get_goal_repository(),
+        context_builder=get_context_builder(),
+        exercises=get_exercise_repository(),
+        orchestrator=orchestrator,
+        clock=get_clock(),
+        ids=get_id_generator(),
+    )
+
+
+def get_assessment_session_service(
+    transfer_assessment: Annotated[
+        TransferAssessmentService, Depends(get_transfer_assessment_service)
+    ],
+) -> AssessmentSessionService:
+    return AssessmentSessionService(
+        sessions=get_session_repository(),
+        activities=get_activity_repository(),
+        exercises=get_exercise_repository(),
+        transfer_assessment=transfer_assessment,
+        clock=get_clock(),
+        ids=get_id_generator(),
+    )
+
+
 def get_activity_content_service(
     exercise_generator: Annotated[
         ExerciseGeneratorService, Depends(get_exercise_generator_service)
@@ -372,6 +403,14 @@ def get_evidence_creation_service() -> EvidenceCreationService:
         get_clock(),
         get_id_generator(),
     )
+
+
+def get_assessment_completion_service(
+    answer_submission: Annotated[AnswerSubmissionService, Depends(get_answer_submission_service)],
+    evaluator: Annotated[EvaluatorService, Depends(get_evaluator_service)],
+    evidence_creation: Annotated[EvidenceCreationService, Depends(get_evidence_creation_service)],
+) -> AssessmentCompletionService:
+    return AssessmentCompletionService(answer_submission, evaluator, evidence_creation)
 
 
 def get_mistake_tracker() -> MistakeTracker:
