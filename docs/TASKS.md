@@ -865,8 +865,11 @@ Before/after + approve/reject.
 # Fase 12 — Release MVP
 
 ### T120 — Fresh-install E2E
+**Estado:** DONE
 **Dep:** T110  
 Install → onboarding → vault → provider → goal.
+
+**Nota:** Primera tarea de la Fase 12 -- y el primer test de esta clase en el repo. Todo lo anterior (Vitest bajo `src/`) mockea `fetch`; esto necesita un navegador real contra un backend Python real y un frontend Vite real simultáneamente, algo que ni pytest ni Vitest pueden hacer -- Playwright (`@playwright/test`, nuevo devDependency) es la elección estándar para exactamente este caso, sin alternativa más ligera razonable dentro de este stack. `backend/scripts/run_e2e_backend.py` borra y re-migra una base de datos SQLite desechable (`backend/data/e2e.sqlite3`, vía `LEARNINGOS_DB_PATH`, ya soportado por `Settings`) antes de arrancar uvicorn en cada run -- así "fresh install" es de verdad fresh, no solo un DB persistido entre corridas. Escrito en Python (no chaineado en el `command` de `webServer`) a propósito: `rm -rf && uvicorn` no funciona igual en `cmd.exe` (CI... no, dev Windows) que en `sh` (CI Linux), y `playwright.config.ts` invoca este script idénticamente en ambos. El escenario (`e2e/fresh-install.spec.ts`) cubre exactamente el texto de la tarea -- vault real (fixture `e2e/fixtures/vault/`) → provider Mock → validar → goal -- sin tocar el límite de `MockProvider` que T113/T115/T117/T118 encontraron en verificación manual: `POST /onboarding/ai-provider/validate` (T018) y `POST /goals` (T096) no llaman a `AIOrchestrator.generate()`, así que todo el escenario es genuinamente automatizable de punta a punta contra el mock provider real, sin canned response. `vite.config.ts` gana `exclude: [...configDefaults.exclude, 'e2e/**']` -- sin esto, el glob por defecto de Vitest también intenta correr los specs de Playwright y falla (`test()` de `@playwright/test` fuera de un run de Playwright). Nuevo job `e2e` en CI (`.github/workflows/ci.yml`, separado de `backend`/`frontend` porque necesita ambos toolchains) -- verificado localmente corriendo `npm run test:e2e` dos veces de punta a punta antes de commitear, ambas en verde.
 
 ### T121 — Full canonical-loop E2E
 **Dep:** T079, T085, T091, T095, T119  

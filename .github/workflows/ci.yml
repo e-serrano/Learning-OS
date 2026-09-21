@@ -40,3 +40,31 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+
+  e2e:
+    # Fresh-install E2E (docs/TASKS.md T120) -- boots the real backend
+    # (against a disposable database, backend/scripts/run_e2e_backend.py)
+    # and the real frontend dev server, so it needs both toolchains,
+    # unlike the backend/frontend jobs above which only need their own.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.22.2"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+      - run: uv sync
+        working-directory: backend
+      - run: npm ci
+        working-directory: frontend
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - run: npm run test:e2e
+        working-directory: frontend
