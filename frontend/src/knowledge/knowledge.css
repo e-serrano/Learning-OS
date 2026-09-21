@@ -1,0 +1,103 @@
+.knowledge-explorer {
+  max-width: 700px;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 16px;
+  font-size: 0.85rem;
+  color: inherit;
+  opacity: 0.75;
+  text-decoration: none;
+}
+
+.knowledge-explorer h2 {
+  margin-top: 0;
+}
+
+.knowledge-explorer .subtitle {
+  opacity: 0.75;
+}
+
+.knowledge-explorer .message {
+  margin: 16px 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: #fdecec;
+  color: #a3231d;
+}
+
+.knowledge-explorer label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.knowledge-explorer select {
+  padding: 8px 10px;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+  border-radius: 6px;
+  font-size: 1rem;
+  background: transparent;
+  color: inherit;
+  margin-bottom: 20px;
+}
+
+.concept-list {
+  display: grid;
+  gap: 8px;
+}
+
+.concept-row {
+  border: 1px solid rgba(128, 128, 128, 0.3);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.concept-row-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 14px;
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 1rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.domain-tag {
+  font-size: 0.75rem;
+  opacity: 0.75;
+}
+
+.status-tag {
+  margin-left: auto;
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(128, 128, 128, 0.2);
+}
+
+.concept-details {
+  padding: 0 14px 14px;
+}
+
+.concept-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 10px 0;
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+
+.relation-list {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 0.9rem;
+}
