@@ -10,10 +10,11 @@ second round-trip (same reasoning as T103's `knowledge_updates`).
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from app.api.dependencies import get_review_flow_service, get_todays_reviews_service
+from app.api.errors import api_error
 from app.domain.entities import Review
 from app.domain.enums import ConceptStatus, ReviewStatus
 from app.domain.value_objects import ConfidencePercent
@@ -25,13 +26,6 @@ router = APIRouter(prefix="/api/v1/reviews", tags=["reviews"])
 
 TodaysReviewsServiceDep = Annotated[TodaysReviewsService, Depends(get_todays_reviews_service)]
 ReviewFlowServiceDep = Annotated[ReviewFlowService, Depends(get_review_flow_service)]
-
-
-def _error(code: str, message: str, status_code: int) -> HTTPException:
-    return HTTPException(
-        status_code=status_code,
-        detail={"error": {"code": code, "message": message, "details": {}}},
-    )
 
 
 class ReviewResponse(BaseModel):
@@ -97,7 +91,7 @@ def complete_review(
     try:
         result = service.complete_review(review_id, request.answer, request.confidence)
     except ReviewNotFoundError as exc:
-        raise _error("NOT_FOUND", f"Review '{review_id}' not found", 404) from exc
+        raise api_error("NOT_FOUND", f"Review '{review_id}' not found", 404) from exc
     except ReviewNotDueError as exc:
-        raise _error("SESSION_STATE_ERROR", str(exc), 409) from exc
+        raise api_error("SESSION_STATE_ERROR", str(exc), 409) from exc
     return ReviewCompletionResponse.from_result(result)

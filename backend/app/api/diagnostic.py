@@ -9,11 +9,12 @@ sense once a roadmap (T101) has populated them.
 from dataclasses import asdict
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from app.ai.errors import AIInvalidOutputError, AIProviderUnavailableError
 from app.api.dependencies import get_diagnostic_session_service
+from app.api.errors import api_error
 from app.domain.enums import SessionStatus
 from app.services.context_builder import GoalNotFoundError
 from app.services.diagnostic_session_service import (
@@ -27,13 +28,6 @@ router = APIRouter(prefix="/api/v1/goals/{goal_id}/diagnostic", tags=["diagnosti
 DiagnosticSessionServiceDep = Annotated[
     DiagnosticSessionService, Depends(get_diagnostic_session_service)
 ]
-
-
-def _error(code: str, message: str, status_code: int) -> HTTPException:
-    return HTTPException(
-        status_code=status_code,
-        detail={"error": {"code": code, "message": message, "details": {}}},
-    )
 
 
 class DiagnosticItemResponse(BaseModel):
@@ -67,15 +61,15 @@ async def start_diagnostic(
     try:
         result = await service.start_diagnostic(goal_id)
     except GoalNotFoundError as exc:
-        raise _error("NOT_FOUND", f"Goal '{goal_id}' not found", 404) from exc
+        raise api_error("NOT_FOUND", f"Goal '{goal_id}' not found", 404) from exc
     except NoConceptsForGoalError as exc:
-        raise _error(
+        raise api_error(
             "SESSION_STATE_ERROR",
             f"Goal '{goal_id}' has no concepts yet -- generate a roadmap first",
             409,
         ) from exc
     except AIInvalidOutputError as exc:
-        raise _error("AI_INVALID_OUTPUT", str(exc), 422) from exc
+        raise api_error("AI_INVALID_OUTPUT", str(exc), 422) from exc
     except AIProviderUnavailableError as exc:
-        raise _error("AI_UNAVAILABLE", str(exc), 503) from exc
+        raise api_error("AI_UNAVAILABLE", str(exc), 503) from exc
     return DiagnosticSessionResponse.from_result(result)

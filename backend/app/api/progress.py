@@ -7,23 +7,17 @@ goal filtering, and `recent_sessions`' window.
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from app.api.dependencies import get_progress_service
+from app.api.errors import api_error
 from app.services.context_builder import GoalNotFoundError
 from app.services.progress_service import GoalProgress, ProgressService
 
 router = APIRouter(tags=["progress"])
 
 ProgressServiceDep = Annotated[ProgressService, Depends(get_progress_service)]
-
-
-def _error(code: str, message: str, status_code: int) -> HTTPException:
-    return HTTPException(
-        status_code=status_code,
-        detail={"error": {"code": code, "message": message, "details": {}}},
-    )
 
 
 class ProgressResponse(BaseModel):
@@ -51,5 +45,5 @@ def get_progress(goal_id: str, service: ProgressServiceDep) -> ProgressResponse:
     try:
         result = service.get_progress(goal_id)
     except GoalNotFoundError as exc:
-        raise _error("NOT_FOUND", f"Goal '{goal_id}' not found", 404) from exc
+        raise api_error("NOT_FOUND", f"Goal '{goal_id}' not found", 404) from exc
     return ProgressResponse.from_result(result)

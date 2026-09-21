@@ -8,10 +8,11 @@ translation, same split as onboarding.py.
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from app.api.dependencies import get_goal_service
+from app.api.errors import api_error
 from app.domain.entities import LearningGoal
 from app.domain.enums import GoalStatus, TargetLevel
 from app.domain.value_objects import FiveLevelScale
@@ -25,13 +26,6 @@ from app.services.goal_service import (
 router = APIRouter(prefix="/api/v1/goals", tags=["goals"])
 
 GoalServiceDep = Annotated[GoalApplicationService, Depends(get_goal_service)]
-
-
-def _error(code: str, message: str, status_code: int) -> HTTPException:
-    return HTTPException(
-        status_code=status_code,
-        detail={"error": {"code": code, "message": message, "details": {}}},
-    )
 
 
 class CreateGoalRequest(BaseModel):
@@ -79,7 +73,7 @@ def create_goal(request: CreateGoalRequest, service: GoalServiceDep) -> GoalResp
             available_minutes_per_week=request.available_minutes_per_week,
         )
     except InvalidGoalError as exc:
-        raise _error("VALIDATION_ERROR", str(exc), 400) from exc
+        raise api_error("VALIDATION_ERROR", str(exc), 400) from exc
     return GoalResponse.from_entity(goal)
 
 
@@ -93,7 +87,7 @@ def get_goal(goal_id: str, service: GoalServiceDep) -> GoalResponse:
     try:
         goal = service.get_goal(goal_id)
     except GoalNotFoundError as exc:
-        raise _error("NOT_FOUND", f"Goal '{goal_id}' not found", 404) from exc
+        raise api_error("NOT_FOUND", f"Goal '{goal_id}' not found", 404) from exc
     return GoalResponse.from_entity(goal)
 
 
@@ -102,9 +96,9 @@ def pause_goal(goal_id: str, service: GoalServiceDep) -> GoalResponse:
     try:
         goal = service.pause_goal(goal_id)
     except GoalNotFoundError as exc:
-        raise _error("NOT_FOUND", f"Goal '{goal_id}' not found", 404) from exc
+        raise api_error("NOT_FOUND", f"Goal '{goal_id}' not found", 404) from exc
     except InvalidGoalTransitionError as exc:
-        raise _error("SESSION_STATE_ERROR", str(exc), 409) from exc
+        raise api_error("SESSION_STATE_ERROR", str(exc), 409) from exc
     return GoalResponse.from_entity(goal)
 
 
@@ -113,7 +107,7 @@ def complete_goal(goal_id: str, service: GoalServiceDep) -> GoalResponse:
     try:
         goal = service.complete_goal(goal_id)
     except GoalNotFoundError as exc:
-        raise _error("NOT_FOUND", f"Goal '{goal_id}' not found", 404) from exc
+        raise api_error("NOT_FOUND", f"Goal '{goal_id}' not found", 404) from exc
     except InvalidGoalTransitionError as exc:
-        raise _error("SESSION_STATE_ERROR", str(exc), 409) from exc
+        raise api_error("SESSION_STATE_ERROR", str(exc), 409) from exc
     return GoalResponse.from_entity(goal)

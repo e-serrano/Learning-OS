@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from functools import lru_cache
 from typing import Annotated
 
-from fastapi import Depends, HTTPException
+from fastapi import Depends
 from sqlalchemy import Engine
 
 from app.ai.orchestrator import AIOrchestrator
@@ -13,6 +13,7 @@ from app.ai.provider_factory import (
     NoDefaultProviderError,
     build_default_provider,
 )
+from app.api.errors import api_error
 from app.config import ConfigStore, CredentialStore, Settings
 from app.obsidian.change_proposal import ChangeProposalRepository
 from app.obsidian.vault_resolver import VaultResolver, VaultUnavailableError
@@ -129,23 +130,11 @@ def get_vault_resolver(store: Annotated[ConfigStore, Depends(get_config_store)])
     FastAPI's override resolution entirely."""
     config = store.load()
     if config.vault_path is None:
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "error": {
-                    "code": "VAULT_UNAVAILABLE",
-                    "message": "Vault is not configured",
-                    "details": {},
-                }
-            },
-        )
+        raise api_error("VAULT_UNAVAILABLE", "Vault is not configured", 400)
     try:
         return VaultResolver(config.vault_path)
     except VaultUnavailableError as exc:
-        raise HTTPException(
-            status_code=400,
-            detail={"error": {"code": "VAULT_UNAVAILABLE", "message": str(exc), "details": {}}},
-        ) from exc
+        raise api_error("VAULT_UNAVAILABLE", str(exc), 400) from exc
 
 
 def get_change_proposal_repository() -> ChangeProposalRepository:
@@ -205,10 +194,7 @@ def get_ai_orchestrator(
             config.ai_providers, get_credential_store()
         )
     except (NoDefaultProviderError, MissingCredentialError, MissingBaseUrlError) as exc:
-        raise HTTPException(
-            status_code=400,
-            detail={"error": {"code": "AI_UNAVAILABLE", "message": str(exc), "details": {}}},
-        ) from exc
+        raise api_error("AI_UNAVAILABLE", str(exc), 400) from exc
     return AIOrchestrator(get_engine(), provider, provider_name=provider_name, model=model)
 
 

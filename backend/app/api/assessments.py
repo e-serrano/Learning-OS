@@ -25,6 +25,7 @@ from app.api.dependencies import (
     get_assessment_session_service,
     get_session_service,
 )
+from app.api.errors import api_error
 from app.domain.enums import ActivityStatus, ConceptStatus, ExerciseType, SessionStatus
 from app.domain.value_objects import ConfidencePercent, FiveLevelScale
 from app.services.assessment_flow_service import AssessmentFlowResult, AssessmentFlowService
@@ -47,15 +48,8 @@ AssessmentFlowServiceDep = Annotated[AssessmentFlowService, Depends(get_assessme
 SessionServiceDep = Annotated[SessionApplicationService, Depends(get_session_service)]
 
 
-def _error(code: str, message: str, status_code: int) -> HTTPException:
-    return HTTPException(
-        status_code=status_code,
-        detail={"error": {"code": code, "message": message, "details": {}}},
-    )
-
-
 def _not_found(assessment_id: str) -> HTTPException:
-    return _error("NOT_FOUND", f"Assessment '{assessment_id}' not found", 404)
+    return api_error("NOT_FOUND", f"Assessment '{assessment_id}' not found", 404)
 
 
 class CreateAssessmentRequest(BaseModel):
@@ -167,11 +161,11 @@ async def create_assessment(
     try:
         result = await service.create_assessment(goal_id, request.concept_id)
     except GoalNotFoundError as exc:
-        raise _error("NOT_FOUND", f"Goal '{goal_id}' not found", 404) from exc
+        raise api_error("NOT_FOUND", f"Goal '{goal_id}' not found", 404) from exc
     except AIInvalidOutputError as exc:
-        raise _error("AI_INVALID_OUTPUT", str(exc), 422) from exc
+        raise api_error("AI_INVALID_OUTPUT", str(exc), 422) from exc
     except AIProviderUnavailableError as exc:
-        raise _error("AI_UNAVAILABLE", str(exc), 503) from exc
+        raise api_error("AI_UNAVAILABLE", str(exc), 503) from exc
     return AssessmentResponse.from_result(result)
 
 
@@ -206,13 +200,13 @@ async def answer_assessment(
             request.confidence,
         )
     except InactiveSessionError as exc:
-        raise _error(
+        raise api_error(
             "SESSION_STATE_ERROR", f"Session '{assessment.session.id}' is not active", 409
         ) from exc
     except AIInvalidOutputError as exc:
-        raise _error("AI_INVALID_OUTPUT", str(exc), 422) from exc
+        raise api_error("AI_INVALID_OUTPUT", str(exc), 422) from exc
     except AIProviderUnavailableError as exc:
-        raise _error("AI_UNAVAILABLE", str(exc), 503) from exc
+        raise api_error("AI_UNAVAILABLE", str(exc), 503) from exc
 
     return AssessmentAnswerResponse.from_result(result)
 
@@ -233,8 +227,8 @@ def complete_assessment(
     try:
         session = session_service.complete_session(assessment.session.id)
     except SessionNotFoundError as exc:
-        raise _error("NOT_FOUND", f"Session '{assessment.session.id}' not found", 404) from exc
+        raise api_error("NOT_FOUND", f"Session '{assessment.session.id}' not found", 404) from exc
     except InvalidSessionTransitionError as exc:
-        raise _error("SESSION_STATE_ERROR", str(exc), 409) from exc
+        raise api_error("SESSION_STATE_ERROR", str(exc), 409) from exc
 
     return AssessmentCompleteResponse(session_id=session.id, status=session.status)

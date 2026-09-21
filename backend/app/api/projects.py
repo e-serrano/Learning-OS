@@ -20,6 +20,7 @@ from pydantic import BaseModel
 
 from app.ai.errors import AIInvalidOutputError, AIProviderUnavailableError
 from app.api.dependencies import get_project_flow_service, get_project_session_service
+from app.api.errors import api_error
 from app.domain.entities import Project
 from app.domain.enums import ActivityStatus, ConceptStatus, ProjectStatus
 from app.domain.value_objects import FiveLevelScale
@@ -44,15 +45,8 @@ ProjectSessionServiceDep = Annotated[ProjectSessionService, Depends(get_project_
 ProjectFlowServiceDep = Annotated[ProjectFlowService, Depends(get_project_flow_service)]
 
 
-def _error(code: str, message: str, status_code: int) -> HTTPException:
-    return HTTPException(
-        status_code=status_code,
-        detail={"error": {"code": code, "message": message, "details": {}}},
-    )
-
-
 def _project_not_found(project_id: str) -> HTTPException:
-    return _error("NOT_FOUND", f"Project '{project_id}' not found", 404)
+    return api_error("NOT_FOUND", f"Project '{project_id}' not found", 404)
 
 
 class CreateProjectRequest(BaseModel):
@@ -170,11 +164,11 @@ async def create_project(
     try:
         result = await service.create_project(goal_id, request.concept_ids)
     except GoalNotFoundError as exc:
-        raise _error("NOT_FOUND", f"Goal '{goal_id}' not found", 404) from exc
+        raise api_error("NOT_FOUND", f"Goal '{goal_id}' not found", 404) from exc
     except AIInvalidOutputError as exc:
-        raise _error("AI_INVALID_OUTPUT", str(exc), 422) from exc
+        raise api_error("AI_INVALID_OUTPUT", str(exc), 422) from exc
     except AIProviderUnavailableError as exc:
-        raise _error("AI_UNAVAILABLE", str(exc), 503) from exc
+        raise api_error("AI_UNAVAILABLE", str(exc), 503) from exc
     return CreateProjectResponse.from_result(result)
 
 
@@ -183,7 +177,7 @@ def list_projects(goal_id: str, service: ProjectSessionServiceDep) -> ProjectLis
     try:
         projects = service.list_projects(goal_id)
     except GoalNotFoundError as exc:
-        raise _error("NOT_FOUND", f"Goal '{goal_id}' not found", 404) from exc
+        raise api_error("NOT_FOUND", f"Goal '{goal_id}' not found", 404) from exc
     return ProjectListResponse(projects=[ProjectResponse.from_entity(p) for p in projects])
 
 
@@ -218,12 +212,12 @@ async def submit_task(
     except ProjectSubmissionNotFoundError as exc:
         raise _project_not_found(project_id) from exc
     except TaskNotFoundError as exc:
-        raise _error("NOT_FOUND", f"Task '{task_id}' not found", 404) from exc
+        raise api_error("NOT_FOUND", f"Task '{task_id}' not found", 404) from exc
     except NotAProjectTaskError as exc:
-        raise _error("VALIDATION_ERROR", str(exc), 400) from exc
+        raise api_error("VALIDATION_ERROR", str(exc), 400) from exc
     except AIInvalidOutputError as exc:
-        raise _error("AI_INVALID_OUTPUT", str(exc), 422) from exc
+        raise api_error("AI_INVALID_OUTPUT", str(exc), 422) from exc
     except AIProviderUnavailableError as exc:
-        raise _error("AI_UNAVAILABLE", str(exc), 503) from exc
+        raise api_error("AI_UNAVAILABLE", str(exc), 503) from exc
 
     return SubmitTaskResponse.from_result(result)

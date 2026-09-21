@@ -14,11 +14,12 @@ over HTTP, so it is also the first to translate `AIProviderUnavailableError`/
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from app.ai.errors import AIInvalidOutputError, AIProviderUnavailableError
 from app.api.dependencies import get_roadmap_generation_service, get_roadmap_service
+from app.api.errors import api_error
 from app.domain.entities import Concept, ConceptRelation, Roadmap
 from app.domain.enums import ConceptRelationType, ConceptStatus, RoadmapStatus
 from app.domain.value_objects import ConfidencePercent, FiveLevelScale, Mastery
@@ -37,13 +38,6 @@ RoadmapServiceDep = Annotated[RoadmapService, Depends(get_roadmap_service)]
 RoadmapGenerationServiceDep = Annotated[
     RoadmapGenerationService, Depends(get_roadmap_generation_service)
 ]
-
-
-def _error(code: str, message: str, status_code: int) -> HTTPException:
-    return HTTPException(
-        status_code=status_code,
-        detail={"error": {"code": code, "message": message, "details": {}}},
-    )
 
 
 class RoadmapNodeResponse(BaseModel):
@@ -102,13 +96,13 @@ async def _generate(goal_id: str, service: RoadmapGenerationServiceDep) -> Roadm
     try:
         return await service.generate_roadmap(goal_id)
     except GoalNotFoundError as exc:
-        raise _error("NOT_FOUND", f"Goal '{goal_id}' not found", 404) from exc
+        raise api_error("NOT_FOUND", f"Goal '{goal_id}' not found", 404) from exc
     except RoadmapValidationError as exc:
-        raise _error("AI_INVALID_OUTPUT", str(exc), 422) from exc
+        raise api_error("AI_INVALID_OUTPUT", str(exc), 422) from exc
     except AIInvalidOutputError as exc:
-        raise _error("AI_INVALID_OUTPUT", str(exc), 422) from exc
+        raise api_error("AI_INVALID_OUTPUT", str(exc), 422) from exc
     except AIProviderUnavailableError as exc:
-        raise _error("AI_UNAVAILABLE", str(exc), 503) from exc
+        raise api_error("AI_UNAVAILABLE", str(exc), 503) from exc
 
 
 async def _generate_and_respond(
@@ -134,9 +128,9 @@ def get_roadmap(goal_id: str, service: RoadmapServiceDep) -> RoadmapResponse:
     try:
         graph = service.get_roadmap(goal_id)
     except GoalNotFoundError as exc:
-        raise _error("NOT_FOUND", f"Goal '{goal_id}' not found", 404) from exc
+        raise api_error("NOT_FOUND", f"Goal '{goal_id}' not found", 404) from exc
     except RoadmapNotFoundError as exc:
-        raise _error("NOT_FOUND", f"No roadmap generated yet for goal '{goal_id}'", 404) from exc
+        raise api_error("NOT_FOUND", f"No roadmap generated yet for goal '{goal_id}'", 404) from exc
     return RoadmapResponse.from_graph(graph)
 
 

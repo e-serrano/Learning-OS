@@ -1,11 +1,12 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from app.ai.capability_check import check_provider_capability
 from app.ai.provider_registry import ProviderId
 from app.api.dependencies import get_config_store, get_credential_store
+from app.api.errors import api_error
 from app.config.credentials import CredentialStore, new_credential_ref
 from app.config.models import AIProviderConfig, OnboardingStep
 from app.config.store import ConfigStore
@@ -18,20 +19,13 @@ ConfigStoreDep = Annotated[ConfigStore, Depends(get_config_store)]
 CredentialStoreDep = Annotated[CredentialStore, Depends(get_credential_store)]
 
 
-def _error(code: str, message: str, status_code: int = 400) -> HTTPException:
-    return HTTPException(
-        status_code=status_code,
-        detail={"error": {"code": code, "message": message, "details": {}}},
-    )
-
-
 def _advance_to(config_step: OnboardingStep, target: OnboardingStep) -> OnboardingStep:
     """Advance linearly, one validated step at a time, until `target` is reached."""
     step = config_step
     while step != target:
         nxt = next_step(step)
         if nxt is None:
-            raise _error("SESSION_STATE_ERROR", "Onboarding already complete", 409)
+            raise api_error("SESSION_STATE_ERROR", "Onboarding already complete", 409)
         step = nxt
     return step
 
@@ -96,9 +90,10 @@ def configure_vault(request: VaultRequest, store: ConfigStoreDep) -> VaultRespon
     config = store.load()
     scan = scan_vault_readonly(request.path)
     if not scan.exists or not scan.readable:
-        raise _error(
+        raise api_error(
             "VAULT_UNAVAILABLE",
             f"Vault path is not usable: {'; '.join(scan.errors) or 'unknown error'}",
+            400,
         )
 
     config.vault_path = request.path
@@ -110,12 +105,12 @@ def configure_vault(request: VaultRequest, store: ConfigStoreDep) -> VaultRespon
 
 
 @router.post("/ai-provider", response_model=AIProviderResponse)
-def configure_ai_provider(
-    request: AIProviderRequest, store: ConfigStoreDep
-) -> AIProviderResponse:
+def configure_ai_provider(request: AIProviderRequest, store: ConfigStoreDep) -> AIProviderResponse:
     config = store.load()
     if config.vault_path is None:
-        raise _error("SESSION_STATE_ERROR", "Configure the vault before selecting a provider")
+        raise api_error(
+            "SESSION_STATE_ERROR", "Configure the vault before selecting a provider", 409
+        )
 
     config.provider_id = request.provider_id.value
     config.model = request.model
@@ -135,7 +130,7 @@ def validate_ai_provider(
 ) -> ValidateResponse:
     config = store.load()
     if config.provider_id is None or config.model is None:
-        raise _error("SESSION_STATE_ERROR", "Select a provider and model before validating")
+        raise api_error("SESSION_STATE_ERROR", "Select a provider and model before validating", 409)
 
     provider_id = ProviderId(config.provider_id)
     result = check_provider_capability(
@@ -178,9 +173,9 @@ def complete_onboarding(store: ConfigStoreDep) -> CompleteResponse:
         return CompleteResponse(onboarding_step=config.onboarding_step)
 
     if config.vault_path is None:
-        raise _error("SESSION_STATE_ERROR", "Vault is not configured")
+        raise api_error("SESSION_STATE_ERROR", "Vault is not configured", 409)
     if not any(p.is_default for p in config.ai_providers):
-        raise _error("SESSION_STATE_ERROR", "No validated default AI provider")
+        raise api_error("SESSION_STATE_ERROR", "No validated default AI provider", 409)
 
     config.onboarding_step = _advance_to(config.onboarding_step, OnboardingStep.COMPLETE)
     store.save(config)

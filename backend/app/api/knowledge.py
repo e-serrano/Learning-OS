@@ -8,10 +8,11 @@ has no single fixed prefix -- only the shared `/api/v1` base.
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from app.api.dependencies import get_knowledge_explorer_service
+from app.api.errors import api_error
 from app.domain.entities import Concept, ConceptRelation
 from app.domain.enums import ConceptRelationType, ConceptStatus
 from app.domain.value_objects import ConfidencePercent, FiveLevelScale, Mastery, RetentionPercent
@@ -26,13 +27,6 @@ router = APIRouter(prefix="/api/v1", tags=["knowledge"])
 KnowledgeExplorerServiceDep = Annotated[
     KnowledgeExplorerService, Depends(get_knowledge_explorer_service)
 ]
-
-
-def _error(code: str, message: str, status_code: int) -> HTTPException:
-    return HTTPException(
-        status_code=status_code,
-        detail={"error": {"code": code, "message": message, "details": {}}},
-    )
 
 
 class ConceptResponse(BaseModel):
@@ -90,7 +84,7 @@ def list_knowledge(
             next_review_before=next_review_before,
         )
     except GoalNotFoundError as exc:
-        raise _error("NOT_FOUND", f"Goal '{goal_id}' not found", 404) from exc
+        raise api_error("NOT_FOUND", f"Goal '{goal_id}' not found", 404) from exc
     return ConceptListResponse(concepts=[ConceptResponse.from_entity(c) for c in concepts])
 
 
@@ -99,7 +93,7 @@ def get_concept(concept_id: str, service: KnowledgeExplorerServiceDep) -> Concep
     try:
         concept = service.get_concept(concept_id)
     except ConceptNotFoundError as exc:
-        raise _error("NOT_FOUND", f"Concept '{concept_id}' not found", 404) from exc
+        raise api_error("NOT_FOUND", f"Concept '{concept_id}' not found", 404) from exc
     return ConceptResponse.from_entity(concept)
 
 
@@ -110,7 +104,7 @@ def list_concept_relations(
     try:
         relations = service.list_relations(concept_id)
     except ConceptNotFoundError as exc:
-        raise _error("NOT_FOUND", f"Concept '{concept_id}' not found", 404) from exc
+        raise api_error("NOT_FOUND", f"Concept '{concept_id}' not found", 404) from exc
     return ConceptRelationListResponse(
         relations=[ConceptRelationResponse.from_entity(r) for r in relations]
     )

@@ -10,7 +10,7 @@ are chained together.
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from app.api.dependencies import (
@@ -20,6 +20,7 @@ from app.api.dependencies import (
     get_diff_approval_service,
     get_vault_scan_service,
 )
+from app.api.errors import api_error
 from app.config.store import ConfigStore
 from app.domain.enums import ProposalOperation
 from app.obsidian.change_proposal import ChangeProposal, ChangeProposalRepository, ProposalStatus
@@ -41,13 +42,6 @@ ChangeProposalRepositoryDep = Annotated[
 VaultScanServiceDep = Annotated[VaultScanService, Depends(get_vault_scan_service)]
 ApplyChangeServiceDep = Annotated[ApplyChangeService, Depends(get_apply_change_service)]
 DiffApprovalServiceDep = Annotated[DiffApprovalService, Depends(get_diff_approval_service)]
-
-
-def _error(code: str, message: str, status_code: int) -> HTTPException:
-    return HTTPException(
-        status_code=status_code,
-        detail={"error": {"code": code, "message": message, "details": {}}},
-    )
 
 
 class ConfigureVaultRequest(BaseModel):
@@ -85,7 +79,7 @@ def configure_vault(
 ) -> ConfigureVaultResponse:
     scan = scan_vault_readonly(request.path)
     if not scan.exists or not scan.readable:
-        raise _error(
+        raise api_error(
             "VAULT_UNAVAILABLE",
             f"Vault path is not usable: {'; '.join(scan.errors) or 'unknown error'}",
             400,
@@ -117,9 +111,9 @@ def apply_change(
     try:
         approval.approve(change_id)
     except ProposalNotFoundError as exc:
-        raise _error("NOT_FOUND", f"Change proposal '{change_id}' not found", 404) from exc
+        raise api_error("NOT_FOUND", f"Change proposal '{change_id}' not found", 404) from exc
     except InvalidProposalStatusError as exc:
-        raise _error("CONFLICT", str(exc), 409) from exc
+        raise api_error("CONFLICT", str(exc), 409) from exc
 
     proposal = applier.apply(change_id)
     return ChangeProposalResponse.from_entity(proposal)
@@ -130,7 +124,7 @@ def reject_change(change_id: str, approval: DiffApprovalServiceDep) -> ChangePro
     try:
         proposal = approval.reject(change_id)
     except ProposalNotFoundError as exc:
-        raise _error("NOT_FOUND", f"Change proposal '{change_id}' not found", 404) from exc
+        raise api_error("NOT_FOUND", f"Change proposal '{change_id}' not found", 404) from exc
     except InvalidProposalStatusError as exc:
-        raise _error("CONFLICT", str(exc), 409) from exc
+        raise api_error("CONFLICT", str(exc), 409) from exc
     return ChangeProposalResponse.from_entity(proposal)

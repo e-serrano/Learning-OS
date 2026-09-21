@@ -40,9 +40,7 @@ def client(tmp_path: Path, fake_keyring: FakeKeyringBackend) -> TestClient:
     Base.metadata.create_all(create_sqlite_engine(str(db_path)))
 
     app.dependency_overrides[get_config_store] = lambda: ConfigStore(str(db_path))
-    app.dependency_overrides[get_credential_store] = lambda: CredentialStore(
-        backend=fake_keyring
-    )
+    app.dependency_overrides[get_credential_store] = lambda: CredentialStore(backend=fake_keyring)
     test_client = TestClient(app)
     yield test_client
     app.dependency_overrides.clear()
@@ -72,9 +70,7 @@ def test_configure_vault_advances_to_vault_scan(client: TestClient, vault_dir: P
 
 
 def test_configure_vault_rejects_nonexistent_path(client: TestClient, tmp_path: Path) -> None:
-    response = client.post(
-        "/api/v1/onboarding/vault", json={"path": str(tmp_path / "missing")}
-    )
+    response = client.post("/api/v1/onboarding/vault", json={"path": str(tmp_path / "missing")})
     assert response.status_code == 400
     assert response.json()["detail"]["error"]["code"] == "VAULT_UNAVAILABLE"
 
@@ -84,7 +80,7 @@ def test_configure_ai_provider_requires_vault_first(client: TestClient) -> None:
         "/api/v1/onboarding/ai-provider",
         json={"provider_id": "mock", "model": "mock-1"},
     )
-    assert response.status_code == 400
+    assert response.status_code == 409
     assert response.json()["detail"]["error"]["code"] == "SESSION_STATE_ERROR"
 
 
@@ -104,9 +100,7 @@ def test_validate_mock_provider_succeeds_without_credential(
     client: TestClient, vault_dir: Path
 ) -> None:
     client.post("/api/v1/onboarding/vault", json={"path": str(vault_dir)})
-    client.post(
-        "/api/v1/onboarding/ai-provider", json={"provider_id": "mock", "model": "mock-1"}
-    )
+    client.post("/api/v1/onboarding/ai-provider", json={"provider_id": "mock", "model": "mock-1"})
 
     response = client.post("/api/v1/onboarding/ai-provider/validate", json={})
 
@@ -178,7 +172,7 @@ def test_validate_remote_provider_with_credential_succeeds_and_never_leaks_secre
 
 def test_complete_requires_vault_and_validated_provider(client: TestClient) -> None:
     response = client.post("/api/v1/onboarding/complete")
-    assert response.status_code == 400
+    assert response.status_code == 409
     assert response.json()["detail"]["error"]["code"] == "SESSION_STATE_ERROR"
 
 
@@ -186,9 +180,7 @@ def test_full_happy_path_reaches_complete_with_mock_provider(
     client: TestClient, vault_dir: Path
 ) -> None:
     client.post("/api/v1/onboarding/vault", json={"path": str(vault_dir)})
-    client.post(
-        "/api/v1/onboarding/ai-provider", json={"provider_id": "mock", "model": "mock-1"}
-    )
+    client.post("/api/v1/onboarding/ai-provider", json={"provider_id": "mock", "model": "mock-1"})
     client.post("/api/v1/onboarding/ai-provider/validate", json={})
 
     response = client.post("/api/v1/onboarding/complete")
@@ -238,13 +230,9 @@ def test_full_happy_path_reaches_complete_with_simulated_remote_provider(
     assert status.json()["ai_providers"][0]["credential_ref"].startswith("anthropic:")
 
 
-def test_complete_is_idempotent_once_already_complete(
-    client: TestClient, vault_dir: Path
-) -> None:
+def test_complete_is_idempotent_once_already_complete(client: TestClient, vault_dir: Path) -> None:
     client.post("/api/v1/onboarding/vault", json={"path": str(vault_dir)})
-    client.post(
-        "/api/v1/onboarding/ai-provider", json={"provider_id": "mock", "model": "mock-1"}
-    )
+    client.post("/api/v1/onboarding/ai-provider", json={"provider_id": "mock", "model": "mock-1"})
     client.post("/api/v1/onboarding/ai-provider/validate", json={})
     client.post("/api/v1/onboarding/complete")
 
