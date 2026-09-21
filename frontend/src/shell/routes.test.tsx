@@ -13,11 +13,45 @@ function renderAt(path: string) {
 
 describe('AppRoutes', () => {
   beforeEach(() => {
-    // Dashboard (T111) fetches goals on mount even when the route under
-    // test isn't "/" -- MemoryRouter still mounts the whole route tree.
+    // Dashboard (T111) and GoalView (T112) fetch on mount regardless of
+    // which route is under test -- react-router still mounts <AppShell>.
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue({ ok: true, json: async () => ({ goals: [] }) }),
+      vi.fn().mockImplementation((input: RequestInfo | URL) => {
+        const url = String(input)
+        if (url.match(/\/goals\/[^/]+\/progress$/)) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              mastery: 0,
+              concepts_total: 0,
+              mastered: 0,
+              weak: 0,
+              due_reviews: 0,
+              recent_sessions: 0,
+            }),
+          })
+        }
+        if (url.match(/\/goals\/[^/]+$/)) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              id: 'goal_1',
+              title: 'Learn SQL',
+              description: null,
+              domain: null,
+              target_level: 'professional',
+              status: 'active',
+              priority: 3,
+              deadline: null,
+              available_minutes_per_week: null,
+              created_at: '2026-01-01T00:00:00Z',
+              updated_at: '2026-01-01T00:00:00Z',
+            }),
+          })
+        }
+        return Promise.resolve({ ok: true, json: async () => ({ goals: [] }) })
+      }),
     )
   })
 
@@ -37,10 +71,10 @@ describe('AppRoutes', () => {
     expect(screen.getByRole('heading', { name: 'Reviews' })).toBeInTheDocument()
   })
 
-  it('renders the goal placeholder for a goal-scoped route', () => {
+  it('renders the goal view for a goal-scoped route', async () => {
     renderAt('/goals/goal_1')
 
-    expect(screen.getByRole('heading', { name: 'Goal' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Learn SQL' })).toBeInTheDocument()
   })
 
   it('redirects an unknown path back to the dashboard', async () => {

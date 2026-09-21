@@ -9,6 +9,7 @@ import {
   getGoalProgress,
   listGoals,
 } from '../api/goals'
+import { MasteryBar } from '../shared/MasteryBar'
 import './dashboard.css'
 
 interface GoalWithProgress {
@@ -102,12 +103,7 @@ function GoalCard({ goal, progress }: GoalWithProgress) {
         <strong>{goal.title}</strong>
         <span className={`status-tag status-${goal.status}`}>{goal.status}</span>
       </div>
-      <div className="goal-card-mastery">
-        <div className="mastery-bar">
-          <div className="mastery-bar-fill" style={{ width: `${progress.mastery * 100}%` }} />
-        </div>
-        <span>{Math.round(progress.mastery * 100)}% mastery</span>
-      </div>
+      <MasteryBar mastery={progress.mastery} />
       <div className="goal-card-stats">
         <span>{progress.concepts_total} concepts</span>
         <span>{progress.mastered} mastered</span>

@@ -1,19 +1,20 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { Dashboard } from '../dashboard/Dashboard'
+import { GoalView } from '../goal/GoalView'
 import { AppShell } from './AppShell'
 import { Placeholder } from './Placeholder'
 
 /** Route table for the app shell (docs/TASKS.md T109). Each placeholder
  * page here is replaced by its own task: Dashboard (T111, done), Goal
- * view (T112), Roadmap view (T113), Knowledge explorer (T114), Session
- * UI (T115), Reviews UI (T116), Assessment UI (T117), Projects UI
- * (T118), Vault diff UI (T119). */
+ * view (T112, done), Roadmap view (T113), Knowledge explorer (T114),
+ * Session UI (T115), Reviews UI (T116), Assessment UI (T117), Projects
+ * UI (T118), Vault diff UI (T119). */
 export function AppRoutes() {
   return (
     <Routes>
       <Route element={<AppShell />}>
         <Route index element={<Dashboard />} />
-        <Route path="goals/:goalId" element={<Placeholder title="Goal" />} />
+        <Route path="goals/:goalId" element={<GoalView />} />
         <Route path="goals/:goalId/roadmap" element={<Placeholder title="Roadmap" />} />
         <Route
           path="goals/:goalId/knowledge"

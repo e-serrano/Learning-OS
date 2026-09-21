@@ -38,6 +38,18 @@ export function createGoal(input: { title: string; target_level: TargetLevel }):
   return request('/goals', { method: 'POST', body: JSON.stringify(input) })
 }
 
+export function getGoal(goalId: string): Promise<Goal> {
+  return request(`/goals/${goalId}`)
+}
+
 export function getGoalProgress(goalId: string): Promise<GoalProgress> {
   return request(`/goals/${goalId}/progress`)
+}
+
+export function pauseGoal(goalId: string): Promise<Goal> {
+  return request(`/goals/${goalId}/pause`, { method: 'POST' })
+}
+
+export function completeGoal(goalId: string): Promise<Goal> {
+  return request(`/goals/${goalId}/complete`, { method: 'POST' })
 }

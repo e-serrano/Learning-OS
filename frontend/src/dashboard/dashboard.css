@@ -65,24 +65,8 @@
   background: rgba(128, 128, 128, 0.2);
 }
 
-.goal-card-mastery {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.goal-card .mastery-bar-row {
   margin-bottom: 8px;
-}
-
-.mastery-bar {
-  flex: 1;
-  height: 6px;
-  border-radius: 3px;
-  background: rgba(128, 128, 128, 0.2);
-  overflow: hidden;
-}
-
-.mastery-bar-fill {
-  height: 100%;
-  background: #2563eb;
 }
 
 .goal-card-stats {

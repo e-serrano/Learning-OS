@@ -1,0 +1,95 @@
+.goal-view {
+  max-width: 800px;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 16px;
+  font-size: 0.85rem;
+  color: inherit;
+  opacity: 0.75;
+  text-decoration: none;
+}
+
+.goal-view .message {
+  margin: 16px 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: #fdecec;
+  color: #a3231d;
+}
+
+.goal-view-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.goal-view-header h2 {
+  margin: 0;
+}
+
+.status-tag {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(128, 128, 128, 0.2);
+}
+
+.goal-view .subtitle {
+  opacity: 0.75;
+}
+
+.goal-stats-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin: 24px 0;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat strong {
+  font-size: 1.4rem;
+}
+
+.stat span {
+  font-size: 0.8rem;
+  opacity: 0.75;
+}
+
+.goal-view-links {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.goal-view-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.goal-view button {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 6px;
+  background: #222;
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.goal-view button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.goal-view button.secondary {
+  background: transparent;
+  color: inherit;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+}

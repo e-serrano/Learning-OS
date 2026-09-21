@@ -1,0 +1,18 @@
+.mastery-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mastery-bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(128, 128, 128, 0.2);
+  overflow: hidden;
+}
+
+.mastery-bar-fill {
+  height: 100%;
+  background: #2563eb;
+}
