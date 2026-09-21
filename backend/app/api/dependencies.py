@@ -26,6 +26,7 @@ from app.persistence.repositories.exercise import SqlExerciseRepository
 from app.persistence.repositories.exercise_attempt import SqlExerciseAttemptRepository
 from app.persistence.repositories.goal import SqlGoalRepository
 from app.persistence.repositories.mistake import SqlMistakeRepository
+from app.persistence.repositories.project import SqlProjectRepository
 from app.persistence.repositories.review import SqlReviewRepository
 from app.persistence.repositories.roadmap import SqlRoadmapRepository
 from app.persistence.repositories.session import SqlSessionRepository
@@ -53,6 +54,12 @@ from app.services.mistake_tracker import MistakeTracker
 from app.services.mistake_update_service import MistakeUpdateService
 from app.services.next_activity_service import NextActivityService
 from app.services.planner_service import PlannerService
+from app.services.project_evaluation_service import ProjectEvaluationService
+from app.services.project_flow_service import ProjectFlowService
+from app.services.project_generation_service import ProjectGenerationService
+from app.services.project_session_service import ProjectSessionService
+from app.services.project_submission_service import ProjectSubmissionService
+from app.services.project_task_service import ProjectTaskService
 from app.services.retention_update_service import RetentionUpdateService
 from app.services.review_completion_service import ReviewCompletionService
 from app.services.review_creation_service import ReviewCreationService
@@ -323,6 +330,10 @@ def get_review_repository() -> SqlReviewRepository:
     return SqlReviewRepository(get_engine())
 
 
+def get_project_repository() -> SqlProjectRepository:
+    return SqlProjectRepository(get_engine())
+
+
 def get_exercise_generator_service(
     orchestrator: Annotated[AIOrchestrator, Depends(get_ai_orchestrator)],
 ) -> ExerciseGeneratorService:
@@ -359,6 +370,63 @@ def get_assessment_session_service(
         activities=get_activity_repository(),
         exercises=get_exercise_repository(),
         transfer_assessment=transfer_assessment,
+        clock=get_clock(),
+        ids=get_id_generator(),
+    )
+
+
+def get_project_generation_service(
+    orchestrator: Annotated[AIOrchestrator, Depends(get_ai_orchestrator)],
+) -> ProjectGenerationService:
+    return ProjectGenerationService(
+        goals=get_goal_repository(),
+        context_builder=get_context_builder(),
+        projects=get_project_repository(),
+        orchestrator=orchestrator,
+        clock=get_clock(),
+        ids=get_id_generator(),
+    )
+
+
+def get_project_task_service() -> ProjectTaskService:
+    return ProjectTaskService(
+        projects=get_project_repository(),
+        sessions=get_session_repository(),
+        activities=get_activity_repository(),
+        clock=get_clock(),
+        ids=get_id_generator(),
+    )
+
+
+def get_project_session_service(
+    generation: Annotated[ProjectGenerationService, Depends(get_project_generation_service)],
+    tasks: Annotated[ProjectTaskService, Depends(get_project_task_service)],
+) -> ProjectSessionService:
+    return ProjectSessionService(
+        goals=get_goal_repository(),
+        projects=get_project_repository(),
+        generation=generation,
+        tasks=tasks,
+    )
+
+
+def get_project_submission_service() -> ProjectSubmissionService:
+    return ProjectSubmissionService(
+        projects=get_project_repository(),
+        activities=get_activity_repository(),
+        evidence=get_evidence_repository(),
+        clock=get_clock(),
+        ids=get_id_generator(),
+    )
+
+
+def get_project_evaluation_service(
+    orchestrator: Annotated[AIOrchestrator, Depends(get_ai_orchestrator)],
+) -> ProjectEvaluationService:
+    return ProjectEvaluationService(
+        projects=get_project_repository(),
+        evidence=get_evidence_repository(),
+        orchestrator=orchestrator,
         clock=get_clock(),
         ids=get_id_generator(),
     )
@@ -447,6 +515,20 @@ def get_review_creation_service(
     review_scheduler: Annotated[ReviewScheduler, Depends(get_review_scheduler)],
 ) -> ReviewCreationService:
     return ReviewCreationService(get_review_repository(), review_scheduler)
+
+
+def get_project_flow_service(
+    submission: Annotated[ProjectSubmissionService, Depends(get_project_submission_service)],
+    evaluation: Annotated[ProjectEvaluationService, Depends(get_project_evaluation_service)],
+    mastery_update: Annotated[MasteryUpdateService, Depends(get_mastery_update_service)],
+    review_creation: Annotated[ReviewCreationService, Depends(get_review_creation_service)],
+) -> ProjectFlowService:
+    return ProjectFlowService(
+        submission=submission,
+        evaluation=evaluation,
+        mastery_update=mastery_update,
+        review_creation=review_creation,
+    )
 
 
 def get_assessment_flow_service(
