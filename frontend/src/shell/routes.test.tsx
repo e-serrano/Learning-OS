@@ -50,6 +50,9 @@ describe('AppRoutes', () => {
             }),
           })
         }
+        if (url.match(/\/reviews\/today$/)) {
+          return Promise.resolve({ ok: true, json: async () => ({ reviews: [] }) })
+        }
         return Promise.resolve({ ok: true, json: async () => ({ goals: [] }) })
       }),
     )
@@ -65,10 +68,10 @@ describe('AppRoutes', () => {
     expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument()
   })
 
-  it('renders the reviews placeholder at /reviews', () => {
+  it('renders the reviews UI at /reviews', async () => {
     renderAt('/reviews')
 
-    expect(screen.getByRole('heading', { name: 'Reviews' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Reviews' })).toBeInTheDocument()
   })
 
   it('renders the goal view for a goal-scoped route', async () => {

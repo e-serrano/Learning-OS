@@ -1,0 +1,91 @@
+.reviews-ui {
+  max-width: 600px;
+}
+
+.reviews-ui h2 {
+  margin-top: 0;
+}
+
+.reviews-ui .message {
+  margin: 16px 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: #fdecec;
+  color: #a3231d;
+}
+
+.reviews-ui .message.success {
+  background: #eafaf0;
+  color: #1a7a3c;
+}
+
+.progress-label {
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+
+.concept-label {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.reviews-ui label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+  margin-top: 16px;
+}
+
+.reviews-ui textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+  border-radius: 6px;
+  font: inherit;
+  background: transparent;
+  color: inherit;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+.reviews-ui input[type='range'] {
+  width: 100%;
+}
+
+.reviews-ui button {
+  margin-top: 20px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 6px;
+  background: #222;
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.reviews-ui button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.review-result .mastery-bar-row {
+  margin: 16px 0 12px;
+}
+
+.review-stats {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+.review-stats .status-tag {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(128, 128, 128, 0.2);
+  opacity: 1;
+}
