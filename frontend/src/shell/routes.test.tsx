@@ -56,6 +56,9 @@ describe('AppRoutes', () => {
         if (url.match(/\/reviews\/today$/)) {
           return Promise.resolve({ ok: true, json: async () => ({ reviews: [] }) })
         }
+        if (url.match(/\/vault\/changes$/)) {
+          return Promise.resolve({ ok: true, json: async () => ({ changes: [] }) })
+        }
         return Promise.resolve({ ok: true, json: async () => ({ goals: [] }) })
       }),
     )

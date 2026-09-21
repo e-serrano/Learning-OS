@@ -7,15 +7,13 @@ import { ProjectView } from '../project/ProjectView'
 import { RoadmapView } from '../roadmap/RoadmapView'
 import { ReviewsUI } from '../reviews/ReviewsUI'
 import { SessionUI } from '../session/SessionUI'
+import { VaultDiffUI } from '../vault/VaultDiffUI'
 import { AppShell } from './AppShell'
-import { Placeholder } from './Placeholder'
 
-/** Route table for the app shell (docs/TASKS.md T109). Each placeholder
- * page here is replaced by its own task: Dashboard (T111, done), Goal
- * view (T112, done), Roadmap view (T113, done), Knowledge explorer
- * (T114, done), Session UI (T115, done), Reviews UI (T116, done),
- * Assessment UI (T117, done), Projects UI (T118, done), Vault diff UI
- * (T119). */
+/** Route table for the app shell (docs/TASKS.md T109). Phase 11 is
+ * complete: Dashboard (T111), Goal view (T112), Roadmap view (T113),
+ * Knowledge explorer (T114), Session UI (T115), Reviews UI (T116),
+ * Assessment UI (T117), Projects UI (T118), Vault diff UI (T119). */
 export function AppRoutes() {
   return (
     <Routes>
@@ -28,7 +26,7 @@ export function AppRoutes() {
         <Route path="reviews" element={<ReviewsUI />} />
         <Route path="assessments/:assessmentId" element={<AssessmentUI />} />
         <Route path="projects/:projectId" element={<ProjectView />} />
-        <Route path="vault" element={<Placeholder title="Vault Changes" />} />
+        <Route path="vault" element={<VaultDiffUI />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
