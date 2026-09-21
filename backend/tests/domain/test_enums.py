@@ -10,6 +10,7 @@ from app.domain.enums import (
     MistakeSeverity,
     MistakeType,
     ProjectStatus,
+    ProposalOperation,
     ReviewStatus,
     RoadmapStatus,
     SessionMode,
@@ -179,6 +180,21 @@ def test_roadmap_status_matches_spec() -> None:
     assert {e.value for e in RoadmapStatus} == {"active", "superseded"}
 
 
+def test_proposal_operation_has_no_delete_variant() -> None:
+    """docs/AGENTS.md #6 / docs/TASKS.md T123 vault security audit:
+    an AI-driven change proposal may create a file, update frontmatter,
+    replace a managed section, or add a link -- never delete anything.
+    Pinning the exact member set here means a future addition to this
+    enum can't silently introduce a deletion capability without this
+    test forcing a deliberate, visible decision."""
+    assert {e.value for e in ProposalOperation} == {
+        "create_file",
+        "update_frontmatter",
+        "replace_managed_section",
+        "add_link",
+    }
+
+
 def test_all_enum_values_are_strings() -> None:
     all_enums = [
         TargetLevel,
@@ -195,6 +211,7 @@ def test_all_enum_values_are_strings() -> None:
         ActivityType,
         ActivityStatus,
         ProjectStatus,
+        ProposalOperation,
         AssessmentType,
         RoadmapStatus,
     ]

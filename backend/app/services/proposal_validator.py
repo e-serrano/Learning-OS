@@ -26,6 +26,7 @@ diff); these never became one.
 """
 
 from dataclasses import dataclass, field
+from pathlib import PurePosixPath
 
 from app.ai.contracts import CuratorOperation
 from app.domain.entities import Concept
@@ -95,7 +96,7 @@ class ProposalValidator:
             return "replace_managed_section requires a section"
         if not operation.path.endswith(".md"):
             return "path must be a markdown file"
-        if any(operation.path.startswith(f"{d}/") for d in DEFAULT_IGNORED_DIRS):
+        if any(part in DEFAULT_IGNORED_DIRS for part in PurePosixPath(operation.path).parts[:-1]):
             return "path targets an ignored directory"
         try:
             self._vault.resolve(operation.path)

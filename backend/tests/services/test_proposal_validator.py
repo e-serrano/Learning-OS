@@ -155,6 +155,26 @@ def test_path_in_ignored_directory_is_rejected(tmp_path: Path) -> None:
     assert "ignored directory" in result.rejected[0].reason
 
 
+def test_path_in_nested_ignored_directory_is_rejected(tmp_path: Path) -> None:
+    """Regression (docs/TASKS.md T123 vault security audit): the check
+    used to only match a root-level `Templates/...` prefix, so a path
+    like `notes/Templates/concept_1.md` or `notes/.obsidian/concept_1.md`
+    slipped through -- inconsistent with `markdown_scanner.py`'s own
+    scan, which already excludes an ignored directory name appearing
+    anywhere in the path, not just at the root."""
+    vault_root = tmp_path / "vault"
+    vault_root.mkdir()
+    validator, _ = _validator(vault_root)
+    op = _operation(path="notes/.obsidian/concept_1.md")
+
+    result = validator.validate_and_persist(
+        [op], _concept(obsidian_path="notes/.obsidian/concept_1.md")
+    )
+
+    assert result.accepted == []
+    assert "ignored directory" in result.rejected[0].reason
+
+
 def test_path_traversal_is_rejected(tmp_path: Path) -> None:
     vault_root = tmp_path / "vault"
     vault_root.mkdir()
