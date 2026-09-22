@@ -84,6 +84,24 @@ Response:
 
 `POST /vault/changes/{change_id}/reject`
 
+### Search
+
+`GET /vault/search?q=<query>` (docs/TASKS.md T127)
+
+Full-text search over indexed vault Markdown content (SQLite FTS5), kept
+current by every `/vault/scan`. `q` must be non-blank (`VALIDATION_ERROR`
+otherwise).
+
+Response:
+
+```json
+{
+  "results": [
+    {"path": "Concepts/Window Functions.md", "title": "Window Functions", "snippet": "...uses a [window] function to..."}
+  ]
+}
+```
+
 ---
 
 ## 3. Knowledge

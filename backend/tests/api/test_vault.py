@@ -10,6 +10,7 @@ from app.api.dependencies import (
     get_config_store,
     get_diff_approval_service,
     get_vault_scan_service,
+    get_vault_search_service,
 )
 from app.config.store import ConfigStore
 from app.domain.enums import ProposalOperation
@@ -21,6 +22,7 @@ from app.persistence.engine import create_sqlite_engine
 from app.services.apply_change_service import ApplyChangeService
 from app.services.diff_approval_service import DiffApprovalService
 from app.services.vault_scan_service import VaultScanService
+from app.services.vault_search_service import VaultSearchService
 
 NOW = datetime(2026, 1, 1, tzinfo=UTC)
 
@@ -62,6 +64,7 @@ def client(
         engine, proposals, resolver
     )
     app.dependency_overrides[get_diff_approval_service] = lambda: DiffApprovalService(proposals)
+    app.dependency_overrides[get_vault_search_service] = lambda: VaultSearchService(engine)
     test_client = TestClient(app)
     yield test_client
     app.dependency_overrides.clear()
@@ -172,3 +175,42 @@ def test_reject_change_404s_when_missing(client: TestClient) -> None:
 
     assert response.status_code == 404
     assert response.json()["detail"]["error"]["code"] == "NOT_FOUND"
+
+
+def test_search_vault_finds_matching_note(client: TestClient, vault_dir: Path) -> None:
+    (vault_dir / "window_functions.md").write_text(
+        "# Window Functions\n\nA window function computes a value across a set of rows.\n"
+    )
+    (vault_dir / "subqueries.md").write_text(
+        "# Subqueries\n\nA subquery is nested inside another.\n"
+    )
+    client.post("/api/v1/vault/scan")
+
+    response = client.get("/api/v1/vault/search", params={"q": "window function"})
+
+    assert response.status_code == 200
+    results = response.json()["results"]
+    assert len(results) == 1
+    assert results[0]["path"] == "window_functions.md"
+    assert results[0]["title"] == "Window Functions"
+    assert "window" in results[0]["snippet"].lower()
+
+
+def test_search_vault_rejects_a_blank_query(client: TestClient) -> None:
+    response = client.get("/api/v1/vault/search", params={"q": "   "})
+
+    assert response.status_code == 400
+    assert response.json()["detail"]["error"]["code"] == "VALIDATION_ERROR"
+
+
+def test_search_vault_excludes_missing_files(client: TestClient, vault_dir: Path) -> None:
+    note = vault_dir / "note.md"
+    note.write_text("# Note\n\nContent about elephants.\n")
+    client.post("/api/v1/vault/scan")
+    note.unlink()
+    client.post("/api/v1/vault/scan")
+
+    response = client.get("/api/v1/vault/search", params={"q": "elephants"})
+
+    assert response.status_code == 200
+    assert response.json()["results"] == []

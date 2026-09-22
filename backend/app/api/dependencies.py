@@ -73,6 +73,7 @@ from app.services.session_service import SessionApplicationService
 from app.services.todays_reviews_service import TodaysReviewsService
 from app.services.transfer_assessment_service import TransferAssessmentService
 from app.services.vault_scan_service import VaultScanService
+from app.services.vault_search_service import VaultSearchService
 
 
 class SystemClock:
@@ -155,6 +156,10 @@ def get_apply_change_service(
 
 def get_diff_approval_service() -> DiffApprovalService:
     return DiffApprovalService(get_change_proposal_repository())
+
+
+def get_vault_search_service() -> VaultSearchService:
+    return VaultSearchService(get_engine())
 
 
 def get_concept_repository() -> SqlConceptRepository:

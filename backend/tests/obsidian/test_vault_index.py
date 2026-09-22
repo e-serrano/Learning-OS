@@ -1,13 +1,13 @@
 from pathlib import Path
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session as DbSession
 
 from app.obsidian.vault_index import VaultIndexer
 from app.obsidian.vault_resolver import VaultResolver
 from app.persistence.base import Base
 from app.persistence.engine import create_sqlite_engine
-from app.persistence.models import VaultFileModel
+from app.persistence.models import VAULT_SEARCH_FTS_TABLE, VaultFileModel
 
 
 def _make_indexer(tmp_path: Path, vault_dir: Path):  # type: ignore[no-untyped-def]
@@ -15,6 +15,13 @@ def _make_indexer(tmp_path: Path, vault_dir: Path):  # type: ignore[no-untyped-d
     Base.metadata.create_all(engine)
     resolver = VaultResolver(str(vault_dir))
     return VaultIndexer(engine, resolver), engine
+
+
+def _match_sql(columns: str, term: str) -> str:
+    return (
+        f"SELECT {columns} FROM {VAULT_SEARCH_FTS_TABLE} "
+        f"WHERE {VAULT_SEARCH_FTS_TABLE} MATCH '{term}'"
+    )
 
 
 def test_reindex_empty_vault_returns_no_entries(tmp_path: Path) -> None:
@@ -131,6 +138,85 @@ def test_reindex_never_writes_to_vault_files(tmp_path: Path) -> None:
     after = (vault / "note.md").read_text()
 
     assert before == after
+
+
+def test_reindex_populates_the_fts_index(tmp_path: Path) -> None:
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    (vault / "window_functions.md").write_text(
+        "# Window Functions\n\nUses OVER() to rank rows across partitions.\n"
+    )
+    indexer, engine = _make_indexer(tmp_path, vault)
+
+    indexer.reindex()
+
+    with engine.connect() as conn:
+        rows = list(conn.execute(text(_match_sql("path, title", "partitions"))))
+    assert rows == [("window_functions.md", "Window Functions")]
+
+
+def test_reindex_derives_title_from_frontmatter_over_heading(tmp_path: Path) -> None:
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    (vault / "note.md").write_text("---\ntitle: Custom Title\n---\n# Different Heading\n\nBody.\n")
+    indexer, engine = _make_indexer(tmp_path, vault)
+
+    indexer.reindex()
+
+    with engine.connect() as conn:
+        row = conn.execute(
+            text(f"SELECT title FROM {VAULT_SEARCH_FTS_TABLE} WHERE path = 'note.md'")
+        ).one()
+    assert row.title == "Custom Title"
+
+
+def test_reindex_derives_title_from_filename_when_no_frontmatter_or_heading(
+    tmp_path: Path,
+) -> None:
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    (vault / "plain_note.md").write_text("Just body text, no heading.\n")
+    indexer, engine = _make_indexer(tmp_path, vault)
+
+    indexer.reindex()
+
+    with engine.connect() as conn:
+        row = conn.execute(
+            text(f"SELECT title FROM {VAULT_SEARCH_FTS_TABLE} WHERE path = 'plain_note.md'")
+        ).one()
+    assert row.title == "plain_note"
+
+
+def test_reindex_updates_fts_content_when_file_changes(tmp_path: Path) -> None:
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    note = vault / "note.md"
+    note.write_text("original wording")
+    indexer, engine = _make_indexer(tmp_path, vault)
+    indexer.reindex()
+
+    note.write_text("updated wording")
+    indexer.reindex()
+
+    with engine.connect() as conn:
+        rows = list(conn.execute(text(_match_sql("path", "original"))))
+    assert rows == []
+
+
+def test_reindex_removes_fts_entry_for_a_missing_file(tmp_path: Path) -> None:
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    note = vault / "note.md"
+    note.write_text("unique searchable phrase")
+    indexer, engine = _make_indexer(tmp_path, vault)
+    indexer.reindex()
+
+    note.unlink()
+    indexer.reindex()
+
+    with engine.connect() as conn:
+        rows = list(conn.execute(text(_match_sql("path", "unique"))))
+    assert rows == []
 
 
 def test_reindex_indexes_multiple_files(tmp_path: Path) -> None:

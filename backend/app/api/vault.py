@@ -19,6 +19,7 @@ from app.api.dependencies import (
     get_config_store,
     get_diff_approval_service,
     get_vault_scan_service,
+    get_vault_search_service,
 )
 from app.api.errors import api_error
 from app.config.store import ConfigStore
@@ -32,6 +33,11 @@ from app.services.diff_approval_service import (
     ProposalNotFoundError,
 )
 from app.services.vault_scan_service import VaultReindexSummary, VaultScanService
+from app.services.vault_search_service import (
+    InvalidSearchQueryError,
+    VaultSearchResult,
+    VaultSearchService,
+)
 
 router = APIRouter(prefix="/api/v1/vault", tags=["vault"])
 
@@ -42,6 +48,7 @@ ChangeProposalRepositoryDep = Annotated[
 VaultScanServiceDep = Annotated[VaultScanService, Depends(get_vault_scan_service)]
 ApplyChangeServiceDep = Annotated[ApplyChangeService, Depends(get_apply_change_service)]
 DiffApprovalServiceDep = Annotated[DiffApprovalService, Depends(get_diff_approval_service)]
+VaultSearchServiceDep = Annotated[VaultSearchService, Depends(get_vault_search_service)]
 
 
 class ConfigureVaultRequest(BaseModel):
@@ -71,6 +78,20 @@ class ChangeProposalResponse(BaseModel):
 
 class ChangeProposalListResponse(BaseModel):
     changes: list[ChangeProposalResponse]
+
+
+class VaultSearchResultResponse(BaseModel):
+    path: str
+    title: str
+    snippet: str
+
+    @classmethod
+    def from_result(cls, result: VaultSearchResult) -> "VaultSearchResultResponse":
+        return cls(path=result.path, title=result.title, snippet=result.snippet)
+
+
+class VaultSearchResponse(BaseModel):
+    results: list[VaultSearchResultResponse]
 
 
 @router.post("/configure", response_model=ConfigureVaultResponse)
@@ -128,3 +149,12 @@ def reject_change(change_id: str, approval: DiffApprovalServiceDep) -> ChangePro
     except InvalidProposalStatusError as exc:
         raise api_error("CONFLICT", str(exc), 409) from exc
     return ChangeProposalResponse.from_entity(proposal)
+
+
+@router.get("/search", response_model=VaultSearchResponse)
+def search_vault(q: str, service: VaultSearchServiceDep) -> VaultSearchResponse:
+    try:
+        results = service.search(q)
+    except InvalidSearchQueryError as exc:
+        raise api_error("VALIDATION_ERROR", str(exc), 400) from exc
+    return VaultSearchResponse(results=[VaultSearchResultResponse.from_result(r) for r in results])

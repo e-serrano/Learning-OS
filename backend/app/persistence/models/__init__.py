@@ -17,6 +17,7 @@ from app.persistence.models.roadmap import RoadmapModel
 from app.persistence.models.session import ActivityModel, SessionModel
 from app.persistence.models.skill import SkillConceptModel, SkillModel
 from app.persistence.models.vault_file import VaultFileModel
+from app.persistence.models.vault_search import VAULT_SEARCH_FTS_TABLE
 
 __all__ = [
     "AIProviderConfigModel",
@@ -41,5 +42,6 @@ __all__ = [
     "SessionModel",
     "SkillConceptModel",
     "SkillModel",
+    "VAULT_SEARCH_FTS_TABLE",
     "VaultFileModel",
 ]

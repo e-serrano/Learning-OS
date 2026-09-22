@@ -926,6 +926,15 @@ CI green, tests green, build green, working tree limpio y tag `v0.1.0`.
 No comenzar hasta T126:
 
 ### T127 — SQLite FTS
+**Estado:** DONE
+
+Full-text search over vault Markdown content: `GET /api/v1/vault/search?q=<query>` (docs/API_SPEC.md #2), backed by a `vault_files_fts` SQLite FTS5 virtual table.
+
+**Nota:** El texto de la tarea (solo un título, sin dependencias ni criterios explícitos en TASKS.md) se interpretó con `docs/ROADMAP.md` Fase 10 ("SQLite FTS, embeddings, semantic retrieval, relevance scoring, context inspection") -- FTS es la base léxica de ese grupo, independiente de embeddings (T128) y no bloqueada por ellos. No confundir con "semantic similarity", la señal de ranking que `docs/AI_CONTRACTS.md` #12 ya lista como pendiente en `context_builder.py` -- esa es semántica (T128/T129), esta es léxica (coincidencia de palabras), una capacidad nueva y separada: buscar notas del vault por contenido, algo que la app no podía hacer en absoluto hasta ahora (`ContextBuilder` nunca lee contenido de notas; el único lugar que lee una nota real es `CuratorService`, y solo la nota objetivo de un concepto concreto).
+
+Una tabla virtual FTS5 no es expresable como modelo declarativo de SQLAlchemy -- `app/persistence/models/vault_search.py` define el DDL crudo una sola vez (`VAULT_SEARCH_FTS_CREATE_SQL`) y lo reutiliza en dos sitios: un listener `after_create`/`after_drop` sobre `Base.metadata` (para que cada test que usa `Base.metadata.create_all()` la tenga automáticamente, sin tocar ningún test existente) y la migración `9ad53fa4ea88`. `VaultIndexer.reindex()` (T042) ya lee el contenido completo de cada archivo para hashearlo -- se aprovechó ese mismo punto para reconstruir por completo la fila FTS de cada path en cada escaneo (borrar + reinsertar), en vez de mantenerla sincronizada de forma incremental vía triggers de contenido externo de SQLite: más simple y correcto para una tabla que ya se reconstruye desde un escaneo completo en cada uso. A diferencia de `vault_files`, un archivo `missing` borra su fila FTS en vez de marcarla -- la búsqueda es una vista del contenido *actual*, no una auditoría histórica.
+
+`VaultSearchService.search()` envuelve cada palabra de la consulta como su propia frase FTS5 literal (en vez de la query completa como una sola frase) -- así caracteres de operador de FTS5 (`"`, `*`, `-`, `AND`/`OR`/`NOT`) en la entrada del usuario nunca se interpretan como sintaxis ni pueden provocar un error, pero varias palabras siguen combinándose con AND (comportamiento por defecto de FTS5 para términos separados por espacio), así que "sql window" encuentra igual una nota que dice "window sql" -- envolver la query entera como una sola frase (primer intento, corregido tras fallar un test) habría exigido coincidencia exacta de orden, rompiendo la búsqueda multi-palabra normal.
 ### T128 — Embeddings
 ### T129 — Semantic retrieval
 ### T130 — FSRS

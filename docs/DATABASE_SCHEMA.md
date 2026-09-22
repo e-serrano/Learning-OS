@@ -341,6 +341,29 @@ them). `managed_id` is the note's stable frontmatter `id` when present
 (docs/OBSIDIAN_SCHEMA.md #3); `missing` supports the deletion policy in
 docs/OBSIDIAN_SCHEMA.md #16 (mark missing, never silently delete evidence).
 
+### vault_files_fts
+
+```sql
+CREATE VIRTUAL TABLE vault_files_fts USING fts5(
+    path UNINDEXED,
+    title,
+    body,
+    tokenize = 'porter unicode61'
+);
+```
+
+Full-text search index over vault Markdown content (docs/TASKS.md T127) --
+not an ORM-mapped table (SQLite FTS5 virtual tables aren't expressible via
+SQLAlchemy's declarative models), added via raw DDL in both a migration and
+an `after_create`/`after_drop` listener on `Base.metadata` so production
+and every test schema stay in sync (`app/persistence/models/vault_search.py`).
+`VaultIndexer.reindex()` fully deletes-then-reinserts each file's row on
+every scan (it already reads the full content to hash it) rather than
+incrementally syncing via SQLite's external-content triggers -- simpler
+and correct for a table that's always rebuilt from a full scan. Unlike
+`vault_files`, a missing file's row is deleted outright, not flagged:
+search reflects current content only, not an audit trail.
+
 ### change_proposals
 
 Added while implementing T046 -- absent from the original schema despite
