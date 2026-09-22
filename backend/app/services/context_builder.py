@@ -4,8 +4,12 @@ never the full vault by default (docs/TASKS.md T060, docs/AI_CONTRACTS.md
 
 Ranking signals implemented: goal relevance, concept relevance,
 prerequisite relationship, recent mistakes, recent practice. Semantic
-similarity (also listed in AI_CONTRACTS.md #12) is out of scope for the
-MVP -- there is no embeddings infrastructure yet.
+similarity (also listed in AI_CONTRACTS.md #12) has embeddings
+infrastructure now (docs/TASKS.md T128/T129, `SemanticSearchService`)
+but is deliberately not wired in here -- doing so would make every
+caller of this class newly require the user's default AI provider to
+support embeddings, which Anthropic does not, silently breaking a
+working deployment. See docs/AI_CONTRACTS.md #12's own note.
 """
 
 from typing import Any

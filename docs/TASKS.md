@@ -949,6 +949,14 @@ Decisión de coste explícita: a diferencia de `vault_files_fts` (T127, gratis, 
 No incluye aún búsqueda por similitud (eso es T129, "Semantic retrieval" -- un paso deliberadamente separado en el propio texto del backlog); T128 es solo generación y persistencia.
 
 ### T129 — Semantic retrieval
+**Estado:** DONE
+
+Búsqueda por similitud de embeddings sobre el vault: `GET /api/v1/vault/search/semantic?q=<query>` (docs/API_SPEC.md #2), consume la infraestructura de T128.
+
+**Nota:** Alcance deliberadamente acotado al mismo patrón que T127/T128: un endpoint de recuperación nuevo y aditivo, no una reescritura de `ContextBuilder`. `SemanticSearchService` (`app/services/semantic_search_service.py`) embebe la query con el `EmbeddingOrchestrator` actual, compara por coseno contra cada fila de `vault_embeddings` cuyo `model` coincide con el modelo de embedding vigente (mismo criterio de T128: vectores de modelos distintos son incomparables, así que una fila con modelo obsoleto se excluye en vez de romper el ranking), y devuelve los `limit` mejores resultados con su `title` (buscado en `vault_files_fts`, T127, para no duplicar lógica de extracción de título). Sin dependencia de numpy -- el backend no la tenía como dependencia y el volumen de notas de un vault no la necesita; similitud de coseno en Python puro. Ruta separada de `/vault/search` (léxica) a propósito: modos de fallo distintos (query FTS mal formada vs. provider de embeddings no disponible) y coste por query distinto (gratis/local vs. llamada de red real), fusionarlas habría ocultado cuál de las dos falló.
+
+Se decidió explícitamente NO conectar esto a `ContextBuilder` (T060) pese a que `docs/AI_CONTRACTS.md` #12 lista "semantic similarity" como una de sus 6 señales de ranking y su propio docstring decía "out of scope -- no hay infraestructura de embeddings todavía" (ya desactualizado tras T128, corregido aquí). Conectarlo habría hecho que cada llamador existente de `get_context_builder()` (diagnóstico, ejercicios, evaluaciones de transferencia, proyectos, curator) dependiera de golpe de que el provider de IA por defecto soporte embeddings -- y Anthropic no los soporta, así que un despliegue funcionando sobre Anthropic se habría roto en silencio. Esa decisión (cableado real en el pipeline de contexto de IA, con manejo de fallo best-effort) es más grande y arriesgada que "añadir un endpoint de recuperación" y queda fuera de esta tarea, documentada en `docs/AI_CONTRACTS.md` #12 y en el docstring de `context_builder.py` para quien la retome.
+
 ### T130 — FSRS
 ### T131 — Knowledge graph UI
 ### T132 — Socratic mode

@@ -76,6 +76,7 @@ from app.services.review_flow_service import ReviewFlowService
 from app.services.review_scheduler import ReviewScheduler
 from app.services.roadmap_generation_service import RoadmapGenerationService
 from app.services.roadmap_service import RoadmapService
+from app.services.semantic_search_service import SemanticSearchService
 from app.services.session_service import SessionApplicationService
 from app.services.todays_reviews_service import TodaysReviewsService
 from app.services.transfer_assessment_service import TransferAssessmentService
@@ -237,6 +238,12 @@ def get_embedding_service(
     orchestrator: Annotated[EmbeddingOrchestrator, Depends(get_embedding_orchestrator)],
 ) -> EmbeddingService:
     return EmbeddingService(get_engine(), vault, orchestrator)
+
+
+def get_semantic_search_service(
+    orchestrator: Annotated[EmbeddingOrchestrator, Depends(get_embedding_orchestrator)],
+) -> SemanticSearchService:
+    return SemanticSearchService(get_engine(), orchestrator)
 
 
 def get_roadmap_repository() -> SqlRoadmapRepository:

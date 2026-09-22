@@ -127,6 +127,32 @@ endpoint (Anthropic) or no default embedding model is known for it
 (OpenRouter/NVIDIA NIM/OpenAI-compatible -- see
 `app/ai/embedding_provider_factory.py`).
 
+### Semantic search
+
+`GET /vault/search/semantic?q=<query>` (docs/TASKS.md T129)
+
+Embedding-similarity search over vault files that already have an
+embedding (see "Generate embeddings" above) -- a separate route from
+`/search` (lexical FTS): different failure modes and a real per-query
+provider cost, unlike FTS. `q` must be non-blank
+(`VALIDATION_ERROR`). Returns `[]` if no embeddings have been generated
+yet, rather than erroring.
+
+Response:
+
+```json
+{
+  "results": [
+    {"path": "Concepts/Window Functions.md", "title": "Window Functions", "score": 0.87}
+  ]
+}
+```
+
+`score` is cosine similarity between the query and the file's stored
+vector. Only compares against vectors from the currently configured
+embedding model -- a provider/model change never silently mixes
+incomparable vectors into the ranking.
+
 ---
 
 ## 3. Knowledge

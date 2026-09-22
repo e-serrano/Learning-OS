@@ -20,6 +20,7 @@ from app.api.dependencies import (
     get_config_store,
     get_diff_approval_service,
     get_embedding_service,
+    get_semantic_search_service,
     get_vault_scan_service,
     get_vault_search_service,
 )
@@ -35,6 +36,7 @@ from app.services.diff_approval_service import (
     ProposalNotFoundError,
 )
 from app.services.embedding_service import EmbeddingGenerationSummary, EmbeddingService
+from app.services.semantic_search_service import SemanticSearchResult, SemanticSearchService
 from app.services.vault_scan_service import VaultReindexSummary, VaultScanService
 from app.services.vault_search_service import (
     InvalidSearchQueryError,
@@ -53,6 +55,7 @@ ApplyChangeServiceDep = Annotated[ApplyChangeService, Depends(get_apply_change_s
 DiffApprovalServiceDep = Annotated[DiffApprovalService, Depends(get_diff_approval_service)]
 VaultSearchServiceDep = Annotated[VaultSearchService, Depends(get_vault_search_service)]
 EmbeddingServiceDep = Annotated[EmbeddingService, Depends(get_embedding_service)]
+SemanticSearchServiceDep = Annotated[SemanticSearchService, Depends(get_semantic_search_service)]
 
 
 class ConfigureVaultRequest(BaseModel):
@@ -96,6 +99,20 @@ class VaultSearchResultResponse(BaseModel):
 
 class VaultSearchResponse(BaseModel):
     results: list[VaultSearchResultResponse]
+
+
+class SemanticSearchResultResponse(BaseModel):
+    path: str
+    title: str
+    score: float
+
+    @classmethod
+    def from_result(cls, result: SemanticSearchResult) -> "SemanticSearchResultResponse":
+        return cls(path=result.path, title=result.title, score=result.score)
+
+
+class SemanticSearchResponse(BaseModel):
+    results: list[SemanticSearchResultResponse]
 
 
 @router.post("/configure", response_model=ConfigureVaultResponse)
@@ -175,3 +192,23 @@ async def generate_embeddings(service: EmbeddingServiceDep) -> EmbeddingGenerati
         raise api_error("AI_INVALID_OUTPUT", str(exc), 422) from exc
     except AIProviderUnavailableError as exc:
         raise api_error("AI_UNAVAILABLE", str(exc), 503) from exc
+
+
+@router.get("/search/semantic", response_model=SemanticSearchResponse)
+async def search_vault_semantic(
+    q: str, service: SemanticSearchServiceDep
+) -> SemanticSearchResponse:
+    """Embedding-similarity search -- see `semantic_search_service.py`'s
+    docstring for why this is a separate route from `/search` (lexical
+    FTS): different failure modes, different cost per query."""
+    try:
+        results = await service.search(q)
+    except InvalidSearchQueryError as exc:
+        raise api_error("VALIDATION_ERROR", str(exc), 400) from exc
+    except AIInvalidOutputError as exc:
+        raise api_error("AI_INVALID_OUTPUT", str(exc), 422) from exc
+    except AIProviderUnavailableError as exc:
+        raise api_error("AI_UNAVAILABLE", str(exc), 503) from exc
+    return SemanticSearchResponse(
+        results=[SemanticSearchResultResponse.from_result(r) for r in results]
+    )

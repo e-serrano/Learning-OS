@@ -12,6 +12,7 @@ from app.api.dependencies import (
     get_config_store,
     get_diff_approval_service,
     get_embedding_service,
+    get_semantic_search_service,
     get_vault_scan_service,
     get_vault_search_service,
 )
@@ -25,6 +26,7 @@ from app.persistence.engine import create_sqlite_engine
 from app.services.apply_change_service import ApplyChangeService
 from app.services.diff_approval_service import DiffApprovalService
 from app.services.embedding_service import EmbeddingService
+from app.services.semantic_search_service import SemanticSearchService
 from app.services.vault_scan_service import VaultScanService
 from app.services.vault_search_service import VaultSearchService
 
@@ -74,6 +76,9 @@ def client(
     )
     app.dependency_overrides[get_embedding_service] = lambda: EmbeddingService(
         engine, resolver, embedding_orchestrator
+    )
+    app.dependency_overrides[get_semantic_search_service] = lambda: SemanticSearchService(
+        engine, embedding_orchestrator
     )
     test_client = TestClient(app)
     yield test_client
@@ -254,3 +259,38 @@ def test_generate_embeddings_is_idempotent_for_unchanged_files(
     body = response.json()
     assert body["embedded"] == 0
     assert body["skipped_unchanged"] == 1
+
+
+def test_search_vault_semantic_finds_a_result_after_embeddings_are_generated(
+    client: TestClient, vault_dir: Path
+) -> None:
+    (vault_dir / "a.md").write_text("# A\n\nContent about window functions.\n")
+    client.post("/api/v1/vault/scan")
+    client.post("/api/v1/vault/embeddings/generate")
+
+    response = client.get("/api/v1/vault/search/semantic", params={"q": "window functions"})
+
+    assert response.status_code == 200
+    results = response.json()["results"]
+    assert len(results) == 1
+    assert results[0]["path"] == "a.md"
+    assert "score" in results[0]
+
+
+def test_search_vault_semantic_rejects_a_blank_query(client: TestClient) -> None:
+    response = client.get("/api/v1/vault/search/semantic", params={"q": "   "})
+
+    assert response.status_code == 400
+    assert response.json()["detail"]["error"]["code"] == "VALIDATION_ERROR"
+
+
+def test_search_vault_semantic_returns_empty_before_any_embeddings_exist(
+    client: TestClient, vault_dir: Path
+) -> None:
+    (vault_dir / "a.md").write_text("# A\n\nSome content.\n")
+    client.post("/api/v1/vault/scan")
+
+    response = client.get("/api/v1/vault/search/semantic", params={"q": "anything"})
+
+    assert response.status_code == 200
+    assert response.json()["results"] == []

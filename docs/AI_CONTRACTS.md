@@ -252,6 +252,16 @@ recent practice
 semantic similarity
 ```
 
+The first five are implemented in `context_builder.py`. `semantic similarity`
+has the infrastructure it needs as of docs/TASKS.md T128/T129 (embeddings,
+`GET /vault/search/semantic`) but is not yet wired into `ContextBuilder`
+itself -- doing so would make every existing caller of `get_context_builder()`
+(diagnostic, exercises, transfer assessments, projects, curator) newly
+depend on the user's default AI provider supporting embeddings, silently
+breaking working Anthropic-based deployments (no embeddings endpoint at
+all). That wiring is a distinct, larger decision than "add a retrieval
+endpoint" and is left for a dedicated future task.
+
 ---
 
 ## 13. AI failure policy
