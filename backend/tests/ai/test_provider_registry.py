@@ -48,3 +48,25 @@ def test_get_provider_descriptor_rejects_unknown_id() -> None:
 @pytest.mark.parametrize("provider_id", [ProviderId.OPENAI, ProviderId.ANTHROPIC])
 def test_remote_providers_require_api_key(provider_id: ProviderId) -> None:
     assert get_provider_descriptor(provider_id).requires_api_key is True
+
+
+def test_anthropic_has_no_embeddings_endpoint() -> None:
+    """docs/TASKS.md T128: Anthropic has no embeddings API at all -- the
+    one provider that's structurally excluded, not just missing a
+    configured default model."""
+    assert get_provider_descriptor(ProviderId.ANTHROPIC).supports_embeddings is False
+
+
+@pytest.mark.parametrize(
+    "provider_id",
+    [
+        ProviderId.MOCK,
+        ProviderId.OLLAMA,
+        ProviderId.OPENAI,
+        ProviderId.OPENROUTER,
+        ProviderId.NVIDIA_NIM,
+        ProviderId.OPENAI_COMPATIBLE,
+    ],
+)
+def test_every_other_provider_supports_embeddings(provider_id: ProviderId) -> None:
+    assert get_provider_descriptor(provider_id).supports_embeddings is True

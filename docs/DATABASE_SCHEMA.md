@@ -364,6 +364,31 @@ and correct for a table that's always rebuilt from a full scan. Unlike
 `vault_files`, a missing file's row is deleted outright, not flagged:
 search reflects current content only, not an audit trail.
 
+### vault_embeddings
+
+```sql
+CREATE TABLE vault_embeddings (
+    path TEXT PRIMARY KEY,
+    content_hash TEXT NOT NULL,
+    model TEXT NOT NULL,
+    dims INTEGER NOT NULL,
+    vector_json TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+```
+
+One embedding vector per indexed vault file (docs/TASKS.md T128), a
+normal declarative table (unlike `vault_files_fts`, an embedding vector
+has no special SQLite storage needs -- `vector_json` is a plain
+JSON-serialized `list[float]`). `content_hash` mirrors the source
+`vault_files.content_hash` at the time this vector was generated --
+`EmbeddingService` compares the two to skip re-embedding unchanged
+files, since a real provider's embeddings call costs money/quota,
+unlike `vault_files_fts`'s free local rebuild on every scan. `model` is
+stored alongside the vector because vectors from different embedding
+models live in different, mutually-incomparable spaces -- mixing them
+would silently corrupt any future similarity search (T129).
+
 ### change_proposals
 
 Added while implementing T046 -- absent from the original schema despite

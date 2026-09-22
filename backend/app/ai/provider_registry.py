@@ -29,6 +29,12 @@ class ProviderDescriptor(BaseModel):
     requires_base_url: bool
     supports_model_listing: bool
     supports_structured_output: bool
+    supports_embeddings: bool
+    """Whether this provider's wire protocol has an embeddings endpoint at
+    all (docs/TASKS.md T128) -- Anthropic has none. This is a protocol
+    capability, not a guarantee this deployment has a working default
+    embedding model configured for it -- see
+    `app/ai/embedding_provider_factory.py`'s `DEFAULT_EMBEDDING_MODELS`."""
 
 
 PROVIDER_REGISTRY: dict[ProviderId, ProviderDescriptor] = {
@@ -39,6 +45,7 @@ PROVIDER_REGISTRY: dict[ProviderId, ProviderDescriptor] = {
         requires_base_url=False,
         supports_model_listing=False,
         supports_structured_output=True,
+        supports_embeddings=True,
     ),
     ProviderId.OLLAMA: ProviderDescriptor(
         id=ProviderId.OLLAMA,
@@ -47,6 +54,7 @@ PROVIDER_REGISTRY: dict[ProviderId, ProviderDescriptor] = {
         requires_base_url=True,
         supports_model_listing=True,
         supports_structured_output=True,
+        supports_embeddings=True,
     ),
     ProviderId.OPENAI: ProviderDescriptor(
         id=ProviderId.OPENAI,
@@ -55,6 +63,7 @@ PROVIDER_REGISTRY: dict[ProviderId, ProviderDescriptor] = {
         requires_base_url=False,
         supports_model_listing=True,
         supports_structured_output=True,
+        supports_embeddings=True,
     ),
     ProviderId.ANTHROPIC: ProviderDescriptor(
         id=ProviderId.ANTHROPIC,
@@ -63,6 +72,7 @@ PROVIDER_REGISTRY: dict[ProviderId, ProviderDescriptor] = {
         requires_base_url=False,
         supports_model_listing=True,
         supports_structured_output=True,
+        supports_embeddings=False,
     ),
     ProviderId.OPENROUTER: ProviderDescriptor(
         id=ProviderId.OPENROUTER,
@@ -71,6 +81,7 @@ PROVIDER_REGISTRY: dict[ProviderId, ProviderDescriptor] = {
         requires_base_url=True,
         supports_model_listing=True,
         supports_structured_output=True,
+        supports_embeddings=True,
     ),
     ProviderId.NVIDIA_NIM: ProviderDescriptor(
         id=ProviderId.NVIDIA_NIM,
@@ -79,6 +90,7 @@ PROVIDER_REGISTRY: dict[ProviderId, ProviderDescriptor] = {
         requires_base_url=True,
         supports_model_listing=True,
         supports_structured_output=True,
+        supports_embeddings=True,
     ),
     ProviderId.OPENAI_COMPATIBLE: ProviderDescriptor(
         id=ProviderId.OPENAI_COMPATIBLE,
@@ -87,6 +99,7 @@ PROVIDER_REGISTRY: dict[ProviderId, ProviderDescriptor] = {
         requires_base_url=True,
         supports_model_listing=True,
         supports_structured_output=False,
+        supports_embeddings=True,
     ),
 }
 

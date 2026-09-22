@@ -312,7 +312,7 @@ nvidia_nim
 openai_compatible
 ```
 
-Each provider declares whether it requires an API key/base URL and whether it supports model listing and structured output.
+Each provider declares whether it requires an API key/base URL and whether it supports model listing, structured output, and embeddings (docs/TASKS.md T128 -- Anthropic is the one provider with no embeddings endpoint at all).
 
 ## 17. Provider-specific adapters
 

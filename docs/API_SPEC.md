@@ -102,6 +102,31 @@ Response:
 }
 ```
 
+### Generate embeddings
+
+`POST /vault/embeddings/generate` (docs/TASKS.md T128)
+
+Generates an embedding vector for every currently-indexed vault file whose
+content changed since its last embedding (unchanged files are skipped).
+Explicit, not automatic on `/vault/scan` -- a real provider's embeddings
+call has a cost the caller should trigger deliberately.
+
+Response:
+
+```json
+{
+  "files_total": 42,
+  "embedded": 3,
+  "skipped_unchanged": 39,
+  "model": "text-embedding-3-small"
+}
+```
+
+`AI_UNAVAILABLE` if the configured default AI provider has no embeddings
+endpoint (Anthropic) or no default embedding model is known for it
+(OpenRouter/NVIDIA NIM/OpenAI-compatible -- see
+`app/ai/embedding_provider_factory.py`).
+
 ---
 
 ## 3. Knowledge

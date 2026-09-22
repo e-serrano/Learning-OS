@@ -13,11 +13,13 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
+from app.ai.errors import AIInvalidOutputError, AIProviderUnavailableError
 from app.api.dependencies import (
     get_apply_change_service,
     get_change_proposal_repository,
     get_config_store,
     get_diff_approval_service,
+    get_embedding_service,
     get_vault_scan_service,
     get_vault_search_service,
 )
@@ -32,6 +34,7 @@ from app.services.diff_approval_service import (
     InvalidProposalStatusError,
     ProposalNotFoundError,
 )
+from app.services.embedding_service import EmbeddingGenerationSummary, EmbeddingService
 from app.services.vault_scan_service import VaultReindexSummary, VaultScanService
 from app.services.vault_search_service import (
     InvalidSearchQueryError,
@@ -49,6 +52,7 @@ VaultScanServiceDep = Annotated[VaultScanService, Depends(get_vault_scan_service
 ApplyChangeServiceDep = Annotated[ApplyChangeService, Depends(get_apply_change_service)]
 DiffApprovalServiceDep = Annotated[DiffApprovalService, Depends(get_diff_approval_service)]
 VaultSearchServiceDep = Annotated[VaultSearchService, Depends(get_vault_search_service)]
+EmbeddingServiceDep = Annotated[EmbeddingService, Depends(get_embedding_service)]
 
 
 class ConfigureVaultRequest(BaseModel):
@@ -158,3 +162,16 @@ def search_vault(q: str, service: VaultSearchServiceDep) -> VaultSearchResponse:
     except InvalidSearchQueryError as exc:
         raise api_error("VALIDATION_ERROR", str(exc), 400) from exc
     return VaultSearchResponse(results=[VaultSearchResultResponse.from_result(r) for r in results])
+
+
+@router.post("/embeddings/generate", response_model=EmbeddingGenerationSummary)
+async def generate_embeddings(service: EmbeddingServiceDep) -> EmbeddingGenerationSummary:
+    """Explicit, not automatic on `/vault/scan` -- see `embedding_service.py`'s
+    own docstring: a real provider's embeddings call has a cost the user
+    should trigger deliberately, unlike FTS's free local rebuild."""
+    try:
+        return await service.generate_for_vault()
+    except AIInvalidOutputError as exc:
+        raise api_error("AI_INVALID_OUTPUT", str(exc), 422) from exc
+    except AIProviderUnavailableError as exc:
+        raise api_error("AI_UNAVAILABLE", str(exc), 503) from exc

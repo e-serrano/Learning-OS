@@ -6,6 +6,12 @@ from typing import Annotated
 from fastapi import Depends
 from sqlalchemy import Engine
 
+from app.ai.embedding_orchestrator import EmbeddingOrchestrator
+from app.ai.embedding_provider_factory import (
+    NoDefaultEmbeddingModelError,
+    ProviderHasNoEmbeddingSupportError,
+    build_default_embedding_provider,
+)
 from app.ai.orchestrator import AIOrchestrator
 from app.ai.provider_factory import (
     MissingBaseUrlError,
@@ -44,6 +50,7 @@ from app.services.context_builder import ContextBuilder
 from app.services.diagnostic_service import DiagnosticService
 from app.services.diagnostic_session_service import DiagnosticSessionService
 from app.services.diff_approval_service import DiffApprovalService
+from app.services.embedding_service import EmbeddingService
 from app.services.evaluator_service import EvaluatorService
 from app.services.evidence_creation_service import EvidenceCreationService
 from app.services.exercise_generator_service import ExerciseGeneratorService
@@ -201,6 +208,35 @@ def get_ai_orchestrator(
     except (NoDefaultProviderError, MissingCredentialError, MissingBaseUrlError) as exc:
         raise api_error("AI_UNAVAILABLE", str(exc), 400) from exc
     return AIOrchestrator(get_engine(), provider, provider_name=provider_name, model=model)
+
+
+def get_embedding_orchestrator(
+    store: Annotated[ConfigStore, Depends(get_config_store)],
+) -> EmbeddingOrchestrator:
+    """Embeddings sibling of `get_ai_orchestrator` (docs/TASKS.md T128).
+    Reuses the same configured default AI provider's credential/base_url
+    (`build_default_embedding_provider`); raises HTTPException directly
+    for the same reason `get_vault_resolver`/`get_ai_orchestrator` do."""
+    config = store.load()
+    try:
+        provider, provider_name, model = build_default_embedding_provider(
+            config.ai_providers, get_credential_store()
+        )
+    except (
+        NoDefaultProviderError,
+        MissingCredentialError,
+        ProviderHasNoEmbeddingSupportError,
+        NoDefaultEmbeddingModelError,
+    ) as exc:
+        raise api_error("AI_UNAVAILABLE", str(exc), 400) from exc
+    return EmbeddingOrchestrator(get_engine(), provider, provider_name=provider_name, model=model)
+
+
+def get_embedding_service(
+    vault: Annotated[VaultResolver, Depends(get_vault_resolver)],
+    orchestrator: Annotated[EmbeddingOrchestrator, Depends(get_embedding_orchestrator)],
+) -> EmbeddingService:
+    return EmbeddingService(get_engine(), vault, orchestrator)
 
 
 def get_roadmap_repository() -> SqlRoadmapRepository:

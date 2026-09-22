@@ -4,11 +4,14 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+from app.ai.adapters.mock_embeddings import MockEmbeddingProvider
+from app.ai.embedding_orchestrator import EmbeddingOrchestrator
 from app.api.dependencies import (
     get_apply_change_service,
     get_change_proposal_repository,
     get_config_store,
     get_diff_approval_service,
+    get_embedding_service,
     get_vault_scan_service,
     get_vault_search_service,
 )
@@ -21,6 +24,7 @@ from app.persistence.base import Base
 from app.persistence.engine import create_sqlite_engine
 from app.services.apply_change_service import ApplyChangeService
 from app.services.diff_approval_service import DiffApprovalService
+from app.services.embedding_service import EmbeddingService
 from app.services.vault_scan_service import VaultScanService
 from app.services.vault_search_service import VaultSearchService
 
@@ -65,6 +69,12 @@ def client(
     )
     app.dependency_overrides[get_diff_approval_service] = lambda: DiffApprovalService(proposals)
     app.dependency_overrides[get_vault_search_service] = lambda: VaultSearchService(engine)
+    embedding_orchestrator = EmbeddingOrchestrator(
+        engine, MockEmbeddingProvider(), provider_name="mock", model="mock-embed"
+    )
+    app.dependency_overrides[get_embedding_service] = lambda: EmbeddingService(
+        engine, resolver, embedding_orchestrator
+    )
     test_client = TestClient(app)
     yield test_client
     app.dependency_overrides.clear()
@@ -214,3 +224,33 @@ def test_search_vault_excludes_missing_files(client: TestClient, vault_dir: Path
 
     assert response.status_code == 200
     assert response.json()["results"] == []
+
+
+def test_generate_embeddings_embeds_every_indexed_file(client: TestClient, vault_dir: Path) -> None:
+    (vault_dir / "a.md").write_text("# A\n\nSome content.\n")
+    (vault_dir / "b.md").write_text("# B\n\nOther content.\n")
+    client.post("/api/v1/vault/scan")
+
+    response = client.post("/api/v1/vault/embeddings/generate")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["files_total"] == 2
+    assert body["embedded"] == 2
+    assert body["skipped_unchanged"] == 0
+    assert body["model"] == "mock-embed"
+
+
+def test_generate_embeddings_is_idempotent_for_unchanged_files(
+    client: TestClient, vault_dir: Path
+) -> None:
+    (vault_dir / "a.md").write_text("# A\n\nSome content.\n")
+    client.post("/api/v1/vault/scan")
+    client.post("/api/v1/vault/embeddings/generate")
+
+    response = client.post("/api/v1/vault/embeddings/generate")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["embedded"] == 0
+    assert body["skipped_unchanged"] == 1
