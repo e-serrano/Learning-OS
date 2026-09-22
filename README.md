@@ -28,9 +28,13 @@ coding-agent contract for this repository.
 
 ## Development
 
-See [DEVELOPMENT.md](DEVELOPMENT.md) for setup and [CONTRIBUTING.md](CONTRIBUTING.md)
-for branch/commit conventions and quality gates.
+See [DEVELOPMENT.md](DEVELOPMENT.md) for installation, the onboarding
+walkthrough, supported AI providers, testing, and troubleshooting.
+[CONTRIBUTING.md](CONTRIBUTING.md) covers branch/commit conventions.
 
 ## Status
 
-Early bootstrap. See `docs/TASKS.md` for current progress.
+MVP in progress: 123/138 tasks done (`docs/TASKS.md`). Phases 0-11 (bootstrap
+through the full frontend) are complete; Phase 12 (Release MVP — E2E tests,
+security audits, this documentation pass, then a `v0.1.0` tag) is the current
+phase. Phase 13 (post-MVP, including FSRS-based scheduling) hasn't started.
