@@ -77,9 +77,7 @@ def test_perfect_evidence_and_full_retention_yields_max_mastery() -> None:
 
 
 def test_recent_window_excludes_older_records_from_recent_performance() -> None:
-    records = [_evidence(0, correctness=0.0)] + [
-        _evidence(i, correctness=1.0) for i in range(1, 6)
-    ]
+    records = [_evidence(0, correctness=0.0)] + [_evidence(i, correctness=1.0) for i in range(1, 6)]
     engine = MasteryEngine(FakeEvidenceRepository(records), recent_window=5)
 
     result = engine.compute(_concept(retention=100))

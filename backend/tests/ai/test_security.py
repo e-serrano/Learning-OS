@@ -41,9 +41,7 @@ def test_injected_content_in_context_never_reaches_the_system_prompt() -> None:
 
 
 def test_injected_content_in_goal_never_reaches_the_system_prompt() -> None:
-    request = AIRequest(
-        role="tutor", prompt_version="tutor.v1", goal={"title": INJECTION_PAYLOAD}
-    )
+    request = AIRequest(role="tutor", prompt_version="tutor.v1", goal={"title": INJECTION_PAYLOAD})
     assert INJECTION_PAYLOAD not in system_prompt(request)
 
 

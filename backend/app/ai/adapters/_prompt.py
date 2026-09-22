@@ -4,8 +4,7 @@ from app.ai.prompts import PROMPT_REGISTRY
 from app.ai.protocol import AIRequest
 
 _JSON_ONLY_SUFFIX = (
-    " Respond only with valid JSON matching the required schema -- no "
-    "prose, no markdown fences."
+    " Respond only with valid JSON matching the required schema -- no prose, no markdown fences."
 )
 
 

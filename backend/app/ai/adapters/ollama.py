@@ -40,9 +40,7 @@ class OllamaProvider:
         client = self._client or httpx.AsyncClient()
         owns_client = self._client is None
         try:
-            response = await client.post(
-                f"{self._base_url}/api/chat", json=payload, timeout=120.0
-            )
+            response = await client.post(f"{self._base_url}/api/chat", json=payload, timeout=120.0)
             response.raise_for_status()
         except httpx.HTTPError as exc:
             raise AIProviderUnavailableError(str(exc)) from exc

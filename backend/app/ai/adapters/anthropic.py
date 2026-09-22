@@ -68,9 +68,7 @@ class AnthropicProvider:
 
         try:
             data = response.json()
-            tool_block = next(
-                block for block in data["content"] if block.get("type") == "tool_use"
-            )
+            tool_block = next(block for block in data["content"] if block.get("type") == "tool_use")
             return response_model.model_validate(tool_block["input"])
         except (KeyError, StopIteration, TypeError, json.JSONDecodeError, ValidationError) as exc:
             raise AIInvalidOutputError(str(exc)) from exc

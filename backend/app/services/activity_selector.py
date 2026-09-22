@@ -72,9 +72,7 @@ class ActivitySelector:
 
     def rank(self, goal_id: str) -> list[ActivityCandidate]:
         now = self._clock.now()
-        candidates = [
-            self._score(concept, now) for concept in self._concepts.list_by_goal(goal_id)
-        ]
+        candidates = [self._score(concept, now) for concept in self._concepts.list_by_goal(goal_id)]
         candidates.sort(key=lambda c: c.score, reverse=True)
         return candidates
 

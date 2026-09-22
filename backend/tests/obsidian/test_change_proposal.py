@@ -126,9 +126,7 @@ def test_update_status_on_missing_proposal_raises(tmp_path: Path) -> None:
 
 def test_create_file_operation_needs_no_section(tmp_path: Path) -> None:
     repo = ChangeProposalRepository(_engine(tmp_path))
-    proposal = _make_proposal(
-        id="p_create", operation=ProposalOperation.CREATE_FILE, section=None
-    )
+    proposal = _make_proposal(id="p_create", operation=ProposalOperation.CREATE_FILE, section=None)
     repo.add(proposal)
 
     loaded = repo.get("p_create")

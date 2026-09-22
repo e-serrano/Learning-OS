@@ -91,9 +91,7 @@ class ChangeProposalRepository:
 
     def list_by_status(self, status: ProposalStatus) -> list[ChangeProposal]:
         with DbSession(self._engine) as db:
-            stmt = select(ChangeProposalModel).where(
-                ChangeProposalModel.status == status.value
-            )
+            stmt = select(ChangeProposalModel).where(ChangeProposalModel.status == status.value)
             return [_to_entity(m) for m in db.scalars(stmt)]
 
     def update_status(

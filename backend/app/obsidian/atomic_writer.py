@@ -52,9 +52,7 @@ def write_note(engine: Engine, resolver: VaultResolver, path: str, content: str)
     with DbSession(engine) as db:
         row = db.get(VaultFileModel, path)
         if row is None:
-            row = VaultFileModel(
-                path=path, file_type="markdown", metadata_json="{}", missing=False
-            )
+            row = VaultFileModel(path=path, file_type="markdown", metadata_json="{}", missing=False)
             db.add(row)
         row.content_hash = new_hash
         row.modified_at = modified_at

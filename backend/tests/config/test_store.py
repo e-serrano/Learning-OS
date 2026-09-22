@@ -66,14 +66,10 @@ def test_save_overwrites_previous_content(db_path: Path) -> None:
 def test_save_replaces_ai_providers_rather_than_accumulating(db_path: Path) -> None:
     store = ConfigStore(str(db_path))
     store.save(
-        AppConfig(
-            ai_providers=[AIProviderConfig(provider_id=ProviderId.MOCK, model="mock-1")]
-        )
+        AppConfig(ai_providers=[AIProviderConfig(provider_id=ProviderId.MOCK, model="mock-1")])
     )
     store.save(
-        AppConfig(
-            ai_providers=[AIProviderConfig(provider_id=ProviderId.OLLAMA, model="llama3")]
-        )
+        AppConfig(ai_providers=[AIProviderConfig(provider_id=ProviderId.OLLAMA, model="llama3")])
     )
 
     loaded = store.load()

@@ -45,6 +45,4 @@ def scan_vault_readonly(path: str) -> VaultScanResult:
     except OSError as exc:
         errors.append(str(exc))
 
-    return VaultScanResult(
-        exists=True, readable=True, markdown_file_count=count, errors=errors
-    )
+    return VaultScanResult(exists=True, readable=True, markdown_file_count=count, errors=errors)

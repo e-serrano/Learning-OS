@@ -38,16 +38,12 @@ def test_planner_response_with_high_leverage_concepts() -> None:
 
 def test_diagnostician_response_validates_evidence_type() -> None:
     with pytest.raises(ValidationError):
-        DiagnosticItem(
-            concept_id="c1", evidence_type="not_a_real_type", question="?", difficulty=1
-        )
+        DiagnosticItem(concept_id="c1", evidence_type="not_a_real_type", question="?", difficulty=1)
 
 
 def test_diagnostician_response_accepts_valid_items() -> None:
     response = DiagnosticianResponse(
-        items=[
-            DiagnosticItem(concept_id="c1", evidence_type="recall", question="?", difficulty=2)
-        ]
+        items=[DiagnosticItem(concept_id="c1", evidence_type="recall", question="?", difficulty=2)]
     )
     assert response.items[0].evidence_type == "recall"
 

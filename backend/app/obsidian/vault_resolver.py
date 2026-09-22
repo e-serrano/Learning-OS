@@ -39,7 +39,5 @@ class VaultResolver:
         try:
             candidate.relative_to(self.root)
         except ValueError:
-            raise VaultPathTraversalError(
-                f"Path escapes vault root: {relative_path}"
-            ) from None
+            raise VaultPathTraversalError(f"Path escapes vault root: {relative_path}") from None
         return candidate

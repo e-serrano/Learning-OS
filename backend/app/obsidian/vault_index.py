@@ -57,9 +57,7 @@ class VaultIndexer:
                 content = absolute.read_text(encoding="utf-8")
                 parsed = parse_frontmatter(content)
                 content_hash = hash_content(content)
-                modified_at = datetime.fromtimestamp(
-                    absolute.stat().st_mtime, tz=UTC
-                ).isoformat()
+                modified_at = datetime.fromtimestamp(absolute.stat().st_mtime, tz=UTC).isoformat()
                 managed_id = _managed_id(parsed.frontmatter)
                 metadata_json = json.dumps(parsed.frontmatter)
 

@@ -40,9 +40,7 @@ class FakeIdGenerator:
 
 
 def test_normalize_collapses_case_whitespace_and_punctuation() -> None:
-    assert normalize("Confuses  ROW_NUMBER, and RANK!") == normalize(
-        "confuses row_number and rank"
-    )
+    assert normalize("Confuses  ROW_NUMBER, and RANK!") == normalize("confuses row_number and rank")
 
 
 def test_first_occurrence_creates_a_new_mistake() -> None:
@@ -75,9 +73,7 @@ def test_differently_worded_but_equivalent_text_still_matches() -> None:
     mistakes = FakeMistakeRepository()
     tracker = MistakeTracker(mistakes, FakeClock(NOW), FakeIdGenerator())
     tracker.record("concept_1", "goal_1", "Forgets PARTITION BY in window functions")
-    result = tracker.record(
-        "concept_1", "goal_1", "forgets partition by in window functions!!"
-    )
+    result = tracker.record("concept_1", "goal_1", "forgets partition by in window functions!!")
 
     assert result.occurrences == 2
 
