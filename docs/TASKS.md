@@ -1040,6 +1040,18 @@ Verificado de las dos formas posibles: (1) extremo backend, real, de punta a pun
 11 tests nuevos backend (7 en `tests/services/test_clip_service.py`, 4 en `tests/api/test_vault.py`) + 931/931 suite completa (931 = 920 previos + 11 nuevos), ruff/mypy limpios.
 
 ### T136 — Obsidian plugin
+**Estado:** DONE
+**Dep:** T081, T119  
+Plugin de Obsidian que lista `ChangeProposal` pendientes con botones Apply/Reject en un panel lateral, dentro de la propia app (`obsidian-plugin/`, consume `GET/POST /vault/changes*` ya existentes).
+
+**Nota:** Igual que T135, sin nada reservado en ningún doc y un tipo de entregable estructuralmente distinto (plugin corriendo dentro del proceso Electron de Obsidian, no una ruta más del backend ni una página del SPA). Se preguntó al usuario antes de construir nada (`AskUserQuestion`): "revisar cambios pendientes dentro del vault" vs. "widget de reviews/progreso"; eligió la primera -- trae el mismo loop de revisión que ya existe en la Vault diff UI (T119) al propio Obsidian, en vez de una pestaña de navegador aparte.
+
+A diferencia de T135, esta tarea NO añadió nada al backend -- `GET /vault/changes`, `POST /vault/changes/{id}/apply`, `POST /vault/changes/{id}/reject` ya existían íntegros desde T081/T119 y el plugin simplemente los consume tal cual; cero endpoints nuevos, cero tests de backend nuevos. Todo el trabajo de esta tarea es un artefacto nuevo (`obsidian-plugin/main.js`/`manifest.json`/`styles.css`), JS plano escrito a mano sin bundler/TypeScript (Obsidian carga `main.js` directo vía `require` de CommonJS) -- mismo criterio "sin tooling de build nuevo para algo tan pequeño" que T135 aplicó a la extensión. Usa `requestUrl` de la propia API de Obsidian en vez de `fetch` -- documentado por Obsidian específicamente porque evita la aplicación de CORS del renderer, mismo razonamiento que llevó a T135 a enrutar todo por el background service worker de la extensión en vez de un content script.
+
+Verificación: igual que T135, no instalable en el navegador de esta sesión (Obsidian es una app Electron aparte, ni siquiera alcanzable como `chrome://` lo fue para la extensión) -- validación estática (`node --check main.js`, JSON válido de `manifest.json`) más el hecho de que los tres endpoints que consume son exactamente los mismos, sin cambios, que T081/T119 ya prueban extensivamente y que T135 además verificó de punta a punta contra un servidor real (crear → listar → aplicar). Sin test harness JS nuevo (Jest u otro) para un único archivo de ~120 líneas -- desproporcionado para el alcance pedido, mismo criterio que T135 (que tampoco tiene tests JS propios para `background.js`). Límite honesto declarado, no ocultado.
+
+Sin tests nuevos (backend sin cambios) -- 931/931 suite completa sin regresión, `node --check`/JSON válidos en los dos archivos del plugin.
+
 ### T137 — Code execution sandbox
 ### T138 — Git integration
 

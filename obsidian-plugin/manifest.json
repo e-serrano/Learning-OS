@@ -1,0 +1,9 @@
+{
+  "id": "learning-os-pending-changes",
+  "name": "Learning OS: Pending Changes",
+  "version": "0.1.0",
+  "minAppVersion": "1.0.0",
+  "description": "Review and apply/reject Learning OS vault change proposals without leaving Obsidian.",
+  "author": "Learning OS",
+  "isDesktopOnly": true
+}

@@ -111,6 +111,33 @@ change for this. Firefox support (a different manifest key set for MV3
 service workers) and a configurable API base URL (currently hardcoded) are
 natural follow-ups, not attempted here.
 
+## Obsidian plugin
+
+`obsidian-plugin/` (docs/TASKS.md T136) adds a sidebar pane inside Obsidian
+itself listing pending `ChangeProposal`s (`GET /api/v1/vault/changes`) with
+Apply/Reject buttons — the exact same review/apply/reject actions the web
+frontend's Vault diff UI exposes, brought into the tool where the notes
+actually live instead of a separate browser tab. Hand-written plain
+JavaScript, no bundler/TypeScript build step (Obsidian loads `main.js`
+directly via CommonJS `require`) — same "no new build tooling for something
+this small" choice T135 made for the browser extension.
+
+To load it locally:
+
+1. Configure a vault and start the backend (hardcodes port 8000, same
+   assumption the browser extension makes).
+2. Copy (or symlink) `obsidian-plugin/` into
+   `<vault>/.obsidian/plugins/learning-os-pending-changes/`.
+3. In Obsidian: Settings → Community plugins → enable "Learning OS: Pending
+   Changes". A ribbon icon and the "Open pending changes" command both open
+   the sidebar pane.
+
+Uses Obsidian's own `requestUrl` API instead of `fetch` — Obsidian's docs
+recommend it specifically because it bypasses the renderer's CORS
+enforcement, the same reasoning behind T135's background-service-worker
+routing. A configurable base URL (settings tab) is a natural follow-up, not
+attempted here.
+
 ## Testing
 
 Five test suites cover different layers (`docs/AGENTS.md` §15). `uv run pytest`
