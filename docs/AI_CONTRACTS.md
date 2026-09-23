@@ -121,6 +121,15 @@ Output:
 
 The tutor must not reveal exercise solutions unless the policy allows it.
 
+Wired into `POST /sessions/{session_id}/tutor` (docs/TASKS.md T132,
+docs/API_SPEC.md #6) as one stateless interactive turn per call, gated on
+`SessionMode.SOCRATIC` -- the application biases the request toward
+Socratic questioning via `constraints`, but never hardcodes `mode`
+itself; that stays the model's per-turn judgment within the schema above.
+No frontend consumes this route yet -- a session-mode selector and a
+Socratic chat UI are a distinct, larger task than wiring the contract
+itself, left for later.
+
 ---
 
 ## 7. Exercise generator contract

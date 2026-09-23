@@ -80,6 +80,7 @@ from app.services.semantic_search_service import SemanticSearchService
 from app.services.session_service import SessionApplicationService
 from app.services.todays_reviews_service import TodaysReviewsService
 from app.services.transfer_assessment_service import TransferAssessmentService
+from app.services.tutor_service import TutorService
 from app.services.vault_scan_service import VaultScanService
 from app.services.vault_search_service import VaultSearchService
 
@@ -389,6 +390,17 @@ def get_exercise_generator_service(
         orchestrator=orchestrator,
         clock=get_clock(),
         ids=get_id_generator(),
+    )
+
+
+def get_tutor_service(
+    orchestrator: Annotated[AIOrchestrator, Depends(get_ai_orchestrator)],
+) -> TutorService:
+    return TutorService(
+        goals=get_goal_repository(),
+        sessions=get_session_repository(),
+        context_builder=get_context_builder(),
+        orchestrator=orchestrator,
     )
 
 

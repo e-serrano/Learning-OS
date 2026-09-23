@@ -257,6 +257,48 @@ Response:
 
 `POST /sessions/{session_id}/complete`
 
+### Tutor turn (Socratic mode)
+
+`POST /sessions/{session_id}/tutor` (docs/TASKS.md T132)
+
+One stateless interactive turn with the Tutor AI role (docs/AI_CONTRACTS.md
+#6). Only usable on a session created with `"mode": "socratic"` --
+`SESSION_STATE_ERROR` otherwise (same code as an inactive session). The
+caller resends the conversation-so-far each call; nothing here persists a
+transcript, and a tutor turn never creates `Evidence` or updates mastery
+-- it is an interactive scaffold, not a graded activity.
+
+Request:
+
+```json
+{
+  "concept_id": "concept_...",
+  "message": "Is it like a subquery?",
+  "history": [
+    {"speaker": "tutor", "content": "What have you tried so far?"},
+    {"speaker": "learner", "content": "Not sure where to start."}
+  ]
+}
+```
+
+`message` and `history` are both optional (default `""` / `[]`) -- the
+opening turn of a dialogue has neither.
+
+Response:
+
+```json
+{
+  "mode": "question",
+  "content": "...",
+  "check_for_understanding": "...",
+  "next_activity": "..."
+}
+```
+
+`mode` is one of `explain|question|hint|feedback|reflection` (the model's
+own choice per turn, biased toward `question` by the request's
+`constraints`, never hardcoded by the application).
+
 ---
 
 ## 7. Reviews

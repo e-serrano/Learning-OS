@@ -11,14 +11,21 @@ prior task.
 `ExerciseGeneratorService` (T071) through `ActivityContentService`
 (T103), so both can raise `AIProviderUnavailableError`/
 `AIInvalidOutputError` same as T101/T102's AI-calling routes.
+
+`/tutor` (docs/TASKS.md T132) is a separate, stateless interactive turn
+using the Tutor AI role -- unlike `/next`/`/answer`, it never touches
+`Activity`/`Evidence`/mastery. Only usable on a `mode="socratic"` session
+(`TutorService` rejects any other mode); the caller resends the
+conversation-so-far each call since nothing here persists it.
 """
 
 from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
+from app.ai.contracts import TutorResponse
 from app.ai.errors import AIInvalidOutputError, AIProviderUnavailableError
 from app.api.dependencies import (
     get_activity_content_service,
@@ -26,6 +33,7 @@ from app.api.dependencies import (
     get_answer_flow_service,
     get_next_activity_service,
     get_session_service,
+    get_tutor_service,
 )
 from app.api.errors import api_error
 from app.domain.entities import Activity, Session
@@ -39,7 +47,7 @@ from app.services.answer_flow_service import (
     AnswerFlowService,
     AnswerResult,
 )
-from app.services.context_builder import GoalNotFoundError
+from app.services.context_builder import ConceptNotFoundError, GoalNotFoundError
 from app.services.next_activity_service import (
     InactiveSessionError,
     NextActivityService,
@@ -51,6 +59,7 @@ from app.services.session_service import (
     InvalidSessionTransitionError,
     SessionApplicationService,
 )
+from app.services.tutor_service import SessionNotSocraticError, TutorService, TutorTurn
 
 router = APIRouter(tags=["sessions"])
 
@@ -61,6 +70,7 @@ AdaptiveActivityServiceDep = Annotated[
 ]
 ActivityContentServiceDep = Annotated[ActivityContentService, Depends(get_activity_content_service)]
 AnswerFlowServiceDep = Annotated[AnswerFlowService, Depends(get_answer_flow_service)]
+TutorServiceDep = Annotated[TutorService, Depends(get_tutor_service)]
 
 
 class CreateSessionRequest(BaseModel):
@@ -176,6 +186,28 @@ class SubmitAnswerResponse(BaseModel):
         )
 
 
+class TutorTurnRequest(BaseModel):
+    concept_id: str
+    message: str = ""
+    history: list[TutorTurn] = Field(default_factory=list)
+
+
+class TutorTurnResponse(BaseModel):
+    mode: str
+    content: str
+    check_for_understanding: str | None
+    next_activity: str | None
+
+    @classmethod
+    def from_tutor_response(cls, response: TutorResponse) -> "TutorTurnResponse":
+        return cls(
+            mode=response.mode,
+            content=response.content,
+            check_for_understanding=response.check_for_understanding,
+            next_activity=response.next_activity,
+        )
+
+
 def _session_response(session: Session) -> SessionResponse:
     return SessionResponse(**session.model_dump())
 
@@ -234,6 +266,33 @@ async def next_activity(
     session = session_service.get_session(session_id)
     content = await _pick_and_attach(session.goal_id, picked, activity_content)
     return NextActivityResponse.from_content(content)
+
+
+@router.post("/api/v1/sessions/{session_id}/tutor", response_model=TutorTurnResponse)
+async def tutor_turn(
+    session_id: str, request: TutorTurnRequest, service: TutorServiceDep
+) -> TutorTurnResponse:
+    try:
+        response = await service.ask(
+            session_id, request.concept_id, request.history, request.message
+        )
+    except SessionNotFoundError as exc:
+        raise api_error("NOT_FOUND", f"Session '{session_id}' not found", 404) from exc
+    except (GoalNotFoundError, ConceptNotFoundError) as exc:
+        raise api_error("NOT_FOUND", str(exc), 404) from exc
+    except InactiveSessionError as exc:
+        raise api_error(
+            "SESSION_STATE_ERROR", f"Session '{session_id}' is not active", 409
+        ) from exc
+    except SessionNotSocraticError as exc:
+        raise api_error(
+            "SESSION_STATE_ERROR", f"Session '{session_id}' is not in socratic mode", 409
+        ) from exc
+    except AIInvalidOutputError as exc:
+        raise api_error("AI_INVALID_OUTPUT", str(exc), 422) from exc
+    except AIProviderUnavailableError as exc:
+        raise api_error("AI_UNAVAILABLE", str(exc), 503) from exc
+    return TutorTurnResponse.from_tutor_response(response)
 
 
 @router.post(

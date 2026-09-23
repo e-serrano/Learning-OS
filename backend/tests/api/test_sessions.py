@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import Engine
 
 from app.ai.adapters.mock import MockProvider
-from app.ai.contracts import EvaluatorResponse, ExerciseGeneratorResponse
+from app.ai.contracts import EvaluatorResponse, ExerciseGeneratorResponse, TutorResponse
 from app.ai.orchestrator import AIOrchestrator
 from app.api.dependencies import (
     get_activity_content_service,
@@ -15,6 +15,7 @@ from app.api.dependencies import (
     get_answer_flow_service,
     get_next_activity_service,
     get_session_service,
+    get_tutor_service,
 )
 from app.domain.entities import Activity, Concept, LearningGoal
 from app.domain.enums import (
@@ -58,6 +59,7 @@ from app.services.next_activity_service import NextActivityService
 from app.services.review_creation_service import ReviewCreationService
 from app.services.review_scheduler import ReviewScheduler
 from app.services.session_service import SessionApplicationService
+from app.services.tutor_service import TutorService
 
 NOW = datetime(2026, 1, 1, tzinfo=UTC)
 
@@ -101,6 +103,17 @@ def _evaluator_response(**overrides: object) -> EvaluatorResponse:
     return EvaluatorResponse(**defaults)  # type: ignore[arg-type]
 
 
+def _tutor_response(**overrides: object) -> TutorResponse:
+    defaults: dict[str, object] = dict(
+        mode="question",
+        content="What do you think happens if two rows share the same value?",
+        check_for_understanding=None,
+        next_activity=None,
+    )
+    defaults.update(overrides)
+    return TutorResponse(**defaults)  # type: ignore[arg-type]
+
+
 @pytest.fixture
 def engine(tmp_path: Path) -> Engine:
     engine = create_sqlite_engine(str(tmp_path / "test.sqlite3"))
@@ -113,6 +126,7 @@ def client(engine: Engine) -> TestClient:
     provider = MockProvider()
     provider.set_response(ExerciseGeneratorResponse, _exercise_response())
     provider.set_response(EvaluatorResponse, _evaluator_response())
+    provider.set_response(TutorResponse, _tutor_response())
     orchestrator = AIOrchestrator(engine, provider, provider_name="mock", model="mock-1")  # type: ignore[arg-type]
 
     goals = SqlGoalRepository(engine)
@@ -180,12 +194,16 @@ def client(engine: Engine) -> TestClient:
         activity_content=activity_content,
     )
     session_service = SessionApplicationService(goals, sessions, FakeClock(), UuidIdGenerator())
+    tutor_service = TutorService(
+        goals=goals, sessions=sessions, context_builder=context_builder, orchestrator=orchestrator
+    )
 
     app.dependency_overrides[get_session_service] = lambda: session_service
     app.dependency_overrides[get_next_activity_service] = lambda: next_activity_service
     app.dependency_overrides[get_adaptive_activity_service] = lambda: adaptive_activity
     app.dependency_overrides[get_activity_content_service] = lambda: activity_content
     app.dependency_overrides[get_answer_flow_service] = lambda: answer_flow
+    app.dependency_overrides[get_tutor_service] = lambda: tutor_service
 
     test_client = TestClient(app)
     yield test_client
@@ -331,3 +349,78 @@ def test_answer_missing_activity_404s(client: TestClient, engine: Engine) -> Non
     )
 
     assert response.status_code == 404
+
+
+def test_tutor_turn_returns_a_socratic_response(client: TestClient, engine: Engine) -> None:
+    _seed_goal_and_concept(engine)
+    session_id = client.post(
+        "/api/v1/goals/goal_1/sessions", json={"mode": "socratic", "duration_minutes": 30}
+    ).json()["id"]
+
+    response = client.post(
+        f"/api/v1/sessions/{session_id}/tutor",
+        json={"concept_id": "window_functions", "message": "Is it like a subquery?"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["mode"] == "question"
+    assert "same value" in body["content"]
+
+
+def test_tutor_turn_accepts_history(client: TestClient, engine: Engine) -> None:
+    _seed_goal_and_concept(engine)
+    session_id = client.post(
+        "/api/v1/goals/goal_1/sessions", json={"mode": "socratic", "duration_minutes": 30}
+    ).json()["id"]
+
+    response = client.post(
+        f"/api/v1/sessions/{session_id}/tutor",
+        json={
+            "concept_id": "window_functions",
+            "message": "Not sure.",
+            "history": [
+                {"speaker": "tutor", "content": "What have you tried so far?"},
+                {"speaker": "learner", "content": "Nothing yet."},
+            ],
+        },
+    )
+
+    assert response.status_code == 200
+
+
+def test_tutor_turn_rejects_a_non_socratic_session(client: TestClient, engine: Engine) -> None:
+    _seed_goal_and_concept(engine)
+    session_id = client.post(
+        "/api/v1/goals/goal_1/sessions", json={"mode": "guided", "duration_minutes": 30}
+    ).json()["id"]
+
+    response = client.post(
+        f"/api/v1/sessions/{session_id}/tutor", json={"concept_id": "window_functions"}
+    )
+
+    assert response.status_code == 409
+    assert response.json()["detail"]["error"]["code"] == "SESSION_STATE_ERROR"
+
+
+def test_tutor_turn_404s_when_session_missing(client: TestClient) -> None:
+    response = client.post(
+        "/api/v1/sessions/missing/tutor", json={"concept_id": "window_functions"}
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"]["error"]["code"] == "NOT_FOUND"
+
+
+def test_tutor_turn_404s_when_concept_missing(client: TestClient, engine: Engine) -> None:
+    _seed_goal_and_concept(engine)
+    session_id = client.post(
+        "/api/v1/goals/goal_1/sessions", json={"mode": "socratic", "duration_minutes": 30}
+    ).json()["id"]
+
+    response = client.post(
+        f"/api/v1/sessions/{session_id}/tutor", json={"concept_id": "missing_concept"}
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"]["error"]["code"] == "NOT_FOUND"
