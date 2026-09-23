@@ -3,10 +3,11 @@ T063, docs/SPECS.md #17: "MVP uses simple spaced repetition. Future
 versions may use FSRS.").
 
 The scheduling algorithm sits behind `SchedulingStrategy`, a swap point
-for T130 (FSRS, Phase 13/post-MVP): a future `FsrsScheduler` implements
-the same Protocol and reads `previous.stability`/`previous.difficulty`
-(already present on the `Review` entity, unused by this MVP strategy) --
-no other caller changes needed.
+that `FsrsScheduler` (app/services/fsrs_scheduler.py, docs/TASKS.md T130)
+now implements: same Protocol, reads `previous.stability`/
+`previous.difficulty` (already present on the `Review` entity, unused by
+this MVP strategy) -- no other caller changes needed. Not the wired-in
+default yet; see `fsrs_scheduler.py`'s module docstring for why.
 """
 
 from dataclasses import dataclass
