@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Learning OS Web Clipper",
+  "version": "0.1.0",
+  "description": "Save a text selection from any page into your Learning OS vault for later review.",
+  "permissions": ["contextMenus"],
+  "host_permissions": ["http://127.0.0.1:8000/*", "http://localhost:8000/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Learning OS Web Clipper"
+  }
+}

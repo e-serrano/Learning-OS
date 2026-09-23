@@ -9,6 +9,7 @@ from app.ai.embedding_orchestrator import EmbeddingOrchestrator
 from app.api.dependencies import (
     get_apply_change_service,
     get_change_proposal_repository,
+    get_clip_service,
     get_config_store,
     get_diff_approval_service,
     get_embedding_service,
@@ -24,6 +25,7 @@ from app.obsidian.vault_resolver import VaultResolver
 from app.persistence.base import Base
 from app.persistence.engine import create_sqlite_engine
 from app.services.apply_change_service import ApplyChangeService
+from app.services.clip_service import ClipService
 from app.services.diff_approval_service import DiffApprovalService
 from app.services.embedding_service import EmbeddingService
 from app.services.semantic_search_service import SemanticSearchService
@@ -31,6 +33,20 @@ from app.services.vault_scan_service import VaultScanService
 from app.services.vault_search_service import VaultSearchService
 
 NOW = datetime(2026, 1, 1, tzinfo=UTC)
+
+
+class FakeClock:
+    def now(self) -> datetime:
+        return NOW
+
+
+class FakeIdGenerator:
+    def __init__(self) -> None:
+        self._counter = 0
+
+    def new_id(self, prefix: str) -> str:
+        self._counter += 1
+        return f"{prefix}_{self._counter}"
 
 
 @pytest.fixture
@@ -79,6 +95,9 @@ def client(
     )
     app.dependency_overrides[get_semantic_search_service] = lambda: SemanticSearchService(
         engine, embedding_orchestrator
+    )
+    app.dependency_overrides[get_clip_service] = lambda: ClipService(
+        proposals, resolver, FakeClock(), FakeIdGenerator()
     )
     test_client = TestClient(app)
     yield test_client
@@ -294,3 +313,59 @@ def test_search_vault_semantic_returns_empty_before_any_embeddings_exist(
 
     assert response.status_code == 200
     assert response.json()["results"] == []
+
+
+def test_create_clip_returns_a_pending_proposal(client: TestClient) -> None:
+    response = client.post(
+        "/api/v1/vault/clip",
+        json={
+            "url": "https://example.com/window-functions",
+            "title": "Window Functions Explained",
+            "selection": "A window function computes a value across a set of rows.",
+        },
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["status"] == "pending"
+    assert body["operation"] == "create_file"
+    assert body["path"].startswith("Clippings/")
+    assert "A window function computes a value across a set of rows." in body["content"]
+
+
+def test_create_clip_shows_up_in_pending_changes(client: TestClient) -> None:
+    client.post(
+        "/api/v1/vault/clip",
+        json={"url": "https://example.com", "title": "Title", "selection": "Selected text."},
+    )
+
+    response = client.get("/api/v1/vault/changes")
+
+    assert response.status_code == 200
+    paths = [c["path"] for c in response.json()["changes"]]
+    assert any(p.startswith("Clippings/") for p in paths)
+
+
+def test_create_clip_can_be_applied_like_any_other_change(
+    client: TestClient, vault_dir: Path
+) -> None:
+    created = client.post(
+        "/api/v1/vault/clip",
+        json={"url": "https://example.com", "title": "Title", "selection": "Selected text."},
+    ).json()
+
+    response = client.post(f"/api/v1/vault/changes/{created['id']}/apply")
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "applied"
+    assert (vault_dir / created["path"]).exists()
+
+
+def test_create_clip_rejects_a_blank_selection(client: TestClient) -> None:
+    response = client.post(
+        "/api/v1/vault/clip",
+        json={"url": "https://example.com", "title": "Title", "selection": "   "},
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"]["error"]["code"] == "VALIDATION_ERROR"

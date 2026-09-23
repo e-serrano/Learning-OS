@@ -17,6 +17,7 @@ from app.ai.errors import AIInvalidOutputError, AIProviderUnavailableError
 from app.api.dependencies import (
     get_apply_change_service,
     get_change_proposal_repository,
+    get_clip_service,
     get_config_store,
     get_diff_approval_service,
     get_embedding_service,
@@ -30,6 +31,7 @@ from app.domain.enums import ProposalOperation
 from app.obsidian.change_proposal import ChangeProposal, ChangeProposalRepository, ProposalStatus
 from app.obsidian.onboarding_scan import scan_vault_readonly
 from app.services.apply_change_service import ApplyChangeService
+from app.services.clip_service import ClipService, InvalidClipError
 from app.services.diff_approval_service import (
     DiffApprovalService,
     InvalidProposalStatusError,
@@ -56,6 +58,7 @@ DiffApprovalServiceDep = Annotated[DiffApprovalService, Depends(get_diff_approva
 VaultSearchServiceDep = Annotated[VaultSearchService, Depends(get_vault_search_service)]
 EmbeddingServiceDep = Annotated[EmbeddingService, Depends(get_embedding_service)]
 SemanticSearchServiceDep = Annotated[SemanticSearchService, Depends(get_semantic_search_service)]
+ClipServiceDep = Annotated[ClipService, Depends(get_clip_service)]
 
 
 class ConfigureVaultRequest(BaseModel):
@@ -212,3 +215,22 @@ async def search_vault_semantic(
     return SemanticSearchResponse(
         results=[SemanticSearchResultResponse.from_result(r) for r in results]
     )
+
+
+class CreateClipRequest(BaseModel):
+    url: str
+    title: str
+    selection: str
+
+
+@router.post("/clip", response_model=ChangeProposalResponse, status_code=201)
+def create_clip(request: CreateClipRequest, service: ClipServiceDep) -> ChangeProposalResponse:
+    """Web clip ingestion (docs/TASKS.md T135) -- the browser extension's
+    only backend entry point. Returns the pending `ChangeProposal`
+    unapplied; the same Vault diff UI (T119) that reviews AI-curated
+    changes reviews clips too."""
+    try:
+        proposal = service.create_clip(request.url, request.title, request.selection)
+    except InvalidClipError as exc:
+        raise api_error("VALIDATION_ERROR", str(exc), 400) from exc
+    return ChangeProposalResponse.from_entity(proposal)

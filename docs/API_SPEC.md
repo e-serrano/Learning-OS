@@ -153,6 +153,31 @@ vector. Only compares against vectors from the currently configured
 embedding model -- a provider/model change never silently mixes
 incomparable vectors into the ranking.
 
+### Clip
+
+`POST /vault/clip` (docs/TASKS.md T135)
+
+The browser extension's only backend entry point. Turns a selection from
+any web page into a pending `ChangeProposal` under `Clippings/` -- raw,
+unsorted source material, no concept association, distinct from the
+Curator AI role's concept-scoped proposals (#9 below). Reviewed and
+applied through the same `/vault/changes` pipeline as any other
+proposal, never written to the vault directly.
+
+Request:
+
+```json
+{
+  "url": "https://example.com/window-functions",
+  "title": "Window Functions Explained",
+  "selection": "A window function computes a value across a set of rows."
+}
+```
+
+`selection` must be non-blank and under 20,000 characters
+(`VALIDATION_ERROR` otherwise). Response is a `ChangeProposal`, same
+shape `/vault/changes` returns, `status: "pending"`.
+
 ---
 
 ## 3. Knowledge

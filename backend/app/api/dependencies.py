@@ -46,6 +46,7 @@ from app.services.apply_change_service import ApplyChangeService
 from app.services.assessment_completion_service import AssessmentCompletionService
 from app.services.assessment_flow_service import AssessmentFlowService
 from app.services.assessment_session_service import AssessmentSessionService
+from app.services.clip_service import ClipService
 from app.services.context_builder import ContextBuilder
 from app.services.diagnostic_service import DiagnosticService
 from app.services.diagnostic_session_service import DiagnosticSessionService
@@ -157,6 +158,13 @@ def get_vault_scan_service(
     vault: Annotated[VaultResolver, Depends(get_vault_resolver)],
 ) -> VaultScanService:
     return VaultScanService(get_engine(), vault)
+
+
+def get_clip_service(
+    proposals: Annotated[ChangeProposalRepository, Depends(get_change_proposal_repository)],
+    vault: Annotated[VaultResolver, Depends(get_vault_resolver)],
+) -> ClipService:
+    return ClipService(proposals, vault, get_clock(), get_id_generator())
 
 
 def get_apply_change_service(

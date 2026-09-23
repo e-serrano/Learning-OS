@@ -86,6 +86,31 @@ A configured provider is only ever confirmed reachable when you actually hit
 nothing assumes a provider works just because it's configured
 (`docs/AI_CONTRACTS.md` #19).
 
+## Browser extension
+
+`extension/` (docs/TASKS.md T135) is a Manifest V3 web clipper: right-click a
+text selection on any page → "Save selection to Learning OS" → it lands as a
+pending `ChangeProposal` under `Clippings/` (`POST /api/v1/vault/clip`), reviewed
+and applied through the exact same Vault diff UI as any other proposal
+(`docs/API_SPEC.md` #2). No popup, no options page — feedback is a toolbar
+badge (green tick / red "ERR") that clears itself after a few seconds.
+
+To load it locally:
+
+1. Configure a vault and start the backend (`uv run uvicorn app.main:app --reload`
+   — the extension hardcodes port 8000, the documented default).
+2. Chrome/Edge → `chrome://extensions` → enable Developer mode → "Load
+   unpacked" → select the `extension/` directory.
+3. Select text on any page, right-click, choose "Save selection to Learning
+   OS", then check the Vault diff UI for the pending clip.
+
+The background service worker fetches the local API directly — its
+`host_permissions` make MV3 background contexts exempt from CORS, so the
+backend's `allow_origins` (locked to the Vite dev origin) never needed to
+change for this. Firefox support (a different manifest key set for MV3
+service workers) and a configurable API base URL (currently hardcoded) are
+natural follow-ups, not attempted here.
+
 ## Testing
 
 Five test suites cover different layers (`docs/AGENTS.md` §15). `uv run pytest`
