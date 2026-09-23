@@ -35,6 +35,7 @@ from app.domain.ports import ClockPort, IdGeneratorPort
 from app.obsidian.change_proposal import ChangeProposal, ChangeProposalRepository, ProposalStatus
 from app.obsidian.markdown_scanner import DEFAULT_IGNORED_DIRS
 from app.obsidian.vault_resolver import VaultPathTraversalError, VaultResolver
+from app.services.curator_service import DEFAULT_CONCEPT_NOTES_DIR, sanitize_concept_filename
 
 MAX_CONTENT_LENGTH = 20_000
 MAX_OPERATIONS_PER_BATCH = 20
@@ -109,7 +110,8 @@ class ProposalValidator:
     def _path_belongs_to_concept(self, path: str, concept: Concept) -> bool:
         if concept.obsidian_path is not None:
             return path == concept.obsidian_path
-        return path == f"{concept.id}.md"
+        expected = f"{DEFAULT_CONCEPT_NOTES_DIR}/{sanitize_concept_filename(concept.title)}.md"
+        return path == expected
 
     def _persist(self, operation: CuratorOperation) -> ChangeProposal:
         now = self._clock.now()

@@ -103,7 +103,11 @@ from app.services.assessment_completion_service import AssessmentCompletionServi
 from app.services.assessment_flow_service import AssessmentFlowService
 from app.services.assessment_session_service import AssessmentSessionService
 from app.services.context_builder import ContextBuilder
-from app.services.curator_service import CuratorService
+from app.services.curator_service import (
+    DEFAULT_CONCEPT_NOTES_DIR,
+    CuratorService,
+    sanitize_concept_filename,
+)
 from app.services.diagnostic_service import DiagnosticService
 from app.services.diagnostic_session_service import DiagnosticSessionService
 from app.services.diff_approval_service import DiffApprovalService
@@ -270,16 +274,17 @@ def client(engine: Engine, vault: VaultResolver) -> TestClient:
         # ActivitySelector (T064) picks whichever concept scores highest, so
         # which concept actually gets touched by the LEARN/PRACTICE answer
         # is not fixed in advance -- the curated path must match whatever
-        # concept the request is actually about (ProposalValidator requires
-        # path == f"{concept.id}.md", T081).
-        concept_id = request.current_state["concept"]["id"]  # type: ignore[attr-defined]
+        # concept the request is actually about (ProposalValidator's
+        # conventional-new-note-name check, T081/T139).
+        concept_title = request.current_state["concept"]["title"]  # type: ignore[attr-defined]
+        path = f"{DEFAULT_CONCEPT_NOTES_DIR}/{sanitize_concept_filename(concept_title)}.md"
         return CuratorResponse(
             operations=[
                 CuratorOperation(
-                    path=f"{concept_id}.md",
+                    path=path,
                     operation=ProposalOperation.CREATE_FILE,
                     section=None,
-                    content=f"# {concept_id}\n\nMastery notes from session evidence.\n",
+                    content=f"# {concept_title}\n\nMastery notes from session evidence.\n",
                 )
             ]
         )

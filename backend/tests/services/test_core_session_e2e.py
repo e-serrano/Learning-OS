@@ -297,7 +297,7 @@ async def test_core_session_flow_end_to_end(tmp_path: Path) -> None:
     assert created_evidence[0].source_type.value == "exercise"
 
     # -- mastery update (T075)
-    updated_concept = mastery_update_service.update_mastery("window_functions")
+    updated_concept = await mastery_update_service.update_mastery("window_functions", goal.id)
     assert updated_concept.mastery > 0
 
     # -- mistake update (T076)

@@ -64,39 +64,94 @@ def _evidence(**overrides: object) -> Evidence:
     return Evidence(**defaults)  # type: ignore[arg-type]
 
 
-def test_update_mastery_persists_the_recomputed_concept() -> None:
+@pytest.mark.asyncio
+async def test_update_mastery_persists_the_recomputed_concept() -> None:
     concepts = FakeConceptRepository([_concept()])
     engine = MasteryEngine(FakeEvidenceRepository([_evidence()]))
     service = MasteryUpdateService(concepts, engine)
 
-    updated = service.update_mastery("concept_1")
+    updated = await service.update_mastery("concept_1", "goal_1")
 
     assert updated.mastery == 5.0
     assert updated.status == ConceptStatus.MASTERED
     assert concepts.get("concept_1") == updated
 
 
-def test_update_mastery_raises_when_concept_not_found() -> None:
+@pytest.mark.asyncio
+async def test_update_mastery_raises_when_concept_not_found() -> None:
     concepts = FakeConceptRepository([])
     engine = MasteryEngine(FakeEvidenceRepository([]))
     service = MasteryUpdateService(concepts, engine)
 
     with pytest.raises(ConceptNotFoundError):
-        service.update_mastery("missing_concept")
+        await service.update_mastery("missing_concept", "goal_1")
 
 
-def test_update_mastery_reflects_new_evidence_added_since_last_recalculation() -> None:
+@pytest.mark.asyncio
+async def test_update_mastery_reflects_new_evidence_added_since_last_recalculation() -> None:
     concepts = FakeConceptRepository([_concept(mastery=0, status=ConceptStatus.UNKNOWN)])
     engine = MasteryEngine(FakeEvidenceRepository([_evidence(correctness=0.2)]))
     service = MasteryUpdateService(concepts, engine)
 
-    first = service.update_mastery("concept_1")
+    first = await service.update_mastery("concept_1", "goal_1")
     assert first.status == ConceptStatus.WEAK
 
     engine_with_more_evidence = MasteryEngine(
         FakeEvidenceRepository([_evidence(correctness=0.2), _evidence(id="evidence_2")])
     )
     service_second = MasteryUpdateService(concepts, engine_with_more_evidence)
-    second = service_second.update_mastery("concept_1")
+    second = await service_second.update_mastery("concept_1", "goal_1")
 
     assert second.mastery > first.mastery
+
+
+class FakeCurationTrigger:
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, ConceptStatus, Concept]] = []
+
+    async def trigger_if_newly_mastered(
+        self, goal_id: str, previous_status: ConceptStatus, updated: Concept
+    ) -> None:
+        self.calls.append((goal_id, previous_status, updated))
+        return None
+
+
+@pytest.mark.asyncio
+async def test_update_mastery_fires_the_curation_trigger_on_transition_into_mastered() -> None:
+    concepts = FakeConceptRepository([_concept(status=ConceptStatus.STRONG)])
+    engine = MasteryEngine(FakeEvidenceRepository([_evidence()]))
+    trigger = FakeCurationTrigger()
+    service = MasteryUpdateService(concepts, engine, trigger)
+
+    updated = await service.update_mastery("concept_1", "goal_1")
+
+    assert updated.status == ConceptStatus.MASTERED
+    assert trigger.calls == [("goal_1", ConceptStatus.STRONG, updated)]
+
+
+@pytest.mark.asyncio
+async def test_update_mastery_always_reports_old_and_new_status_to_the_trigger() -> None:
+    """`MasteryUpdateService` unconditionally hands both statuses to the
+    trigger on every call -- deciding whether that's an actual transition
+    into MASTERED is `MasteryCurationTriggerService`'s own job (see
+    test_mastery_curation_trigger_service.py), not duplicated here."""
+    concepts = FakeConceptRepository([_concept(status=ConceptStatus.UNKNOWN, mastery=0)])
+    engine = MasteryEngine(FakeEvidenceRepository([_evidence(correctness=0.2)]))
+    trigger = FakeCurationTrigger()
+    service = MasteryUpdateService(concepts, engine, trigger)
+
+    updated = await service.update_mastery("concept_1", "goal_1")
+
+    assert updated.status != ConceptStatus.MASTERED
+    assert trigger.calls == [("goal_1", ConceptStatus.UNKNOWN, updated)]
+
+
+@pytest.mark.asyncio
+async def test_update_mastery_works_with_no_curation_trigger_configured() -> None:
+    concepts = FakeConceptRepository([_concept()])
+    engine = MasteryEngine(FakeEvidenceRepository([_evidence()]))
+    service = MasteryUpdateService(concepts, engine)
+
+    updated = await service.update_mastery("concept_1", "goal_1")
+
+    assert updated.status == ConceptStatus.MASTERED

@@ -11,7 +11,18 @@ Returns the AI's raw proposed operations, unvalidated and unpersisted.
 Turning a validated operation into a persisted ChangeProposal is T081's
 job: "the application validates every operation" before it ever becomes
 one (docs/AI_CONTRACTS.md #9, and CuratorResponse's own docstring).
+
+`target_path` for a concept with no `obsidian_path` yet lands under
+`03_Knowledge/Concepts/` using the concept's title, not its id
+(docs/TASKS.md T139 fix) -- matches docs/OBSIDIAN_SCHEMA.md #2's default
+vault structure and #15's own naming example ("Concept Title.md")
+exactly; the previous `f"{concept.id}.md"` fallback (flat at vault
+root, e.g. `concept_sql_window_functions.md`) matched neither and had
+never been exercised outside tests, since nothing invoked this service
+in production until T139 wired it to actually fire.
 """
+
+import re
 
 from app.ai.contracts import CuratorOperation, CuratorResponse
 from app.ai.orchestrator import AIOrchestrator
@@ -22,6 +33,18 @@ from app.services.context_builder import ConceptNotFoundError, GoalNotFoundError
 
 CURATOR_PROMPT_VERSION = "curator.v1"
 MAX_RECENT_EVIDENCE = 5
+DEFAULT_CONCEPT_NOTES_DIR = "03_Knowledge/Concepts"
+_INVALID_FILENAME_CHARS = re.compile(r'[\\/:*?"<>|]')
+
+
+def sanitize_concept_filename(title: str) -> str:
+    """Strips characters invalid in a filename on Windows/macOS/Linux,
+    keeping spaces/casing -- docs/OBSIDIAN_SCHEMA.md #15's own example
+    is a literal, human-readable "Concept Title.md", not a slug. Public
+    (not `_`-prefixed): `ProposalValidator` needs the exact same
+    convention to accept the paths this service proposes."""
+    cleaned = _INVALID_FILENAME_CHARS.sub("", " ".join(title.split())).strip()
+    return cleaned or "Untitled concept"
 
 
 class CuratorService:
@@ -49,7 +72,9 @@ class CuratorService:
         if concept is None:
             raise ConceptNotFoundError(concept_id)
 
-        target_path = concept.obsidian_path or f"{concept.id}.md"
+        target_path = concept.obsidian_path or (
+            f"{DEFAULT_CONCEPT_NOTES_DIR}/{sanitize_concept_filename(concept.title)}.md"
+        )
         recent_evidence = sorted(
             self._evidence.list_by_concept(concept_id),
             key=lambda e: e.timestamp,

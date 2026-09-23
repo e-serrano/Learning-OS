@@ -109,7 +109,7 @@ class AnswerFlowService:
         concept_ids = list(dict.fromkeys(e.concept_id for e in evidence))
         knowledge_updates: list[KnowledgeUpdate] = []
         for concept_id in concept_ids:
-            concept = self._mastery_update.update_mastery(concept_id)
+            concept = await self._mastery_update.update_mastery(concept_id, session.goal_id)
             review = self._review_creation.schedule_review(
                 concept_id, session.goal_id, correctness=evaluation.correctness
             )

@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 from fastapi import HTTPException
 
-from app.api.dependencies import get_vault_resolver
+from app.api.dependencies import _build_curation_trigger, get_vault_resolver
 from app.config.models import AppConfig
 
 
@@ -40,3 +40,31 @@ def test_get_vault_resolver_returns_resolver_for_valid_path(tmp_path: Path) -> N
     resolver = get_vault_resolver(FakeConfigStore(vault_path=str(vault)))
 
     assert resolver.root == vault.resolve()
+
+
+class FakeConfigStoreForCuration:
+    def __init__(self, config: AppConfig) -> None:
+        self._config = config
+
+    def load(self) -> AppConfig:
+        return self._config
+
+
+def test_build_curation_trigger_returns_none_when_vault_not_configured() -> None:
+    store = FakeConfigStoreForCuration(AppConfig(vault_path=None))
+
+    result = _build_curation_trigger(store)  # type: ignore[arg-type]
+
+    assert result is None
+
+
+def test_build_curation_trigger_returns_none_when_no_ai_provider_is_configured(
+    tmp_path: Path,
+) -> None:
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    store = FakeConfigStoreForCuration(AppConfig(vault_path=str(vault), ai_providers=[]))
+
+    result = _build_curation_trigger(store)  # type: ignore[arg-type]
+
+    assert result is None

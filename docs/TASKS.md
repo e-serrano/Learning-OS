@@ -1055,6 +1055,25 @@ Sin tests nuevos (backend sin cambios) -- 931/931 suite completa sin regresión,
 ### T137 — Code execution sandbox
 ### T138 — Git integration
 
+### T139 — Auto-curate the vault note when a concept becomes mastered
+**Estado:** DONE
+**Dep:** T080, T081, T075  
+Petición directa del usuario (2026-09-23), no del backlog de Fase 13: cada vez que un concepto se confirma como aprendido (`ConceptStatus.MASTERED`), se propone automáticamente crear/ampliar su nota en Obsidian, en vez de dejarlo a una llamada manual.
+
+**Nota:** Investigación previa a escribir código (siguiendo el mismo patrón de esta sesión: no adivinar, comprobar qué existe). Hallazgo clave, ya señalado explícitamente por la propia nota de T121: `CuratorService` (T080) y `ProposalValidator` (T081) estaban completos desde hace muchas tareas pero **nunca invocados desde ningún flujo de aplicación** -- "a real gap... documented here for whoever decides where curator should fire in production." Esta tarea es esa decisión.
+
+Diseño: `MasteryCurationTriggerService` (nuevo, `app/services/mastery_curation_trigger_service.py`) recibe el status ANTERIOR y el `Concept` YA actualizado, y solo actúa en una transición real (`previous_status != MASTERED and updated.status == MASTERED`) -- nunca en cada evidencia posterior de un concepto ya dominado (coste de IA evitable, cero información nueva), pero SÍ vuelve a dispararse si el concepto cae por debajo de `mastered` y lo recupera más tarde (un segundo punto de síntesis es información genuinamente nueva -- así es como la nota "se va ampliando" tal como pidió el usuario, no una foto fija de una sola vez).
+
+`MasteryUpdateService.update_mastery()` (T075) es el único punto de integración necesario: ya leía el concept ANTES de recalcularlo, así que detectar la transición ahí evita duplicar "leer status viejo, llamar a update_mastery, comparar" en sus 4 llamadores independientes (`AnswerFlowService`, `AssessmentFlowService`, `ProjectFlowService`, `ReviewFlowService` -- los 4 confirmados por grep, ninguno delega en otro). Gana un colaborador opcional `curation_trigger: MasteryCurationTriggerService | None = None` y se vuelve `async` (antes era sync); sus 4 llamadores pasan ahora `goal_id` además de `concept_id` y usan `await` -- `ReviewFlowService.complete_review` (antes sync) y su ruta en `api/reviews.py` pasan a `async def` como efecto colateral necesario, único cambio de firma pública de esta tarea.
+
+Construcción defensiva en `app/api/dependencies.py` (`_build_curation_trigger`, nuevo): NUNCA debe romper el flujo principal de evidencia/mastery si el vault o el proveedor de IA no están configurados -- a diferencia de `get_vault_resolver`/`get_ai_orchestrator` (que lanzan `HTTPException` porque SU ruta sí depende de ellos), esta función reutiliza esas dos funciones tal cual pero atrapa `HTTPException` y devuelve `None` -- ningún caller de `get_mastery_update_service()` deja de funcionar solo porque el usuario aún no completó el onboarding de vault/IA, exactamente el mismo comportamiento que tenían antes de esta tarea.
+
+Fix necesario descubierto al activar el flujo por primera vez en producción: `CuratorService`'s `target_path` fallback era `f"{concept.id}.md"` (plano, en la raíz del vault, p.ej. `concept_sql_window_functions.md`) -- no coincidía ni con la estructura por defecto de `docs/OBSIDIAN_SCHEMA.md` #2 (`03_Knowledge/Concepts/`) ni con su propio ejemplo de nomenclatura en #15 (`"Concept Title.md"`, por título, no por id). Inofensivo mientras el curator nunca se invocaba en producción; al activarlo aquí se vuelve un bug real e inmediatamente visible, así que se corrigió en la misma tarea: `sanitize_concept_filename()` (pública, compartida con `ProposalValidator._path_belongs_to_concept` para que ambos acuerden exactamente el mismo path) + `DEFAULT_CONCEPT_NOTES_DIR = "03_Knowledge/Concepts"`.
+
+Verificación real de punta a punta (no solo tests aislados): script standalone contra SQLite real + `VaultResolver` real + `MockProvider` con `CuratorResponse` real -- concept STRONG→MASTERED por evidencia real, dispara el trigger, `CuratorService.propose()` real, `ProposalValidator.validate_and_persist()` real, proposal pendiente persistida con el path `03_Knowledge/Concepts/Window Functions.md` correcto, aprobada y aplicada exactamente como la ruta real `/vault/changes/{id}/apply`, archivo final verificado en disco con el contenido correcto (script de verificación, no committeado).
+
+12 tests nuevos (7 en `test_mastery_curation_trigger_service.py`, 3 en `test_mastery_update_service.py`, 2 en `test_dependencies.py`) más ajustes en tests existentes para el nuevo convenio async/path (`test_proposal_validator.py`, `test_review_flow_service.py`, `test_curator_service.py`, `test_core_session_e2e.py`, `test_canonical_loop.py`) + 943/943 suite completa (943 = 931 previos + 12 nuevos), ruff/mypy limpios.
+
 ---
 
 # Vertical slice mínimo recomendado

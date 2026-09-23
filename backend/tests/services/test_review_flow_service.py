@@ -118,12 +118,15 @@ def _service(engine: Engine) -> ReviewFlowService:
     )
 
 
-def test_complete_review_creates_a_supporting_session_and_activity(tmp_path: Path) -> None:
+@pytest.mark.asyncio
+async def test_complete_review_creates_a_supporting_session_and_activity(tmp_path: Path) -> None:
     engine = _engine(tmp_path)
     _seed_goal_and_concept(engine)
     _seed_review(engine)
 
-    result = _service(engine).complete_review("review_seed", answer="ROW_NUMBER", confidence=80)
+    result = await _service(engine).complete_review(
+        "review_seed", answer="ROW_NUMBER", confidence=80
+    )
 
     assert result.completed_review.status == ReviewStatus.COMPLETED
     activity = SqlActivityRepository(engine).get(result.evidence.activity_id)
@@ -135,12 +138,15 @@ def test_complete_review_creates_a_supporting_session_and_activity(tmp_path: Pat
     assert session.status.value == "completed"
 
 
-def test_complete_review_updates_retention_and_mastery(tmp_path: Path) -> None:
+@pytest.mark.asyncio
+async def test_complete_review_updates_retention_and_mastery(tmp_path: Path) -> None:
     engine = _engine(tmp_path)
     _seed_goal_and_concept(engine)
     _seed_review(engine)
 
-    result = _service(engine).complete_review("review_seed", answer="ROW_NUMBER", confidence=90)
+    result = await _service(engine).complete_review(
+        "review_seed", answer="ROW_NUMBER", confidence=90
+    )
 
     assert result.concept.retention == 90.0
     stored = SqlConceptRepository(engine).get("window_functions")
@@ -148,20 +154,22 @@ def test_complete_review_updates_retention_and_mastery(tmp_path: Path) -> None:
     assert stored.retention == 90.0
 
 
-def test_complete_review_schedules_next_review(tmp_path: Path) -> None:
+@pytest.mark.asyncio
+async def test_complete_review_schedules_next_review(tmp_path: Path) -> None:
     engine = _engine(tmp_path)
     _seed_goal_and_concept(engine)
     _seed_review(engine)
 
-    result = _service(engine).complete_review("review_seed", answer="x", confidence=80)
+    result = await _service(engine).complete_review("review_seed", answer="x", confidence=80)
 
     assert result.next_review.id != "review_seed"
     assert result.next_review.scheduled_at > result.completed_review.completed_at  # type: ignore[operator]
 
 
-def test_complete_review_raises_when_missing(tmp_path: Path) -> None:
+@pytest.mark.asyncio
+async def test_complete_review_raises_when_missing(tmp_path: Path) -> None:
     engine = _engine(tmp_path)
     _seed_goal_and_concept(engine)
 
     with pytest.raises(ReviewNotFoundError):
-        _service(engine).complete_review("missing", answer="x", confidence=50)
+        await _service(engine).complete_review("missing", answer="x", confidence=50)

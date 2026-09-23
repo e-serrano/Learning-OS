@@ -85,11 +85,11 @@ def list_todays_reviews(service: TodaysReviewsServiceDep) -> ReviewListResponse:
 
 
 @router.post("/{review_id}/complete", response_model=ReviewCompletionResponse)
-def complete_review(
+async def complete_review(
     review_id: str, request: CompleteReviewRequest, service: ReviewFlowServiceDep
 ) -> ReviewCompletionResponse:
     try:
-        result = service.complete_review(review_id, request.answer, request.confidence)
+        result = await service.complete_review(review_id, request.answer, request.confidence)
     except ReviewNotFoundError as exc:
         raise api_error("NOT_FOUND", f"Review '{review_id}' not found", 404) from exc
     except ReviewNotDueError as exc:

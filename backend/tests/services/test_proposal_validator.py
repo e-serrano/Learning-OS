@@ -56,7 +56,7 @@ def _concept(**overrides: object) -> Concept:
 
 def _operation(**overrides: object) -> CuratorOperation:
     defaults: dict[str, object] = dict(
-        path="concept_1.md",
+        path="03_Knowledge/Concepts/Window Functions.md",
         operation=ProposalOperation.REPLACE_MANAGED_SECTION,
         section="SUMMARY",
         content="Window functions compute values across row sets.",
@@ -93,7 +93,7 @@ def test_create_file_for_a_concept_without_obsidian_path_uses_conventional_name(
     vault_root.mkdir()
     validator, _ = _validator(vault_root)
     op = _operation(
-        path="concept_1.md",
+        path="03_Knowledge/Concepts/Window Functions.md",
         operation=ProposalOperation.CREATE_FILE,
         section=None,
         content="# New note",

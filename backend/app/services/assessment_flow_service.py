@@ -69,7 +69,7 @@ class AssessmentFlowService:
         concept_ids = list(dict.fromkeys(e.concept_id for e in result.evidence))
         concepts: list[Concept] = []
         for concept_id in concept_ids:
-            concepts.append(self._mastery_update.update_mastery(concept_id))
+            concepts.append(await self._mastery_update.update_mastery(concept_id, goal_id))
             self._review_creation.schedule_review(
                 concept_id, goal_id, correctness=result.evaluation.correctness
             )

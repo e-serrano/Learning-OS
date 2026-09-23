@@ -199,6 +199,19 @@ Output:
 
 The application validates every operation.
 
+Wired into an automatic trigger (docs/TASKS.md T139, user request): the
+moment `MasteryEngine`'s status derivation crosses a concept into
+`mastered` (never on every subsequent evidence event for an
+already-mastered concept -- only the transition), the curator is called
+for that concept and the result becomes a normal pending
+`ChangeProposal`, reviewed through the same surfaces as any other
+(Vault diff UI, Obsidian plugin, browser extension) -- never
+auto-applied. Best-effort: if no vault or AI provider is configured, or
+the AI call itself fails, nothing here blocks the evidence/mastery
+update that triggered it. A concept with no `obsidian_path` yet gets
+one conventionally at `03_Knowledge/Concepts/{title}.md`, matching
+docs/OBSIDIAN_SCHEMA.md #2/#15.
+
 ---
 
 ## 10. Progress analyst

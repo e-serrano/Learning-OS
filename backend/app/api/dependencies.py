@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from functools import lru_cache
 from typing import Annotated
 
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 from sqlalchemy import Engine
 
 from app.ai.embedding_orchestrator import EmbeddingOrchestrator
@@ -48,6 +48,7 @@ from app.services.assessment_flow_service import AssessmentFlowService
 from app.services.assessment_session_service import AssessmentSessionService
 from app.services.clip_service import ClipService
 from app.services.context_builder import ContextBuilder
+from app.services.curator_service import CuratorService
 from app.services.diagnostic_service import DiagnosticService
 from app.services.diagnostic_session_service import DiagnosticSessionService
 from app.services.diff_approval_service import DiffApprovalService
@@ -57,6 +58,7 @@ from app.services.evidence_creation_service import EvidenceCreationService
 from app.services.exercise_generator_service import ExerciseGeneratorService
 from app.services.goal_service import GoalApplicationService
 from app.services.knowledge_explorer_service import KnowledgeExplorerService
+from app.services.mastery_curation_trigger_service import MasteryCurationTriggerService
 from app.services.mastery_engine import MasteryEngine
 from app.services.mastery_update_service import MasteryUpdateService
 from app.services.mistake_tracker import MistakeTracker
@@ -70,6 +72,7 @@ from app.services.project_generation_service import ProjectGenerationService
 from app.services.project_session_service import ProjectSessionService
 from app.services.project_submission_service import ProjectSubmissionService
 from app.services.project_task_service import ProjectTaskService
+from app.services.proposal_validator import ProposalValidator
 from app.services.retention_update_service import RetentionUpdateService
 from app.services.review_completion_service import ReviewCompletionService
 from app.services.review_creation_service import ReviewCreationService
@@ -594,10 +597,38 @@ def get_mastery_engine() -> MasteryEngine:
     return MasteryEngine(get_evidence_repository())
 
 
+def _build_curation_trigger(store: ConfigStore) -> MasteryCurationTriggerService | None:
+    """Best-effort: returns None (curation silently skipped) rather than
+    raising when the vault or AI provider isn't configured -- unlike
+    every other caller of get_vault_resolver()/get_ai_orchestrator(),
+    this one must never fail the request it is wired into (completing an
+    exercise/assessment/project/review must still work with no vault or
+    no AI provider configured, exactly as it did before T139)."""
+    try:
+        vault = get_vault_resolver(store)
+        orchestrator = get_ai_orchestrator(store)
+    except HTTPException:
+        return None
+    curator = CuratorService(
+        get_goal_repository(),
+        get_concept_repository(),
+        get_evidence_repository(),
+        vault,
+        orchestrator,
+    )
+    validator = ProposalValidator(
+        get_change_proposal_repository(), vault, get_clock(), get_id_generator()
+    )
+    return MasteryCurationTriggerService(curator, validator)
+
+
 def get_mastery_update_service(
     mastery_engine: Annotated[MasteryEngine, Depends(get_mastery_engine)],
+    store: Annotated[ConfigStore, Depends(get_config_store)],
 ) -> MasteryUpdateService:
-    return MasteryUpdateService(get_concept_repository(), mastery_engine)
+    return MasteryUpdateService(
+        get_concept_repository(), mastery_engine, _build_curation_trigger(store)
+    )
 
 
 def get_review_scheduler() -> ReviewScheduler:

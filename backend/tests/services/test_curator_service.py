@@ -217,7 +217,7 @@ async def test_propose_current_note_is_empty_string_for_a_new_note(tmp_path: Pat
     await service.propose("goal_1", "concept_1")
 
     sent = captured[0]
-    assert sent.current_state["target_note"] == "concept_1.md"
+    assert sent.current_state["target_note"] == "03_Knowledge/Concepts/Window Functions.md"
     assert sent.current_state["current_note"] == ""
 
 

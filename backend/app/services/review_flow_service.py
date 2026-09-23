@@ -74,7 +74,7 @@ class ReviewFlowService:
         self._clock = clock
         self._ids = ids
 
-    def complete_review(
+    async def complete_review(
         self, review_id: str, answer: str, confidence: ConfidencePercent
     ) -> ReviewFlowResult:
         review = self._reviews.get(review_id)
@@ -105,7 +105,9 @@ class ReviewFlowService:
         result = self._review_completion.complete_review(review_id, activity.id, answer, confidence)
 
         self._retention_update.update_retention(result.evidence.concept_id)
-        concept = self._mastery_update.update_mastery(result.evidence.concept_id)
+        concept = await self._mastery_update.update_mastery(
+            result.evidence.concept_id, review.goal_id
+        )
 
         return ReviewFlowResult(
             completed_review=result.completed_review,
