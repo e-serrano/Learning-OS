@@ -146,4 +146,63 @@ describe('KnowledgeExplorer', () => {
       ),
     )
   })
+
+  it('switching to graph view fetches relations for every concept and renders nodes', async () => {
+    const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/concepts/a/relations')) {
+        return Promise.resolve(
+          jsonResponse({
+            relations: [{ source_id: 'a', target_id: 'b', relation: 'PREREQUISITE_OF', weight: null }],
+          }),
+        )
+      }
+      if (url.includes('/relations')) {
+        return Promise.resolve(jsonResponse({ relations: [] }))
+      }
+      return Promise.resolve(jsonResponse({ concepts: [CONCEPT_A, CONCEPT_B] }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderAt('/goals/goal_1/knowledge')
+    await screen.findByText('Window Functions')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Graph' }))
+
+    expect(await screen.findByRole('img', { name: 'Concept graph' })).toBeInTheDocument()
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining('/concepts/a/relations'),
+        expect.anything(),
+      ),
+    )
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining('/concepts/b/relations'),
+        expect.anything(),
+      ),
+    )
+  })
+
+  it('selecting a node in graph view shows its detail panel', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((input: RequestInfo | URL) => {
+        const url = String(input)
+        if (url.includes('/relations')) {
+          return Promise.resolve(jsonResponse({ relations: [] }))
+        }
+        return Promise.resolve(jsonResponse({ concepts: [CONCEPT_A, CONCEPT_B] }))
+      }),
+    )
+
+    renderAt('/goals/goal_1/knowledge')
+    await screen.findByText('Window Functions')
+    fireEvent.click(screen.getByRole('button', { name: 'Graph' }))
+    await screen.findByRole('img', { name: 'Concept graph' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Window Functions' }))
+
+    expect(await screen.findByText('30% confidence')).toBeInTheDocument()
+  })
 })

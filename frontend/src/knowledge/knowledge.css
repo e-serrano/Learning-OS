@@ -42,7 +42,35 @@
   font-size: 1rem;
   background: transparent;
   color: inherit;
+}
+
+.knowledge-toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
   margin-bottom: 20px;
+}
+
+.view-toggle {
+  display: inline-flex;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.view-toggle button {
+  padding: 8px 14px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.view-toggle button.active {
+  background: rgba(37, 99, 235, 0.15);
+  font-weight: 600;
 }
 
 .concept-list {
@@ -116,4 +144,86 @@
 .concept-details button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.knowledge-graph-wrapper {
+  display: grid;
+  gap: 16px;
+}
+
+.knowledge-graph-scroll {
+  overflow-x: auto;
+  border: 1px solid rgba(128, 128, 128, 0.3);
+  border-radius: 8px;
+}
+
+.knowledge-graph {
+  display: block;
+}
+
+.kg-node {
+  cursor: pointer;
+  color: inherit;
+}
+
+.kg-node rect {
+  fill: rgba(128, 128, 128, 0.08);
+  stroke: rgba(128, 128, 128, 0.5);
+  stroke-width: 1.5;
+}
+
+.kg-status-weak rect,
+.kg-status-needs_review rect {
+  stroke: #dc2626;
+}
+
+.kg-status-learning rect,
+.kg-status-developing rect {
+  stroke: #2563eb;
+}
+
+.kg-status-usable rect,
+.kg-status-strong rect {
+  stroke: #16a34a;
+}
+
+.kg-status-mastered rect {
+  stroke: #15803d;
+  stroke-width: 2;
+}
+
+.kg-node-selected rect {
+  stroke-width: 3;
+}
+
+.kg-node text {
+  fill: currentColor;
+  font-size: 12px;
+  pointer-events: none;
+}
+
+.kg-edge {
+  stroke: rgba(128, 128, 128, 0.5);
+  stroke-width: 1.5;
+}
+
+.kg-edge-prerequisite_of {
+  stroke: rgba(128, 128, 128, 0.8);
+}
+
+.knowledge-graph-details {
+  border: 1px solid rgba(128, 128, 128, 0.3);
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.knowledge-graph-details-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.knowledge-graph-details .concept-details {
+  padding: 0;
 }
