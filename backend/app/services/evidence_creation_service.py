@@ -59,7 +59,12 @@ class EvidenceCreationService:
         self._clock = clock
         self._ids = ids
 
-    def create_evidence(self, evaluation_id: str, activity_id: str) -> list[Evidence]:
+    def create_evidence(
+        self,
+        evaluation_id: str,
+        activity_id: str,
+        source_type: EvidenceSourceType = EvidenceSourceType.EXERCISE,
+    ) -> list[Evidence]:
         evaluation = self._evaluations.get(evaluation_id)
         if evaluation is None:
             raise EvaluationNotFoundError(evaluation_id)

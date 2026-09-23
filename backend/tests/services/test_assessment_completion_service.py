@@ -8,7 +8,7 @@ from app.ai.adapters.mock import MockProvider
 from app.ai.contracts import EvaluatorResponse
 from app.ai.orchestrator import AIOrchestrator
 from app.domain.entities import Evaluation, Evidence, Exercise, ExerciseAttempt, Session
-from app.domain.enums import ExerciseType, SessionMode, SessionStatus
+from app.domain.enums import EvidenceSourceType, ExerciseType, SessionMode, SessionStatus
 from app.persistence.base import Base
 from app.persistence.engine import create_sqlite_engine
 from app.services.answer_submission_service import AnswerSubmissionService
@@ -170,6 +170,7 @@ async def test_complete_assessment_runs_the_full_pipeline(tmp_path: Path) -> Non
     assert result.attempt.exercise_id == "exercise_1"
     assert result.evaluation.attempt_id == result.attempt.id
     assert [e.concept_id for e in result.evidence] == ["window_functions"]
+    assert [e.source_type for e in result.evidence] == [EvidenceSourceType.ASSESSMENT]
 
 
 @pytest.mark.asyncio

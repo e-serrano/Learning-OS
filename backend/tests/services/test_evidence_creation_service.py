@@ -161,6 +161,34 @@ def test_create_evidence_maps_evaluation_scores_onto_evidence() -> None:
     assert evidence.timestamp == NOW
 
 
+def test_create_evidence_defaults_source_type_to_exercise() -> None:
+    service, _ = _service()
+
+    [evidence] = service.create_evidence("evaluation_1", activity_id="activity_1")
+
+    assert evidence.source_type == EvidenceSourceType.EXERCISE
+
+
+def test_create_evidence_accepts_explicit_source_type() -> None:
+    service, _ = _service()
+
+    [evidence] = service.create_evidence(
+        "evaluation_1", activity_id="activity_1", source_type=EvidenceSourceType.ASSESSMENT
+    )
+
+    assert evidence.source_type == EvidenceSourceType.ASSESSMENT
+
+
+def test_create_evidence_applies_explicit_source_type_to_every_fanned_out_row() -> None:
+    service, _ = _service(exercises=[_exercise(concept_ids=["concept_1", "concept_2"])])
+
+    created = service.create_evidence(
+        "evaluation_1", activity_id="activity_1", source_type=EvidenceSourceType.ASSESSMENT
+    )
+
+    assert {e.source_type for e in created} == {EvidenceSourceType.ASSESSMENT}
+
+
 def test_create_evidence_converts_confidence_percent_to_normalized_score() -> None:
     service, _ = _service(attempts=[_attempt(confidence=80)])
 

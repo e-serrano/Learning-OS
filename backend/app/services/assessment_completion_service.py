@@ -12,11 +12,19 @@ computed for every evaluation, not transfer-specific) into an explicit,
 thresholded, measurable pass/fail judgment on those two dimensions --
 docs/TASKS.md T091 explicitly wants "a later *measurable* transfer",
 not scores buried inside an Evaluation record.
+
+Exercise has no field marking "this is a transfer assessment" (T089
+persists it as a plain Exercise), so EvidenceCreationService cannot
+infer `source_type` from the exercise alone -- this service passes
+`EvidenceSourceType.ASSESSMENT` explicitly into `create_evidence`
+rather than letting it fall back to the default `EXERCISE` a regular
+exercise flow (AnswerFlowService) relies on.
 """
 
 from dataclasses import dataclass
 
 from app.domain.entities import Evaluation, Evidence, ExerciseAttempt
+from app.domain.enums import EvidenceSourceType
 from app.services.answer_submission_service import AnswerSubmissionService
 from app.services.evaluator_service import EvaluatorService
 from app.services.evidence_creation_service import EvidenceCreationService
@@ -59,7 +67,9 @@ class AssessmentCompletionService:
     ) -> AssessmentCompletionResult:
         attempt = self._answer_submission.submit_answer(exercise_id, session_id, answer, confidence)
         evaluation = await self._evaluator.evaluate(attempt.id)
-        evidence = self._evidence_creation.create_evidence(evaluation.id, activity_id)
+        evidence = self._evidence_creation.create_evidence(
+            evaluation.id, activity_id, source_type=EvidenceSourceType.ASSESSMENT
+        )
 
         return AssessmentCompletionResult(
             attempt=attempt,
