@@ -328,6 +328,31 @@ Request:
 
 `POST /assessments/{assessment_id}/complete`
 
+### Teach-back (docs/TASKS.md T133)
+
+`POST /goals/{goal_id}/teach-back`
+
+```json
+{"concept_id": "concept_..."}
+```
+
+Generates a teach-back prompt for the concept -- asks the learner to
+explain it in their own words rather than solve a normal exercise -- and
+scaffolds a `mode="teach_back"` Session + Activity to hold it, the same
+shape `POST /goals/{goal_id}/assessments` uses for transfer assessments.
+Response mirrors the assessment response (`teach_back_id` instead of
+`assessment_id`), `exercise.type` is always `"teach_back"`.
+
+`GET /teach-back/{teach_back_id}`
+
+Unlike assessments, answering and completing reuse the ordinary session
+routes unchanged -- `POST /sessions/{session_id}/activities/{activity_id}/answer`
+(`teach_back_id` *is* the `activity_id`) and
+`POST /sessions/{session_id}/complete`. A teach-back answer is graded by
+the same Evaluator as any exercise; the only difference is that the
+resulting Evidence is recorded with `source_type: "teach_back"` instead
+of `"exercise"`, so progress/retrieval can distinguish it later.
+
 ---
 
 ## 9. Projects

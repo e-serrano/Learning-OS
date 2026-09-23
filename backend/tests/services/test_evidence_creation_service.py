@@ -219,3 +219,22 @@ def test_create_evidence_raises_when_exercise_not_found() -> None:
         service.create_evidence("evaluation_1", activity_id="activity_1")
 
     assert evidence_repo.added == []
+
+
+def test_create_evidence_tags_teach_back_exercises_with_their_own_source_type() -> None:
+    service, _ = _service(exercises=[_exercise(type=ExerciseType.TEACH_BACK)])
+
+    [evidence] = service.create_evidence("evaluation_1", activity_id="activity_1")
+
+    assert evidence.source_type == EvidenceSourceType.TEACH_BACK
+
+
+def test_create_evidence_keeps_the_exercise_source_type_for_every_other_type() -> None:
+    for exercise_type in ExerciseType:
+        if exercise_type == ExerciseType.TEACH_BACK:
+            continue
+        service, _ = _service(exercises=[_exercise(type=exercise_type)])
+
+        [evidence] = service.create_evidence("evaluation_1", activity_id="activity_1")
+
+        assert evidence.source_type == EvidenceSourceType.EXERCISE

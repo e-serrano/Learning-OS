@@ -78,6 +78,8 @@ from app.services.roadmap_generation_service import RoadmapGenerationService
 from app.services.roadmap_service import RoadmapService
 from app.services.semantic_search_service import SemanticSearchService
 from app.services.session_service import SessionApplicationService
+from app.services.teach_back_service import TeachBackService
+from app.services.teach_back_session_service import TeachBackSessionService
 from app.services.todays_reviews_service import TodaysReviewsService
 from app.services.transfer_assessment_service import TransferAssessmentService
 from app.services.tutor_service import TutorService
@@ -412,6 +414,32 @@ def get_transfer_assessment_service(
         context_builder=get_context_builder(),
         exercises=get_exercise_repository(),
         orchestrator=orchestrator,
+        clock=get_clock(),
+        ids=get_id_generator(),
+    )
+
+
+def get_teach_back_service(
+    orchestrator: Annotated[AIOrchestrator, Depends(get_ai_orchestrator)],
+) -> TeachBackService:
+    return TeachBackService(
+        goals=get_goal_repository(),
+        context_builder=get_context_builder(),
+        exercises=get_exercise_repository(),
+        orchestrator=orchestrator,
+        clock=get_clock(),
+        ids=get_id_generator(),
+    )
+
+
+def get_teach_back_session_service(
+    teach_back: Annotated[TeachBackService, Depends(get_teach_back_service)],
+) -> TeachBackSessionService:
+    return TeachBackSessionService(
+        sessions=get_session_repository(),
+        activities=get_activity_repository(),
+        exercises=get_exercise_repository(),
+        teach_back=teach_back,
         clock=get_clock(),
         ids=get_id_generator(),
     )
