@@ -13,15 +13,27 @@ docs/API_SPEC.md's answer endpoint carries `activity_id` in its own URL
 path (`/sessions/{session_id}/activities/{activity_id}/answer`) rather
 than on the attempt itself.
 
-`source_type` is `EvidenceSourceType.TEACH_BACK` when the underlying
-Exercise's own `type` is `ExerciseType.TEACH_BACK`, `EXERCISE` otherwise
-(docs/TASKS.md T133) -- previously always hardcoded to `EXERCISE`
-regardless of exercise type, leaving `EvidenceSourceType.TEACH_BACK`
-reserved in the enum (docs/DOMAIN_MODEL.md #6) but dead code. Answering a
-teach-back exercise goes through this exact same route/service
-unchanged (docs/TASKS.md T133 needed no new answer/evaluation pipeline,
-only this one type-aware branch plus a way to generate a teach-back
-Exercise in the first place, see `teach_back_service.py`).
+`source_type` has two ways of being decided, in priority order:
+
+1. The caller passes it explicitly (docs/TASKS.md T090 fix) -- e.g.
+   `AssessmentCompletionService` always passes
+   `EvidenceSourceType.ASSESSMENT`, since nothing about a transfer
+   assessment's own `Exercise` distinguishes it from an ordinary one.
+2. Otherwise (`source_type=None`, the default -- `AnswerFlowService`'s
+   ordinary answer route never passes one), it's inferred from the
+   underlying Exercise's own `type`: `TEACH_BACK` if
+   `exercise.type == ExerciseType.TEACH_BACK`, `EXERCISE` otherwise
+   (docs/TASKS.md T133).
+
+Both previously hardcoded to `EXERCISE` unconditionally, leaving
+`EvidenceSourceType.ASSESSMENT`/`TEACH_BACK` reserved in the enum
+(docs/DOMAIN_MODEL.md #6) but dead code. `None` (not
+`EvidenceSourceType.EXERCISE`) is the sentinel specifically so these two
+independent fixes compose instead of one silently overriding the other
+-- a real default of `EXERCISE` would have made every caller's own
+choice indistinguishable from "caller didn't specify," and the
+type-inference branch would have clobbered `AssessmentCompletionService`'s
+explicit `ASSESSMENT` on every call.
 """
 
 from app.domain.entities import Evidence
@@ -63,7 +75,7 @@ class EvidenceCreationService:
         self,
         evaluation_id: str,
         activity_id: str,
-        source_type: EvidenceSourceType = EvidenceSourceType.EXERCISE,
+        source_type: EvidenceSourceType | None = None,
     ) -> list[Evidence]:
         evaluation = self._evaluations.get(evaluation_id)
         if evaluation is None:
@@ -75,11 +87,12 @@ class EvidenceCreationService:
         if exercise is None:
             raise ExerciseNotFoundError(attempt.exercise_id)
 
-        source_type = (
-            EvidenceSourceType.TEACH_BACK
-            if exercise.type == ExerciseType.TEACH_BACK
-            else EvidenceSourceType.EXERCISE
-        )
+        if source_type is None:
+            source_type = (
+                EvidenceSourceType.TEACH_BACK
+                if exercise.type == ExerciseType.TEACH_BACK
+                else EvidenceSourceType.EXERCISE
+            )
 
         now = self._clock.now()
         created: list[Evidence] = []

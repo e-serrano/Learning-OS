@@ -266,3 +266,18 @@ def test_create_evidence_keeps_the_exercise_source_type_for_every_other_type() -
         [evidence] = service.create_evidence("evaluation_1", activity_id="activity_1")
 
         assert evidence.source_type == EvidenceSourceType.EXERCISE
+
+
+def test_create_evidence_explicit_source_type_overrides_teach_back_type_inference() -> None:
+    """An explicit `source_type` (e.g. AssessmentCompletionService's
+    ASSESSMENT) must win even if the underlying exercise happens to be
+    type=TEACH_BACK -- the two source_type mechanisms (explicit override,
+    docs/TASKS.md T090; type-based inference, T133) must compose rather
+    than one silently clobbering the other."""
+    service, _ = _service(exercises=[_exercise(type=ExerciseType.TEACH_BACK)])
+
+    [evidence] = service.create_evidence(
+        "evaluation_1", activity_id="activity_1", source_type=EvidenceSourceType.ASSESSMENT
+    )
+
+    assert evidence.source_type == EvidenceSourceType.ASSESSMENT
