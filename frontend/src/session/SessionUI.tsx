@@ -10,6 +10,8 @@ import {
   getSession,
   submitAnswer,
 } from '../api/sessions'
+import { ReadAloudButton } from '../shared/ReadAloudButton'
+import { VoiceInputButton } from '../shared/VoiceInputButton'
 import './session.css'
 
 const DEFAULT_CONFIDENCE = 70
@@ -164,7 +166,10 @@ export function SessionUI() {
       {phase === 'answering' && (
         <>
           <p className="activity-type">{activity.type}</p>
-          <p className="prompt">{activity.content.prompt}</p>
+          <div className="prompt-row">
+            <p className="prompt">{activity.content.prompt}</p>
+            <ReadAloudButton text={activity.content.prompt} />
+          </div>
 
           {activity.content.success_criteria.length > 0 && (
             <ul className="success-criteria">
@@ -197,6 +202,12 @@ export function SessionUI() {
               onChange={(e) => setAnswer(e.target.value)}
               rows={6}
               required
+            />
+            <VoiceInputButton
+              disabled={busy}
+              onTranscript={(text) =>
+                setAnswer((prev) => (prev.trim().length > 0 ? `${prev} ${text}` : text))
+              }
             />
             <label htmlFor="confidence">Confidence: {confidence}%</label>
             <input

@@ -32,9 +32,16 @@
   margin-bottom: 4px;
 }
 
+.prompt-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
 .prompt {
   font-size: 1.1rem;
   white-space: pre-wrap;
+  flex: 1;
 }
 
 .success-criteria {
