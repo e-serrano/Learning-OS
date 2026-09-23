@@ -49,7 +49,12 @@ class EvidenceCreationService:
         self._clock = clock
         self._ids = ids
 
-    def create_evidence(self, evaluation_id: str, activity_id: str) -> list[Evidence]:
+    def create_evidence(
+        self,
+        evaluation_id: str,
+        activity_id: str,
+        source_type: EvidenceSourceType = EvidenceSourceType.EXERCISE,
+    ) -> list[Evidence]:
         evaluation = self._evaluations.get(evaluation_id)
         if evaluation is None:
             raise EvaluationNotFoundError(evaluation_id)
@@ -69,7 +74,7 @@ class EvidenceCreationService:
                 goal_id=exercise.goal_id,
                 session_id=attempt.session_id,
                 activity_id=activity_id,
-                source_type=EvidenceSourceType.EXERCISE,
+                source_type=source_type,
                 difficulty=exercise.difficulty,
                 correctness=evaluation.correctness,
                 reasoning=evaluation.reasoning,

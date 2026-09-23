@@ -249,4 +249,4 @@ async def test_weak_concept_review_then_measurable_transfer(tmp_path: Path) -> N
     assert assessment_result.independence_demonstrated is True
     sources = {e.source_type for e in evidence.list_by_concept("window_functions")}
     assert EvidenceSourceType.REVIEW in sources
-    assert EvidenceSourceType.EXERCISE in sources
+    assert EvidenceSourceType.ASSESSMENT in sources
