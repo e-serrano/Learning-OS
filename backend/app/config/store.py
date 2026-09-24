@@ -8,7 +8,15 @@ from app.config.models import AIProviderConfig, AppConfig
 from app.persistence.engine import create_sqlite_engine
 from app.persistence.models.config import AIProviderConfigModel, AppSettingModel
 
-_SETTINGS_KEYS = ("vault_path", "provider_id", "model", "base_url", "language", "onboarding_step")
+_SETTINGS_KEYS = (
+    "vault_path",
+    "provider_id",
+    "model",
+    "base_url",
+    "language",
+    "git_auto_commit",
+    "onboarding_step",
+)
 
 
 def _now_iso() -> str:
@@ -58,6 +66,7 @@ class ConfigStore:
             "model": config.model,
             "base_url": config.base_url,
             "language": config.language,
+            "git_auto_commit": config.git_auto_commit,
             "onboarding_step": config.onboarding_step.value,
         }
 

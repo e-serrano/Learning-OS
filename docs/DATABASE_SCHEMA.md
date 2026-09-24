@@ -510,7 +510,7 @@ value_json TEXT NOT NULL
 updated_at TEXT NOT NULL
 ```
 
-Store only non-secret settings such as vault path, onboarding state, selected provider/model and language. `language` is readable/writable any time via `GET/PATCH /settings` (docs/API_SPEC.md #15), independent of onboarding progress, and steers AI output language app-wide (docs/AI_CONTRACTS.md #2).
+Store only non-secret settings such as vault path, onboarding state, selected provider/model, language and `git_auto_commit`. `language`/`git_auto_commit` are readable/writable any time via `GET/PATCH /settings` (docs/API_SPEC.md #15), independent of onboarding progress -- `language` steers AI output language app-wide (docs/AI_CONTRACTS.md #2), `git_auto_commit` opts into per-file git commits on vault writes (docs/TASKS.md T138).
 
 ### `ai_provider_configs`
 

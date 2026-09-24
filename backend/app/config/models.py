@@ -46,6 +46,7 @@ class AppConfig(BaseModel):
     model: str | None = None
     base_url: str | None = None
     language: str = "en"
+    git_auto_commit: bool = False
     onboarding_step: OnboardingStep = OnboardingStep.WELCOME
     ai_providers: list[AIProviderConfig] = Field(default_factory=list)
 

@@ -1,3 +1,4 @@
+import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -13,8 +14,32 @@ from app.persistence.engine import create_sqlite_engine
 from app.persistence.models import VaultFileModel
 from app.services.apply_change_service import ApplyChangeService, ProposalNotApprovedError
 from app.services.diff_approval_service import ProposalNotFoundError
+from app.services.vault_git_service import VaultGitService
 
 NOW = datetime(2026, 1, 1, tzinfo=UTC)
+
+
+def _init_git_repo(path: Path) -> None:
+    """Real `git init`, not a fake/mock -- a git failure that only ever
+    shows up against real git behavior (e.g. missing committer identity)
+    is exactly the kind of thing a mock would hide."""
+    subprocess.run(["git", "init"], cwd=path, capture_output=True, check=True)
+    subprocess.run(
+        ["git", "config", "user.name", "Test"], cwd=path, capture_output=True, check=True
+    )
+    subprocess.run(
+        ["git", "config", "user.email", "test@example.com"],
+        cwd=path,
+        capture_output=True,
+        check=True,
+    )
+
+
+def _git_log(path: Path) -> str:
+    result = subprocess.run(
+        ["git", "log", "--oneline"], cwd=path, capture_output=True, text=True, check=True
+    )
+    return result.stdout
 
 
 def _engine(tmp_path: Path) -> Engine:
@@ -210,3 +235,60 @@ def test_apply_marks_conflicted_when_file_changed_externally_since_indexing(
 
     assert result.status == ProposalStatus.CONFLICTED
     assert (vault_root / "concept_1.md").read_text(encoding="utf-8") == "externally edited\n"
+
+
+def test_apply_commits_the_written_file_when_the_vault_is_a_git_repo(tmp_path: Path) -> None:
+    vault_root = tmp_path / "vault"
+    vault_root.mkdir()
+    _init_git_repo(vault_root)
+    engine = _engine(tmp_path)
+    proposals = ChangeProposalRepository(engine)
+    vault = VaultResolver(str(vault_root))
+    service = ApplyChangeService(engine, proposals, vault, git=VaultGitService(vault))
+    proposals.add(_proposal())
+
+    result = service.apply("proposal_1")
+
+    assert result.status == ProposalStatus.APPLIED
+    log = _git_log(vault_root)
+    assert "create_file concept_1.md" in log
+
+
+def test_apply_never_fails_when_the_vault_is_not_a_git_repo(tmp_path: Path) -> None:
+    """A `VaultGitService` configured (auto-commit turned on) against a
+    vault that just isn't a git repo must degrade to a no-op, never fail
+    the apply that already succeeded (docs/TASKS.md T138: best-effort)."""
+    vault_root = tmp_path / "vault"
+    vault_root.mkdir()  # deliberately not a git repo
+    engine = _engine(tmp_path)
+    proposals = ChangeProposalRepository(engine)
+    vault = VaultResolver(str(vault_root))
+    service = ApplyChangeService(engine, proposals, vault, git=VaultGitService(vault))
+    proposals.add(_proposal())
+
+    result = service.apply("proposal_1")
+
+    assert result.status == ProposalStatus.APPLIED
+    assert (vault_root / "concept_1.md").exists()
+
+
+def test_apply_does_not_sweep_unrelated_dirty_changes_into_the_commit(tmp_path: Path) -> None:
+    """docs/AGENTS.md #22: 'never overwrite unrelated dirty changes' --
+    an unrelated file the user was mid-editing in the same vault repo
+    must stay exactly as dirty/untracked as it was before our commit."""
+    vault_root = tmp_path / "vault"
+    vault_root.mkdir()
+    _init_git_repo(vault_root)
+    (vault_root / "unrelated.md").write_text("work in progress\n", encoding="utf-8")
+    engine = _engine(tmp_path)
+    proposals = ChangeProposalRepository(engine)
+    vault = VaultResolver(str(vault_root))
+    service = ApplyChangeService(engine, proposals, vault, git=VaultGitService(vault))
+    proposals.add(_proposal())
+
+    service.apply("proposal_1")
+
+    status = subprocess.run(
+        ["git", "status", "--porcelain"], cwd=vault_root, capture_output=True, text=True, check=True
+    ).stdout
+    assert "?? unrelated.md" in status  # still untracked -- never staged, never committed

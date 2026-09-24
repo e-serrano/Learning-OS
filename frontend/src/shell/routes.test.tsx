@@ -62,7 +62,12 @@ describe('AppRoutes', () => {
         if (url.match(/\/settings$/)) {
           return Promise.resolve({
             ok: true,
-            json: async () => ({ language: 'en', supported_languages: { en: 'English' } }),
+            json: async () => ({
+              language: 'en',
+              supported_languages: { en: 'English' },
+              git_auto_commit: false,
+              git_available: false,
+            }),
           })
         }
         return Promise.resolve({ ok: true, json: async () => ({ goals: [] }) })

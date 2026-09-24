@@ -88,6 +88,7 @@ from app.services.teach_back_session_service import TeachBackSessionService
 from app.services.todays_reviews_service import TodaysReviewsService
 from app.services.transfer_assessment_service import TransferAssessmentService
 from app.services.tutor_service import TutorService
+from app.services.vault_git_service import VaultGitService
 from app.services.vault_scan_service import VaultScanService
 from app.services.vault_search_service import VaultSearchService
 
@@ -177,8 +178,26 @@ def get_sql_sandbox_service() -> SqlSandboxService:
 
 def get_apply_change_service(
     vault: Annotated[VaultResolver, Depends(get_vault_resolver)],
+    store: Annotated[ConfigStore, Depends(get_config_store)],
 ) -> ApplyChangeService:
-    return ApplyChangeService(get_engine(), get_change_proposal_repository(), vault)
+    git = VaultGitService(vault) if store.load().git_auto_commit else None
+    return ApplyChangeService(get_engine(), get_change_proposal_repository(), vault, git=git)
+
+
+def is_vault_a_git_repo(store: ConfigStore) -> bool:
+    """Informational only (`GET /settings`, docs/TASKS.md T138) -- whether
+    the *currently configured* vault happens to already be a git repo,
+    independent of whether auto-commit is turned on. Reuses
+    `get_vault_resolver`/`VaultGitService` as plain functions rather than
+    through `Depends()`, and treats "vault not configured/unavailable" as
+    simply "not a git repo" -- same defensive shape as
+    `_build_curation_trigger` (T139), since this must never break
+    `GET /settings` just because onboarding isn't done yet."""
+    try:
+        vault = get_vault_resolver(store)
+    except HTTPException:
+        return False
+    return VaultGitService(vault).is_git_repo()
 
 
 def get_diff_approval_service() -> DiffApprovalService:

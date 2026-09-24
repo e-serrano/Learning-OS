@@ -9,6 +9,8 @@ function jsonResponse(body: unknown) {
 const SETTINGS = {
   language: 'en',
   supported_languages: { en: 'English', es: 'Spanish', fr: 'French' },
+  git_auto_commit: false,
+  git_available: true,
 }
 
 describe('SettingsView', () => {
@@ -57,5 +59,47 @@ describe('SettingsView', () => {
     render(<SettingsView />)
 
     expect(await screen.findByText('boom')).toBeInTheDocument()
+  })
+
+  it('enables the git auto-commit checkbox when the vault is a git repo', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(SETTINGS)))
+
+    render(<SettingsView />)
+
+    const checkbox = await screen.findByLabelText('Git auto-commit')
+    expect(checkbox).not.toBeChecked()
+    expect(checkbox).toBeEnabled()
+  })
+
+  it('disables the git auto-commit checkbox when the vault is not a git repo', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(jsonResponse({ ...SETTINGS, git_available: false })),
+    )
+
+    render(<SettingsView />)
+
+    expect(await screen.findByLabelText('Git auto-commit')).toBeDisabled()
+    expect(screen.getByText('Your configured vault is not a git repository, so this is unavailable.')).toBeInTheDocument()
+  })
+
+  it('toggles git auto-commit and confirms', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((_input: RequestInfo | URL, init?: RequestInit) => {
+        if (init?.method === 'PATCH') {
+          return Promise.resolve(jsonResponse({ ...SETTINGS, git_auto_commit: true }))
+        }
+        return Promise.resolve(jsonResponse(SETTINGS))
+      }),
+    )
+
+    render(<SettingsView />)
+    const checkbox = await screen.findByLabelText('Git auto-commit')
+
+    fireEvent.click(checkbox)
+
+    expect(await screen.findByText('Saved.')).toBeInTheDocument()
+    expect(checkbox).toBeChecked()
   })
 })

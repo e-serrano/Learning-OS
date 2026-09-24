@@ -41,3 +41,19 @@ def test_update_language_rejects_an_unsupported_code(client: TestClient) -> None
     response = client.patch("/api/v1/settings/language", json={"language": "klingon"})
     assert response.status_code == 400
     assert response.json()["detail"]["error"]["code"] == "VALIDATION_ERROR"
+
+
+def test_get_settings_defaults_git_auto_commit_to_off_and_unavailable(
+    client: TestClient,
+) -> None:
+    body = client.get("/api/v1/settings").json()
+    assert body["git_auto_commit"] is False
+    assert body["git_available"] is False  # no vault configured in this fixture
+
+
+def test_update_git_auto_commit_persists_the_new_value(client: TestClient) -> None:
+    response = client.patch("/api/v1/settings/git-auto-commit", json={"enabled": True})
+    assert response.status_code == 200
+    assert response.json()["git_auto_commit"] is True
+
+    assert client.get("/api/v1/settings").json()["git_auto_commit"] is True

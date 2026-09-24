@@ -32,6 +32,12 @@ operation type); either kind of verification failure marks the proposal
 `compute_content()` is public and side-effect-free (only reads) so a
 diff preview can show before/after content for a still-pending proposal
 without writing anything -- see T085's knowledge E2E.
+
+After a successful write, an optional `VaultGitService` (T138, opt-in)
+commits exactly that one file -- never the whole working tree -- if the
+vault happens to be a git repo and the user turned the setting on. A git
+failure never turns an otherwise-successful apply into a failure; the
+proposal is already `applied` before the commit is even attempted.
 """
 
 from sqlalchemy import Engine
@@ -44,6 +50,7 @@ from app.obsidian.frontmatter import parse_frontmatter
 from app.obsidian.managed_sections import replace_section
 from app.obsidian.vault_resolver import VaultResolver
 from app.services.diff_approval_service import ProposalNotFoundError
+from app.services.vault_git_service import VaultGitService
 from app.services.write_verification import WriteVerificationError, verify_write
 
 
@@ -57,11 +64,16 @@ class ApplyChangeError(Exception):
 
 class ApplyChangeService:
     def __init__(
-        self, engine: Engine, proposals: ChangeProposalRepository, vault: VaultResolver
+        self,
+        engine: Engine,
+        proposals: ChangeProposalRepository,
+        vault: VaultResolver,
+        git: VaultGitService | None = None,
     ) -> None:
         self._engine = engine
         self._proposals = proposals
         self._vault = vault
+        self._git = git
 
     def apply(self, proposal_id: str) -> ChangeProposal:
         proposal = self._proposals.get(proposal_id)
@@ -94,6 +106,9 @@ class ApplyChangeService:
             return self._reload(proposal_id)
 
         self._proposals.update_status(proposal_id, ProposalStatus.APPLIED)
+        if self._git is not None:
+            message = f"Learning OS: {proposal.operation.value} {proposal.path}"
+            self._git.commit_file(proposal.path, message)
         return self._reload(proposal_id)
 
     def compute_content(self, proposal: ChangeProposal) -> str:

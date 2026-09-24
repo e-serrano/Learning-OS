@@ -513,7 +513,7 @@ Configuration endpoints must never return API keys. The frontend must not persis
 `GET /settings`
 
 ```json
-{"language": "en", "supported_languages": {"en": "English", "es": "Spanish", "fr": "French", "de": "German", "pt": "Portuguese", "it": "Italian"}}
+{"language": "en", "supported_languages": {"en": "English", "es": "Spanish", "fr": "French", "de": "German", "pt": "Portuguese", "it": "Italian"}, "git_auto_commit": false, "git_available": true}
 ```
 
 `PATCH /settings/language`
@@ -523,6 +523,14 @@ Configuration endpoints must never return API keys. The frontend must not persis
 ```
 
 Rejects a code outside `supported_languages` with `VALIDATION_ERROR` (400). The stored value is a general app preference, not onboarding-gated — it can be changed at any time, before or after `/onboarding/complete`. Every AI request the app makes is steered by the configured language: `AIOrchestrator.generate` injects `constraints.language` into the common request envelope (docs/AI_CONTRACTS.md #2) for every role, which covers AI-generated Obsidian note content (the curator, docs/AI_CONTRACTS.md #9) as well as tutor/exercise/evaluator output.
+
+`PATCH /settings/git-auto-commit`
+
+```json
+{"enabled": true}
+```
+
+Opt-in (docs/TASKS.md T138, docs/AGENTS.md #22: "Automatic commits are opt-in"): once on, every vault write `ApplyChangeService` applies is also committed to the vault's own git history, one commit per file, never a bulk/whole-tree commit. `git_available` in the `GET`/`PATCH` response is read-only and informational — whether the *currently configured* vault is already a git repository, independent of whether the setting is on; the frontend uses it to disable the checkbox rather than let the user turn on a setting that can't do anything yet. Enabling it against a non-git vault is harmless — every commit attempt is simply a no-op (docs/AGENTS.md #22: never resets, force-pushes, or touches unrelated dirty changes; this integration never pushes to a remote at all).
 
 ## 16. Sandbox
 

@@ -1,9 +1,10 @@
+import subprocess
 from pathlib import Path
 
 import pytest
 from fastapi import HTTPException
 
-from app.api.dependencies import _build_curation_trigger, get_vault_resolver
+from app.api.dependencies import _build_curation_trigger, get_vault_resolver, is_vault_a_git_repo
 from app.config.models import AppConfig
 
 
@@ -68,3 +69,26 @@ def test_build_curation_trigger_returns_none_when_no_ai_provider_is_configured(
     result = _build_curation_trigger(store)  # type: ignore[arg-type]
 
     assert result is None
+
+
+def test_is_vault_a_git_repo_false_when_vault_not_configured() -> None:
+    store = FakeConfigStoreForCuration(AppConfig(vault_path=None))
+
+    assert is_vault_a_git_repo(store) is False  # type: ignore[arg-type]
+
+
+def test_is_vault_a_git_repo_false_for_a_plain_vault(tmp_path: Path) -> None:
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    store = FakeConfigStoreForCuration(AppConfig(vault_path=str(vault)))
+
+    assert is_vault_a_git_repo(store) is False  # type: ignore[arg-type]
+
+
+def test_is_vault_a_git_repo_true_for_a_real_git_repo(tmp_path: Path) -> None:
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    subprocess.run(["git", "init"], cwd=vault, capture_output=True, check=True)
+    store = FakeConfigStoreForCuration(AppConfig(vault_path=str(vault)))
+
+    assert is_vault_a_git_repo(store) is True  # type: ignore[arg-type]
