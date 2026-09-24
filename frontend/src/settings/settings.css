@@ -52,3 +52,35 @@
   background: #eafaf0;
   color: #1a7a3c;
 }
+
+.ai-provider-settings {
+  margin-top: 8px;
+}
+
+.ai-provider-settings input[type='text'],
+.ai-provider-settings input[type='password'] {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+  border-radius: 6px;
+  font: inherit;
+  background: transparent;
+  color: inherit;
+  box-sizing: border-box;
+}
+
+.ai-provider-settings button {
+  margin-top: 16px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 6px;
+  background: #222;
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.ai-provider-settings button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

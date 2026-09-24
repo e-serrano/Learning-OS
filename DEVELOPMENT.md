@@ -258,9 +258,10 @@ cd frontend && npm test && npm run build && npm run lint
 ## Credentials
 
 AI provider API keys are never placed in `.env`, source, or the database.
-They are entered during onboarding and stored via the OS keyring; only a
-`credential_ref` (an opaque lookup key, not the secret) is persisted locally
-(`docs/TASKS.md` T014, T124).
+They are entered during onboarding, or later from the app itself
+(Settings → AI provider, `docs/TASKS.md` T146), and stored via the OS
+keyring either way; only a `credential_ref` (an opaque lookup key, not
+the secret) is persisted locally (`docs/TASKS.md` T014, T124).
 
 ## Troubleshooting
 

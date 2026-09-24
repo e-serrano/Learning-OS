@@ -1,12 +1,17 @@
 """Provider configuration routes (docs/TASKS.md T099, docs/API_SPEC.md #14).
 
-Standalone counterparts to the onboarding-only `/onboarding/ai-provider*`
-routes (T025) -- same relationship T097's `/vault/*` has to
-`/onboarding/vault`. Only read + validate, no save/update route: the
-task text ("Leer configuracion sin secretos y validar provider/model")
-names exactly those two capabilities, and provider configs are still
-only ever written through onboarding (T025) -- changing an already
--configured default provider post-onboarding is out of scope here.
+Standalone counterparts to the `/onboarding/ai-provider*` routes (T025)
+-- same relationship T097's `/vault/*` has to `/onboarding/vault`. Only
+read + validate here, no save/update route: the task text ("Leer
+configuracion sin secretos y validar provider/model") names exactly
+those two capabilities. Provider configs are still only ever *written*
+through `/onboarding/ai-provider`+`/ai-provider/validate` -- but despite
+the URL prefix those two remain fully callable after onboarding
+`COMPLETE` (neither route gates on onboarding step for anything beyond
+advancing the state machine, which they simply skip once already
+complete). `AIProviderSettings.tsx` (docs/TASKS.md T146) is exactly
+that: the frontend reusing them from Settings to change provider/model
+/credential later, not a new backend route.
 
 Never returns `credential_ref` (docs/API_SPEC.md #14: "Configuration
 endpoints must never return API keys") even though it is only a keyring

@@ -1211,6 +1211,21 @@ Las dos rutas que llaman a esto (`POST /onboarding/ai-provider/validate`, `POST 
 
 6 tests nuevos en `test_capability_check.py` (`_build_probe_adapter` monkeypatcheado, no `httpx.MockTransport` real por proveedor -- el protocolo de red de cada adapter ya está probado a fondo en `tests/ai/adapters/`; lo específico de `validate_provider_connection` es su propia lógica -- exención de mock, mapeo éxito/fallo, nunca reintentar -- independiente de qué adapter concreto responda) + 1013/1013 suite backend completa (1013 = 1007 previos + 6 nuevos -- los 4 tests reescritos de `test_onboarding.py` no cambian el conteo total), ruff/mypy limpios. Sin cambios de frontend -- la UI de onboarding ya esperaba la respuesta del POST tal cual, sin cambios de contrato de API.
 
+### T146 — Cambiar el provider/modelo/API key de IA desde la app
+**Estado:** DONE
+**Dep:** T025 (rutas de onboarding), T140 (Settings)  
+Petición directa del usuario (2026-09-24), surgida al depurar en vivo T144/T145 con él: onboarding solo se ve una vez -- `App.tsx` cambia a la app enrutada en cuanto `onboarding_step` llega a `COMPLETE` y nunca vuelve -- así que no había ninguna forma de cambiar provider, modelo o API key después sin editar la base de datos a mano o llamar a la API con `curl` directamente (lo que se le indicó al usuario como solución temporal mientras se construía esto).
+
+**Nota:** Cero rutas de backend nuevas -- hallazgo clave al investigar: `POST /onboarding/ai-provider` y `POST /onboarding/ai-provider/validate` YA funcionan perfectamente bien llamadas después de `COMPLETE` (ninguna de las dos bloquea en ese estado; simplemente `_advance_to` no hace nada si ya está completo, el resto de la lógica -- guardar provider/model, validar en vivo con T145, guardar credential_ref -- corre igual). El comentario del propio `app/api/providers.py` decía lo contrario ("out of scope") -- quedó desactualizado en cuanto T145 añadió validación real, corregido en esta tarea.
+
+Frontend: `AIProviderSettings.tsx` (nuevo, `frontend/src/settings/`) fusiona en un solo formulario lo que el wizard de onboarding hace en dos pasos separados (`ProviderStep` + `CredentialModelStep`) -- reutiliza literalmente el mismo `PROVIDER_OPTIONS` (`frontend/src/onboarding/providers.ts`) y las mismas dos llamadas API (`configureAIProvider`, `validateAIProvider`, ya existentes en `api/onboarding.ts`, sin cambios). Precarga provider/model/base_url actuales vía `GET /onboarding/status`. Campo de API key nunca se precarga (el backend nunca la devuelve) y se limpia tras cada intento, pase o falle -- mismo comportamiento que `CredentialModelStep` ya tenía.
+
+Limitación real de la API heredada, no introducida aquí, documentada en la propia UI: si el provider requiere API key, hay que reescribirla en CADA guardado, incluso solo para cambiar el modelo -- `validate_ai_provider` reemplaza toda la lista `ai_providers` con una entrada nueva cuyo `credential_ref` es `None` a menos que se mande una credential fresca, y la comprobación estructural (T018) ya rechaza la petición antes de llegar ahí si el provider la requiere y no se manda -- así que en la práctica nunca se puede "perder" una key ya guardada por accidente, solo hay que volver a escribirla cada vez.
+
+Verificado real de punta a punta en el navegador de esta sesión (mismo backend de desarrollo seguro -- provider `mock`, vault temporal -- que T139/T142): campo de modelo precargado con `mock-1` real desde el backend, cambiar a `ollama` revela "Endpoint URL" precargado con el default `http://localhost:11434` y oculta "API key", cambiar a `anthropic` revela "API key" y oculta "Endpoint URL", volver a `mock` y pulsar "Save & test connection" dispara `POST /onboarding/ai-provider` + `POST /onboarding/ai-provider/validate` reales (confirmado en las peticiones de red) y muestra "Connected successfully." real.
+
+7 tests nuevos de Vitest (`AIProviderSettings.test.tsx`: precarga, campos condicionales por provider en ambas direcciones, éxito, fallo con motivo, limpieza de la key tras el intento, error de carga inicial) + 93/93 suite frontend completa (93 = 86 previos + 7 nuevos), `tsc -b` y `oxlint` limpios. Sin cambios de backend más allá de un comentario desactualizado corregido en `providers.py`.
+
 ---
 
 # Vertical slice mínimo recomendado

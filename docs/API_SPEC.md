@@ -462,6 +462,12 @@ Future authentication is required before supporting non-local binding.
 
 ## 13. Onboarding
 
+`POST /onboarding/ai-provider` and `POST /onboarding/ai-provider/validate`
+stay callable after `onboarding_step` reaches `COMPLETE` — they just skip
+advancing the state machine further. This is how Settings' AI provider
+section (docs/TASKS.md T146) changes provider/model/credential later,
+without a separate backend route.
+
 `GET /onboarding/status`
 
 `POST /onboarding/vault`

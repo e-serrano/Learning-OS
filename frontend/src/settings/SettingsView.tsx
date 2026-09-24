@@ -1,5 +1,6 @@
 import { type ChangeEvent, useEffect, useState } from 'react'
 import { ApiError, getSettings, updateGitAutoCommit, updateLanguage } from '../api/settings'
+import { AIProviderSettings } from './AIProviderSettings'
 import './settings.css'
 
 type Phase = 'loading' | 'error' | 'ready'
@@ -14,7 +15,11 @@ type Phase = 'loading' | 'error' | 'ready'
  * once on, every vault write the app makes is committed to the vault's
  * own git history automatically -- no separate action per change,
  * disabled and hidden behind a plain checkbox when the vault isn't a
- * git repo at all. */
+ * git repo at all.
+ *
+ * The AI provider section (docs/TASKS.md T146) is its own component,
+ * `AIProviderSettings` -- separate data source (`GET /onboarding/status`,
+ * not `GET /settings`), so it loads/errors independently. */
 export function SettingsView() {
   const [phase, setPhase] = useState<Phase>('loading')
   const [error, setError] = useState<string | null>(null)
@@ -125,6 +130,9 @@ export function SettingsView() {
       {saving && <p className="field-hint">Saving…</p>}
       {saved && !saving && <div className="message success">Saved.</div>}
       {error && <div className="message error">{error}</div>}
+
+      <h3>AI provider</h3>
+      <AIProviderSettings />
     </div>
   )
 }
