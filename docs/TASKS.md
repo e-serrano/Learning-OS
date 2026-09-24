@@ -49,9 +49,11 @@ Crear repositorio GitHub privado por defecto; configurar `origin`; no inventar o
 Definir `main`, `feature/*`, `fix/*`, `chore/*`; `develop` es opcional.
 
 ### T007 — Protección de `main`
-**Estado:** BLOCKED — GitHub API devuelve 403: "Upgrade to GitHub Pro or make this repository public to enable this feature." El repositorio es privado en un plan Free; branch protection clásica no está disponible. Requiere que el usuario decida: pasar a GitHub Pro, o hacer el repositorio público. Ninguna de las dos se ha aplicado (cambio de facturación/visibilidad fuera de autonomía del agente).
+**Estado:** DONE (alcance reducido a propósito, ver nota)
 **Dep:** T005  
 PR requerido, checks de CI requeridos y sin force-push cuando la configuración de GitHub lo permita.
+
+**Nota:** Bloqueada originalmente (repo privado en plan Free, 403 de la API de branch protection); desbloqueada el 2026-09-24 cuando el usuario hizo público el repositorio. Antes de aplicar nada se preguntó al usuario (`AskUserQuestion`) qué nivel quería, porque la especificación literal de la tarea ("PR requerido") habría roto el flujo de push directo a `main` usado en TODA la sesión hasta ahora (T130-T141, ninguno vía PR pese a que docs/AGENTS.md #18 documenta PR como flujo por defecto) -- una protección estricta con revisión de PR obligatoria habría bloqueado tanto al usuario como al propio agente de seguir con ese mismo patrón sin aviso. El usuario eligió la opción ligera: exige que los 3 checks de CI (`backend`, `frontend`, `e2e`) estén en verde y bloquea force-push/borrado de `main`, pero NO exige pull request -- `enforce_admins: false` y `required_pull_request_reviews: null`, así que el push directo sigue funcionando exactamente igual que hasta ahora. Aplicado vía `gh api -X PUT repos/e-serrano/Learning-OS/branches/main/protection`, verificado leyendo la configuración de vuelta.
 
 ### T008 — GitHub Actions
 **Estado:** DONE
