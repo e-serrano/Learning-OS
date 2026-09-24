@@ -14,10 +14,12 @@ Architecture principle:
 ## Structure
 
 ```text
-backend/    FastAPI application, domain/services/persistence/AI orchestration
-frontend/   React + TypeScript UI
-scripts/    Developer/operations scripts
-docs/       Normative specification (source of truth)
+backend/          FastAPI application, domain/services/persistence/AI orchestration
+frontend/         React + TypeScript UI
+extension/        Browser web clipper (Manifest V3) -- see DEVELOPMENT.md
+obsidian-plugin/  Obsidian sidebar plugin for reviewing pending vault changes
+docs/             Normative specification (source of truth)
+scripts/          Reserved for developer/operations scripts (currently empty)
 ```
 
 ## Documentation

@@ -25,27 +25,36 @@ Reference the task ID when it adds clarity, e.g. `feat(onboarding): add vault co
 
 ## Workflow
 
+`main` requires its 3 CI checks (`backend`, `frontend`, `e2e`) to pass and
+blocks force-push/deletion, but does not require a pull request — this
+project has one active maintainer plus an AI coding agent, both pushing
+directly to `main` after running the quality gates below locally. Use a
+`feature/<task-id>-<short-name>` branch and a pull request when you want
+review before merging, e.g. an external contribution:
+
 ```text
 main ← pull request ← feature/<task-id>-<short-name>
 ```
 
-CI must be green before merging to `main`.
+Either way, CI must be green before/at merge to `main`.
 
 ## Quality gates
 
-Backend:
+Backend (from `backend/`):
 
 ```bash
-uv run pytest
-uv run ruff check .
-uv run mypy backend/app
+uv run ruff format
+uv run ruff check --fix .
+uv run pytest -q
+uv run mypy app
 ```
 
-Frontend:
+Frontend (from `frontend/`):
 
 ```bash
 npm test
 npm run build
+npm run lint
 ```
 
 Do not commit or push code that fails these checks, contains secrets, or breaks existing functionality.
