@@ -26,6 +26,20 @@ The model supplies semantic judgments and generated learning content.
 }
 ```
 
+`constraints.language` is set on every request by `AIOrchestrator.generate`
+(docs/TASKS.md T140, user request: a language preference for the app and
+for AI-written vault notes) from the user's configured `AppConfig.language`
+(`GET/PATCH /settings`, docs/API_SPEC.md #15) -- never by an individual
+caller, so every role (tutor, curator, exercise generator, evaluator,
+planner, diagnostician, progress analyst) is steered uniformly without
+each service constructing its own `AIRequest` needing to know about it.
+`app/ai/adapters/_prompt.py` only ever appends one of a small closed set
+of hardcoded sentences ("Respond in Spanish.", etc.) for a recognized
+code; an unrecognized value is a silent no-op, never echoed into the
+system prompt verbatim -- vault/context content stays untrusted data
+(#11), and this closed list keeps a config field from becoming a second
+injection surface.
+
 ---
 
 ## 3. Provider interface

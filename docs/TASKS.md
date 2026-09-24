@@ -1074,6 +1074,23 @@ Verificación real de punta a punta (no solo tests aislados): script standalone 
 
 12 tests nuevos (7 en `test_mastery_curation_trigger_service.py`, 3 en `test_mastery_update_service.py`, 2 en `test_dependencies.py`) más ajustes en tests existentes para el nuevo convenio async/path (`test_proposal_validator.py`, `test_review_flow_service.py`, `test_curator_service.py`, `test_core_session_e2e.py`, `test_canonical_loop.py`) + 943/943 suite completa (943 = 931 previos + 12 nuevos), ruff/mypy limpios.
 
+### T140 — App-wide language preference (app + AI-written vault notes)
+**Estado:** DONE
+**Dep:** T034 (ConfigStore/AppConfig), T080 (CuratorService)  
+Petición directa del usuario (2026-09-24), no del backlog de Fase 13: una preferencia de idioma configurable que afecte tanto a la app como a las notas que la IA escribe en Obsidian.
+
+**Nota:** Investigación previa (mismo patrón: comprobar qué existe antes de escribir código). Hallazgo: `AppConfig.language: str = "en"` (`app/config/models.py`) ya existía completo -- persistido por `ConfigStore`, expuesto en `GET /onboarding/status` -- desde antes de esta sesión, pero era un campo reservado-y-muerto igual que los enums de T130-T133: nada lo escribía tras el valor por defecto (sin endpoint de escritura post-onboarding) y nada lo leía para afectar una sola llamada a IA. Esta tarea cierra ambos lados.
+
+Backend, lectura/escritura: `app/config/languages.py` (nuevo) define `SUPPORTED_LANGUAGES`, una lista cerrada (en/es/fr/de/pt/it) en vez de aceptar string libre -- el valor se inyecta más tarde en cada system prompt de IA, así que un string sin acotar aquí sería una segunda superficie de inyección de prompts (docs/AGENTS.md #14/#19) además de la ya cubierta por vault/context. `app/api/settings.py` (nuevo router, `GET /settings`, `PATCH /settings/language`) valida contra esa lista (400 `VALIDATION_ERROR` si no pertenece); `AppConfig.language` en sí sigue siendo un `str` simple sin cambios de tipo, para no romper el round-trip ya cubierto por `test_store.py` (que persiste valores arbitrarios como `"fr"` a través de `ConfigStore` sin ninguna validación en esa capa -- la validación vive en el límite de la API, no en el store).
+
+Backend, efecto en IA: único punto de integración es `AIOrchestrator.generate()` (`app/ai/orchestrator.py`) -- gana un `language: str = "en"` de constructor (poblado en `get_ai_orchestrator` desde `config.language`) e inyecta `constraints["language"]` en cada `AIRequest` que no lo traiga ya explícito, antes de reenviarlo al provider. Cubre los 11 call-sites existentes (`tutor_service.py`, `curator_service.py`, `exercise_generator_service.py`, `evaluator_service.py`, `planner_service.py`, `diagnostic_service.py`, `project_generation_service.py`, `project_evaluation_service.py`, `transfer_assessment_service.py`, `teach_back_service.py`) sin tocar ninguno -- mismo razonamiento de "un solo punto de integración" que T139 aplicó a `MasteryUpdateService` en vez de sus 4 llamadores. `app/ai/adapters/_prompt.py::system_prompt` traduce `constraints["language"]` a UNA frase fija en inglés ("Respond in Spanish.", etc.) tomada del mismo diccionario cerrado -- nunca ecoa el valor crudo, así que un valor no reconocido (o hipotéticamente adversarial, si algún caller futuro construyera `constraints["language"]` a mano) degrada a no-op en vez de alcanzar el system prompt tal cual (verificado explícitamente con un payload de inyección en `test_prompts.py`, mismo patrón que `test_security.py` ya usa para vault/context).
+
+Frontend: `SettingsView.tsx` (nuevo, `frontend/src/settings/`) -- página simple con un `<select>` poblado desde `supported_languages` (la app nunca hardcodea la lista, la pide al backend), guarda on-change vía `PATCH /settings/language`. Enlazada en `AppShell.tsx`/`routes.tsx` junto a Dashboard/Reviews/Vault, ruta `/settings` -- no forma parte del wizard de onboarding (es una preferencia cambiable en cualquier momento, no un paso con avance secuencial).
+
+Verificado real de punta a punta en el navegador de esta sesión: servidor dev real (backend `uvicorn` + frontend Vite), `GET /settings` inicial (`en`), cambio a Spanish vía la UI real → "Saved." → confirmado por `curl` directo al backend que persistió (`language: "es"`), revertido a `en` al terminar para no dejar el entorno de desarrollo real del usuario en un estado distinto al que tenía.
+
+14 tests nuevos: backend 10 (4 en `test_prompts.py`, 3 en `test_orchestrator.py`, 3 en `test_settings.py`) + 953/953 suite backend completa (953 = 943 previos + 10 nuevos); frontend 4 (3 en `SettingsView.test.tsx`, 1 en `routes.test.tsx`) + 74/74 suite frontend completa (74 = 70 previos + 4 nuevos). ruff/mypy/tsc/oxlint limpios.
+
 ---
 
 # Vertical slice mínimo recomendado

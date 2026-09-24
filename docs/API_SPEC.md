@@ -507,3 +507,19 @@ mock
 ```
 
 Configuration endpoints must never return API keys. The frontend must not persist provider credentials in browser storage.
+
+## 15. Settings
+
+`GET /settings`
+
+```json
+{"language": "en", "supported_languages": {"en": "English", "es": "Spanish", "fr": "French", "de": "German", "pt": "Portuguese", "it": "Italian"}}
+```
+
+`PATCH /settings/language`
+
+```json
+{"language": "es"}
+```
+
+Rejects a code outside `supported_languages` with `VALIDATION_ERROR` (400). The stored value is a general app preference, not onboarding-gated — it can be changed at any time, before or after `/onboarding/complete`. Every AI request the app makes is steered by the configured language: `AIOrchestrator.generate` injects `constraints.language` into the common request envelope (docs/AI_CONTRACTS.md #2) for every role, which covers AI-generated Obsidian note content (the curator, docs/AI_CONTRACTS.md #9) as well as tutor/exercise/evaluator output.

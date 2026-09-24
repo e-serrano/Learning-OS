@@ -222,7 +222,9 @@ def get_ai_orchestrator(
         )
     except (NoDefaultProviderError, MissingCredentialError, MissingBaseUrlError) as exc:
         raise api_error("AI_UNAVAILABLE", str(exc), 400) from exc
-    return AIOrchestrator(get_engine(), provider, provider_name=provider_name, model=model)
+    return AIOrchestrator(
+        get_engine(), provider, provider_name=provider_name, model=model, language=config.language
+    )
 
 
 def get_embedding_orchestrator(

@@ -510,7 +510,7 @@ value_json TEXT NOT NULL
 updated_at TEXT NOT NULL
 ```
 
-Store only non-secret settings such as vault path, onboarding state, selected provider/model and language.
+Store only non-secret settings such as vault path, onboarding state, selected provider/model and language. `language` is readable/writable any time via `GET/PATCH /settings` (docs/API_SPEC.md #15), independent of onboarding progress, and steers AI output language app-wide (docs/AI_CONTRACTS.md #2).
 
 ### `ai_provider_configs`
 

@@ -7,6 +7,7 @@ import { ProjectView } from '../project/ProjectView'
 import { RoadmapView } from '../roadmap/RoadmapView'
 import { ReviewsUI } from '../reviews/ReviewsUI'
 import { SessionUI } from '../session/SessionUI'
+import { SettingsView } from '../settings/SettingsView'
 import { VaultDiffUI } from '../vault/VaultDiffUI'
 import { AppShell } from './AppShell'
 
@@ -27,6 +28,7 @@ export function AppRoutes() {
         <Route path="assessments/:assessmentId" element={<AssessmentUI />} />
         <Route path="projects/:projectId" element={<ProjectView />} />
         <Route path="vault" element={<VaultDiffUI />} />
+        <Route path="settings" element={<SettingsView />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

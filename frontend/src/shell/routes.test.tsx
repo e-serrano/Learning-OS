@@ -59,6 +59,12 @@ describe('AppRoutes', () => {
         if (url.match(/\/vault\/changes$/)) {
           return Promise.resolve({ ok: true, json: async () => ({ changes: [] }) })
         }
+        if (url.match(/\/settings$/)) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ language: 'en', supported_languages: { en: 'English' } }),
+          })
+        }
         return Promise.resolve({ ok: true, json: async () => ({ goals: [] }) })
       }),
     )
@@ -90,6 +96,12 @@ describe('AppRoutes', () => {
     renderAt('/does-not-exist')
 
     expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument()
+  })
+
+  it('renders the settings view at /settings', async () => {
+    renderAt('/settings')
+
+    expect(await screen.findByRole('heading', { name: 'Settings' })).toBeInTheDocument()
   })
 
   it('keeps the nav visible across routes', () => {

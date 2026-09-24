@@ -115,6 +115,52 @@ async def test_session_id_is_recorded_when_provided(tmp_path: Path) -> None:
 
 
 @pytest.mark.asyncio
+async def test_generate_defaults_to_english_when_no_language_configured(tmp_path: Path) -> None:
+    engine = _engine(tmp_path)
+    provider = MockProvider()
+    seen: list[AIRequest] = []
+    provider.set_response(Greeting, lambda req: (seen.append(req), Greeting(text="hi"))[1])
+    orchestrator = AIOrchestrator(engine, provider, provider_name="mock", model="mock-1")
+
+    await orchestrator.generate(AIRequest(role="tutor", prompt_version="tutor.v1"), Greeting)
+
+    assert seen[0].constraints["language"] == "en"
+
+
+@pytest.mark.asyncio
+async def test_generate_injects_the_orchestrator_configured_language(tmp_path: Path) -> None:
+    engine = _engine(tmp_path)
+    provider = MockProvider()
+    seen: list[AIRequest] = []
+    provider.set_response(Greeting, lambda req: (seen.append(req), Greeting(text="hi"))[1])
+    orchestrator = AIOrchestrator(
+        engine, provider, provider_name="mock", model="mock-1", language="es"
+    )
+
+    await orchestrator.generate(AIRequest(role="curator", prompt_version="curator.v1"), Greeting)
+
+    assert seen[0].constraints["language"] == "es"
+
+
+@pytest.mark.asyncio
+async def test_generate_never_overrides_an_explicit_language_constraint(tmp_path: Path) -> None:
+    engine = _engine(tmp_path)
+    provider = MockProvider()
+    seen: list[AIRequest] = []
+    provider.set_response(Greeting, lambda req: (seen.append(req), Greeting(text="hi"))[1])
+    orchestrator = AIOrchestrator(
+        engine, provider, provider_name="mock", model="mock-1", language="es"
+    )
+
+    await orchestrator.generate(
+        AIRequest(role="tutor", prompt_version="tutor.v1", constraints={"language": "fr"}),
+        Greeting,
+    )
+
+    assert seen[0].constraints["language"] == "fr"
+
+
+@pytest.mark.asyncio
 async def test_multiple_calls_each_get_their_own_ai_run_row(tmp_path: Path) -> None:
     engine = _engine(tmp_path)
     provider = MockProvider()

@@ -101,6 +101,13 @@ Generated summary.
 
 User content outside managed sections is never replaced automatically.
 
+Managed-section prose (the curator's `content` values) is written in the
+user's configured language (`GET/PATCH /settings`, docs/API_SPEC.md #15,
+docs/AI_CONTRACTS.md #2) -- section headings and the surrounding
+structural markers (frontmatter keys, `LEARNING_OS:BEGIN/END` comments)
+stay as shown above regardless of language, since only the AI-generated
+content itself is steered, never the schema.
+
 ---
 
 ## 6. Human-authored sections

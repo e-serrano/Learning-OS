@@ -12,6 +12,7 @@ from app.api.providers import router as providers_router
 from app.api.reviews import router as reviews_router
 from app.api.roadmap import router as roadmap_router
 from app.api.sessions import router as sessions_router
+from app.api.settings import router as settings_router
 from app.api.teach_back import router as teach_back_router
 from app.api.vault import router as vault_router
 
@@ -39,6 +40,7 @@ app.include_router(assessments_router)
 app.include_router(teach_back_router)
 app.include_router(projects_router)
 app.include_router(progress_router)
+app.include_router(settings_router)
 
 
 @app.get("/api/v1/health")

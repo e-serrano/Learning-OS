@@ -1,0 +1,43 @@
+.settings-view {
+  max-width: 480px;
+}
+
+.settings-view h2 {
+  margin-top: 0;
+}
+
+.settings-view label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-top: 16px;
+}
+
+.settings-view .field-hint {
+  font-size: 0.85rem;
+  opacity: 0.75;
+  margin: 4px 0 8px;
+}
+
+.settings-view select {
+  padding: 8px 10px;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+  border-radius: 6px;
+  font: inherit;
+  background: transparent;
+  color: inherit;
+}
+
+.settings-view .message {
+  margin: 16px 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: #fdecec;
+  color: #a3231d;
+}
+
+.settings-view .message.success {
+  background: #eafaf0;
+  color: #1a7a3c;
+}

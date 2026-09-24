@@ -26,12 +26,18 @@ class AIOrchestrator:
     """
 
     def __init__(
-        self, engine: Engine, provider: AIProvider, provider_name: str, model: str
+        self,
+        engine: Engine,
+        provider: AIProvider,
+        provider_name: str,
+        model: str,
+        language: str = "en",
     ) -> None:
         self._engine = engine
         self._provider = provider
         self._provider_name = provider_name
         self._model = model
+        self._language = language
 
     @property
     def provider_name(self) -> str:
@@ -50,6 +56,10 @@ class AIOrchestrator:
         response_model: type[BaseModel],
         session_id: str | None = None,
     ) -> BaseModel:
+        if "language" not in request.constraints:
+            request = request.model_copy(
+                update={"constraints": {**request.constraints, "language": self._language}}
+            )
         started = time.monotonic()
         success = False
         error_type: str | None = None
