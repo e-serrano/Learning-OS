@@ -61,6 +61,13 @@ cp .env.docker.example .env
 docker compose up --build
 ```
 
+That brings up the two containers — it does **not** finish setup by itself.
+Open `http://127.0.0.1:8080` and go through onboarding same as a native
+install ([Onboarding](#onboarding) below): vault path, then AI provider,
+then (if the provider needs one) its API key. `KEYRING_CRYPTFILE_PASSWORD`
+only prepares *where* that key gets encrypted at rest — it is not the key
+itself and doesn't skip this step.
+
 Frontend at `http://127.0.0.1:8080`, backend at `http://127.0.0.1:8000`. Both
 are published to `127.0.0.1` only, matching `docs/AGENTS.md` #19 — this is a
 local-first, single-user tool with AI credentials and vault filesystem
@@ -70,9 +77,22 @@ A few things work differently than the native setup:
 
 - **CORS never comes up.** `frontend/nginx.conf` reverse-proxies `/api/` to
   the backend container, so the browser only ever talks to one origin.
-- **Vault path.** `VAULT_HOST_PATH` is bind-mounted into the backend
-  container at `/vault` — during onboarding, enter `/vault` as the vault
-  path, not your host path.
+- **Vault path is fixed before startup, not chosen in the wizard.** A
+  container only ever sees folders explicitly bind-mounted into it —
+  Docker has no mechanism for a running container to reach out and mount
+  an arbitrary host path *after* it's already up, so typing a host path
+  into onboarding (the way native installs work) can't work here.
+  `VAULT_HOST_PATH` (in `.env`, read before the container starts) is the
+  bind mount; the wizard just points at where it landed inside the
+  container (`/vault`), never your real host path. Switching vaults means
+  editing `.env` and `docker compose up` again, not re-running onboarding.
+  (A single mounted folder is also the smallest filesystem exposure the
+  container gets — mounting something broader like your whole home
+  directory would let onboarding pick any subfolder without touching
+  `.env` again, at the cost of the container being able to see everything
+  under it, not just the vault. Not done here — see `docs/AGENTS.md` #19
+  on restricting filesystem access — but it's a legitimate trade-off if
+  you want that convenience instead.)
 - **Credentials.** There is no OS keyring inside a Linux container, so
   `KEYRING_CRYPTFILE_PASSWORD` activates an encrypted-file backend instead
   (`app/config/keyring_setup.py`) — a no-op on native runs, where the real
