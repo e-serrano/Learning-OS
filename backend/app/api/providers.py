@@ -19,7 +19,11 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from app.ai.capability_check import CapabilityCheckResult, check_provider_capability
+from app.ai.capability_check import (
+    CapabilityCheckResult,
+    check_provider_capability,
+    validate_provider_connection,
+)
 from app.ai.provider_registry import ProviderDescriptor, ProviderId, list_providers
 from app.api.dependencies import get_config_store
 from app.config.store import ConfigStore
@@ -77,10 +81,19 @@ def get_provider_config(store: ConfigStoreDep) -> ProviderConfigResponse:
 
 
 @router.post("/validate", response_model=CapabilityCheckResult)
-def validate_provider(request: ValidateProviderRequest) -> CapabilityCheckResult:
-    return check_provider_capability(
+async def validate_provider(request: ValidateProviderRequest) -> CapabilityCheckResult:
+    result = check_provider_capability(
         provider_id=request.provider_id,
         model=request.model,
         base_url=request.base_url,
         credential=request.credential,
     )
+    if result.ok:
+        assert request.model is not None  # guaranteed by check_provider_capability's own check
+        result = await validate_provider_connection(
+            provider_id=request.provider_id,
+            model=request.model,
+            base_url=request.base_url,
+            credential=request.credential,
+        )
+    return result

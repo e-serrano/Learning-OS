@@ -110,9 +110,14 @@ def test_validate_mock_provider_succeeds_without_credential(
     assert body["onboarding_step"] == "VALIDATE"
 
 
-def test_validate_ollama_local_provider_requires_base_url_but_no_credential(
+def test_validate_ollama_local_provider_passes_structural_check_but_fails_live(
     client: TestClient, vault_dir: Path
 ) -> None:
+    """Structurally well-formed (base_url present, no credential needed --
+    see test_capability_check.py's own unit test for that in isolation),
+    but nothing is actually listening at that base_url in a test run --
+    docs/TASKS.md T145's whole point is that this must now be caught here,
+    not only much later when a real generation call is attempted."""
     client.post("/api/v1/onboarding/vault", json={"path": str(vault_dir)})
     client.post(
         "/api/v1/onboarding/ai-provider",
@@ -123,8 +128,8 @@ def test_validate_ollama_local_provider_requires_base_url_but_no_credential(
 
     assert response.status_code == 200
     body = response.json()
-    assert body["ok"] is True
-    assert body["onboarding_step"] == "VALIDATE"
+    assert body["ok"] is False
+    assert body["onboarding_step"] == "AI_PROVIDER"  # never advanced past this
 
 
 def test_validate_remote_provider_without_credential_fails_and_does_not_advance(
@@ -145,13 +150,19 @@ def test_validate_remote_provider_without_credential_fails_and_does_not_advance(
     assert body["onboarding_step"] == "AI_PROVIDER"
 
 
-def test_validate_remote_provider_with_credential_succeeds_and_never_leaks_secret(
+def test_validate_provider_with_credential_succeeds_and_never_leaks_secret(
     client: TestClient, vault_dir: Path
 ) -> None:
+    """`mock`, not a remote provider: this is about the storage/response
+    path (a successfully-validated credential is stored via the keyring
+    and never echoed back), not about any one provider's live wire
+    protocol (T145 makes a real remote provider's "validate" genuinely
+    hit the network, which a real credential like "sk-super-secret-value"
+    would never actually pass)."""
     client.post("/api/v1/onboarding/vault", json={"path": str(vault_dir)})
     client.post(
         "/api/v1/onboarding/ai-provider",
-        json={"provider_id": "openai", "model": "gpt-5"},
+        json={"provider_id": "mock", "model": "mock-1"},
     )
 
     response = client.post(
@@ -192,9 +203,14 @@ def test_full_happy_path_reaches_complete_with_mock_provider(
     assert status.json()["onboarding_step"] == "COMPLETE"
 
 
-def test_full_happy_path_reaches_complete_with_ollama_local_provider(
+def test_complete_stays_blocked_when_the_local_provider_never_actually_validated(
     client: TestClient, vault_dir: Path
 ) -> None:
+    """A structurally-fine-looking ollama config (base_url present, no
+    credential needed) that nothing is listening behind must not be able
+    to reach onboarding COMPLETE -- docs/TASKS.md T145's real point: a
+    config that only ever *looked* valid can no longer silently finish
+    onboarding."""
     client.post("/api/v1/onboarding/vault", json={"path": str(vault_dir)})
     client.post(
         "/api/v1/onboarding/ai-provider",
@@ -204,13 +220,17 @@ def test_full_happy_path_reaches_complete_with_ollama_local_provider(
 
     response = client.post("/api/v1/onboarding/complete")
 
-    assert response.status_code == 200
-    assert response.json()["onboarding_step"] == "COMPLETE"
+    assert response.status_code == 409
+    assert response.json()["detail"]["error"]["code"] == "SESSION_STATE_ERROR"
 
 
-def test_full_happy_path_reaches_complete_with_simulated_remote_provider(
+def test_a_fake_credential_against_a_real_remote_provider_fails_live_and_is_never_stored(
     client: TestClient, vault_dir: Path
 ) -> None:
+    """Before T145, a made-up credential like this would have been
+    accepted (`check_provider_capability` only checked it was non-empty)
+    and onboarding would have reached COMPLETE with a provider that was
+    never actually reachable -- exactly this task's motivating bug."""
     client.post("/api/v1/onboarding/vault", json={"path": str(vault_dir)})
     client.post(
         "/api/v1/onboarding/ai-provider", json={"provider_id": "anthropic", "model": "claude-x"}
@@ -218,16 +238,14 @@ def test_full_happy_path_reaches_complete_with_simulated_remote_provider(
     validate = client.post(
         "/api/v1/onboarding/ai-provider/validate", json={"credential": "sk-ant-simulated"}
     )
-    assert validate.json()["ok"] is True
+    assert validate.json()["ok"] is False
 
     response = client.post("/api/v1/onboarding/complete")
-
-    assert response.status_code == 200
-    assert response.json()["onboarding_step"] == "COMPLETE"
+    assert response.status_code == 409
 
     status = client.get("/api/v1/onboarding/status")
     assert "sk-ant-simulated" not in status.text
-    assert status.json()["ai_providers"][0]["credential_ref"].startswith("anthropic:")
+    assert status.json()["ai_providers"] == []  # never stored -- validation never succeeded
 
 
 def test_complete_is_idempotent_once_already_complete(client: TestClient, vault_dir: Path) -> None:

@@ -399,6 +399,15 @@ AI request contracts never contain credential values. Adapters resolve credentia
 
 Before activation, validate connection, credential if required, model and minimum structured-output capability. If unsupported, onboarding reports the limitation instead of silently parsing free-form text.
 
+Two-stage since docs/TASKS.md T145: `check_provider_capability` (structural
+-- required fields present, provider declares structured-output support,
+never touches the network) gates `validate_provider_connection` (live --
+one minimal real request through the actual adapter, docs/TASKS.md T144's
+error-body fix making a live failure's `reason` meaningful). `mock` is
+exempt from the live stage -- deterministic and offline by design, so
+"reachable" doesn't apply to it, and the app must stay usable with zero
+setup (docs/DEVELOPMENT.md).
+
 ## 20. Onboarding response
 
 A successful validation may return provider/model/capabilities, but never credentials.

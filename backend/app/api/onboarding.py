@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from app.ai.capability_check import check_provider_capability
+from app.ai.capability_check import check_provider_capability, validate_provider_connection
 from app.ai.provider_registry import ProviderId
 from app.api.dependencies import get_config_store, get_credential_store
 from app.api.errors import api_error
@@ -123,7 +123,7 @@ def configure_ai_provider(request: AIProviderRequest, store: ConfigStoreDep) -> 
 
 
 @router.post("/ai-provider/validate", response_model=ValidateResponse)
-def validate_ai_provider(
+async def validate_ai_provider(
     request: ValidateRequest,
     store: ConfigStoreDep,
     credential_store: CredentialStoreDep,
@@ -139,6 +139,13 @@ def validate_ai_provider(
         base_url=config.base_url,
         credential=request.credential,
     )
+    if result.ok:
+        result = await validate_provider_connection(
+            provider_id=provider_id,
+            model=config.model,
+            base_url=config.base_url,
+            credential=request.credential,
+        )
     if not result.ok:
         return ValidateResponse(
             onboarding_step=config.onboarding_step, ok=False, reason=result.reason

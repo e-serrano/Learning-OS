@@ -483,9 +483,14 @@ Future authentication is required before supporting non-local binding.
 ```
 
 `credential` is optional (omit for providers that don't require one, e.g.
-`mock`). The raw value is never echoed back or persisted — on success it is
-stored via the OS keyring and only a `credential_ref` is kept. Returns
-validation result and capabilities, never credentials:
+`mock`). Validates in two stages (docs/TASKS.md T145): structural first
+(required fields present), then — only if that passes — one real minimal
+request through the actual provider, so `ok: true` means the provider
+genuinely answered, not just that the form was filled in correctly. `mock`
+skips the live stage (deterministic/offline by design). The raw credential
+value is never echoed back or persisted — on success it is stored via the
+OS keyring and only a `credential_ref` is kept. Returns validation result
+and capabilities, never credentials:
 
 ```json
 {"onboarding_step": "VALIDATE", "ok": true, "reason": null}
