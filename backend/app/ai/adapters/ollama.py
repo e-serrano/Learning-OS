@@ -4,8 +4,9 @@ from typing import Any
 import httpx
 from pydantic import BaseModel, ValidationError
 
+from app.ai.adapters._http_errors import provider_unavailable_error
 from app.ai.adapters._prompt import system_prompt, user_prompt
-from app.ai.errors import AIInvalidOutputError, AIProviderUnavailableError
+from app.ai.errors import AIInvalidOutputError
 from app.ai.protocol import AIRequest
 
 
@@ -43,7 +44,7 @@ class OllamaProvider:
             response = await client.post(f"{self._base_url}/api/chat", json=payload, timeout=120.0)
             response.raise_for_status()
         except httpx.HTTPError as exc:
-            raise AIProviderUnavailableError(str(exc)) from exc
+            raise provider_unavailable_error(exc) from exc
         finally:
             if owns_client:
                 await client.aclose()

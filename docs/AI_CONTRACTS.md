@@ -325,6 +325,14 @@ validate
 
 Do not silently convert malformed output into arbitrary state.
 
+"Surface failure" includes the provider's own explanation, not just an
+HTTP status line: every wire adapter's `AIProviderUnavailableError`
+(docs/TASKS.md T144) includes the response body for a 4xx/5xx, since
+that is where a provider states the actual reason (bad model ID,
+malformed field, rate limit) -- a bare "400 Bad Request" gives the user
+nothing to act on. A connection-level failure (no response reached) still
+falls back to the plain error, since there is no body to read.
+
 ---
 
 ## 14. AI run metadata

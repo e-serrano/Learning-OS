@@ -72,6 +72,26 @@ async def test_http_error_raises_provider_unavailable() -> None:
 
 
 @pytest.mark.asyncio
+async def test_http_error_message_includes_the_response_body() -> None:
+    """A bad status line alone ("400 Bad Request") never says *why* --
+    Anthropic puts that in the body, e.g. an invalid model id."""
+    error_body = {
+        "type": "error",
+        "error": {
+            "type": "invalid_request_error",
+            "message": "model: bad-model is not a valid model ID",
+        },
+    }
+    client = httpx.AsyncClient(
+        transport=httpx.MockTransport(lambda req: httpx.Response(400, json=error_body))
+    )
+    provider = AnthropicProvider(model="bad-model", api_key="sk-ant-test", client=client)
+
+    with pytest.raises(AIProviderUnavailableError, match="not a valid model ID"):
+        await provider.generate(_request(), Greeting)
+
+
+@pytest.mark.asyncio
 async def test_response_without_tool_use_block_raises_invalid_output() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json={"content": [{"type": "text", "text": "not a tool call"}]})

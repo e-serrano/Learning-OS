@@ -12,7 +12,8 @@ this base.
 
 import httpx
 
-from app.ai.errors import AIInvalidOutputError, AIProviderUnavailableError
+from app.ai.adapters._http_errors import provider_unavailable_error
+from app.ai.errors import AIInvalidOutputError
 
 
 class OpenAICompatibleEmbeddingAdapter:
@@ -43,7 +44,7 @@ class OpenAICompatibleEmbeddingAdapter:
             )
             response.raise_for_status()
         except httpx.HTTPError as exc:
-            raise AIProviderUnavailableError(str(exc)) from exc
+            raise provider_unavailable_error(exc) from exc
         finally:
             if owns_client:
                 await client.aclose()
