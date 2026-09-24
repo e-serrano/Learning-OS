@@ -140,9 +140,18 @@ docs/API_SPEC.md #6) as one stateless interactive turn per call, gated on
 `SessionMode.SOCRATIC` -- the application biases the request toward
 Socratic questioning via `constraints`, but never hardcodes `mode`
 itself; that stays the model's per-turn judgment within the schema above.
-No frontend consumes this route yet -- a session-mode selector and a
-Socratic chat UI are a distinct, larger task than wiring the contract
-itself, left for later.
+
+Extended by T141 to also gate on `SessionMode.INTERVIEW`, same route and
+schema, only the `constraints` steering instruction changes (a simulated
+technical-interview style -- probing follow-ups, no coaching -- instead
+of Socratic questioning). `TutorService.TUTOR_STYLE_INSTRUCTIONS` maps
+each supported mode to its instruction, so a third tutor-style mode only
+needs a new map entry, not a new route/contract/exception type.
+
+No frontend consumes this route yet, for either mode -- a session-mode
+selector and a chat UI are a distinct, larger task than wiring the
+contract itself, left for later (T132's own original scoping decision,
+unchanged by T141).
 
 ---
 

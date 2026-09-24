@@ -389,7 +389,22 @@ def test_tutor_turn_accepts_history(client: TestClient, engine: Engine) -> None:
     assert response.status_code == 200
 
 
-def test_tutor_turn_rejects_a_non_socratic_session(client: TestClient, engine: Engine) -> None:
+def test_tutor_turn_returns_an_interview_response(client: TestClient, engine: Engine) -> None:
+    _seed_goal_and_concept(engine)
+    session_id = client.post(
+        "/api/v1/goals/goal_1/sessions", json={"mode": "interview", "duration_minutes": 30}
+    ).json()["id"]
+
+    response = client.post(
+        f"/api/v1/sessions/{session_id}/tutor",
+        json={"concept_id": "window_functions", "message": "I'd use a window function."},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["mode"] == "question"
+
+
+def test_tutor_turn_rejects_a_non_tutorable_session(client: TestClient, engine: Engine) -> None:
     _seed_goal_and_concept(engine)
     session_id = client.post(
         "/api/v1/goals/goal_1/sessions", json={"mode": "guided", "duration_minutes": 30}

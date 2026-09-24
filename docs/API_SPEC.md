@@ -282,16 +282,19 @@ Response:
 
 `POST /sessions/{session_id}/complete`
 
-### Tutor turn (Socratic mode)
+### Tutor turn (Socratic or interview mode)
 
-`POST /sessions/{session_id}/tutor` (docs/TASKS.md T132)
+`POST /sessions/{session_id}/tutor` (docs/TASKS.md T132, T141)
 
 One stateless interactive turn with the Tutor AI role (docs/AI_CONTRACTS.md
-#6). Only usable on a session created with `"mode": "socratic"` --
-`SESSION_STATE_ERROR` otherwise (same code as an inactive session). The
-caller resends the conversation-so-far each call; nothing here persists a
-transcript, and a tutor turn never creates `Evidence` or updates mastery
--- it is an interactive scaffold, not a graded activity.
+#6). Only usable on a session created with `"mode": "socratic"` or
+`"mode": "interview"` -- `SESSION_STATE_ERROR` otherwise (same code as an
+inactive session). Same request/response shape for both modes; only the
+instructional style the app asks the model for differs (Socratic
+questioning vs. a simulated technical interview with probing follow-ups).
+The caller resends the conversation-so-far each call; nothing here
+persists a transcript, and a tutor turn never creates `Evidence` or
+updates mastery -- it is an interactive scaffold, not a graded activity.
 
 Request:
 

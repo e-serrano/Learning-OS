@@ -1126,6 +1126,21 @@ Verificado real de punta a punta en el navegador de esta sesión: servidor dev r
 
 14 tests nuevos: backend 10 (4 en `test_prompts.py`, 3 en `test_orchestrator.py`, 3 en `test_settings.py`) + 953/953 suite backend completa (953 = 943 previos + 10 nuevos); frontend 4 (3 en `SettingsView.test.tsx`, 1 en `routes.test.tsx`) + 74/74 suite frontend completa (74 = 70 previos + 4 nuevos). ruff/mypy/tsc/oxlint limpios.
 
+### T141 — Interview mode
+**Estado:** DONE
+**Dep:** T132 (Socratic tutor turn)  
+Petición directa del usuario ("start the interview mode task", 2026-09-24), spin-off del hallazgo señalado al cerrar T138: `docs/ROADMAP.md` Fase 11 nombra "interview mode" junto a los otros nueve ítems (FSRS...Git integration), pero nunca recibió número de tarea propio y `SessionMode.INTERVIEW` (docs/DOMAIN_MODEL.md, `app/domain/enums.py`) llevaba reservado y sin usar desde el modelado temprano de dominio -- mismo patrón enum-reservado-y-muerto que `SOCRATIC`/`TEACH_BACK` tenían antes de T132/T133.
+
+**Nota:** A diferencia de T135/T136/T137 (ambigüedad real que requirió `AskUserQuestion`), el paralelismo estructural con T132 era lo bastante fuerte como para proceder sin preguntar: mismo contrato (`TutorResponse`), misma ruta (`POST /sessions/{session_id}/tutor`), mismo mecanismo de sesgo de estilo vía `constraints` en vez de un contrato nuevo -- la única decisión de producto real era qué instrucción de estilo distingue una entrevista simulada de un diálogo socrático (entrevista: preguntas de seguimiento que sondean el razonamiento, tono neutral, sin dar pistas salvo que el candidato esté totalmente bloqueado; socrático: una pregunta enfocada que guía al propio aprendiz hacia la respuesta, con ayuda progresiva).
+
+`app/services/tutor_service.py`: `TUTOR_STYLE_INSTRUCTIONS: dict[SessionMode, str]` reemplaza el `if session.mode != SOCRATIC` de T132 por un mapa `{SOCRATIC: ..., INTERVIEW: ...}` -- una tercera modalidad tipo-tutor futura solo necesita una entrada nueva en el mapa, no una ruta/contrato/excepción nueva. `SessionNotSocraticError` se renombra a `SessionNotTutorableError` (nombrada por la capacidad, no por un modo concreto) -- único cambio de nombre público de esta tarea, propagado a `sessions.py` y a los tests existentes. El `constraints["style"]` enviado a la IA ahora es `session.mode.value` (`"socratic"` o `"interview"`) en vez de la cadena `"socratic"` fija que T132 había dejado hardcodeada.
+
+Alcance deliberadamente igual de acotado que T132: sin UI de chat nueva (ni para socrático ni para entrevista) -- `docs/AI_CONTRACTS.md` #6 ya documentaba esto como "a distinct, larger task than wiring the contract itself, left for later" desde T132, y ninguna de las ocho tareas siguientes de Fase 11 lo retomó; esta tarea no cambia esa decisión de alcance, solo la hace explícita para los dos modos en vez de uno. Ningún archivo de `frontend/` se toca.
+
+7 tests nuevos backend (1 renombrado + 4 nuevos en `test_tutor_service.py` -- respuesta de entrevista, constraints de estilo de entrevista --, 2 nuevos en `test_sessions.py` -- ruta de entrevista, rechazo renombrado) + 992/992 suite backend completa (992 = 989 previos + 3 nuevos -- el resto son renombrados, no nuevos), ruff/mypy limpios. Sin cambios ni tests nuevos en frontend (alcance explícitamente fuera, ver nota).
+
+Con esto, Fase 11 — Advanced learning queda completa: los diez ítems de `docs/ROADMAP.md` (FSRS, knowledge graph UI, interview mode, Socratic mode, teach-back mode, voice, browser extension, Obsidian plugin, code execution sandbox, Git integration) tienen ahora tarea y estado DONE (T130-T141, sin T137→T141 estrictamente correlativo con el orden del bullet list, ya que dos de ellos -- T139, T140 -- fueron peticiones directas del usuario intercaladas fuera del backlog de Fase 13).
+
 ---
 
 # Vertical slice mínimo recomendado

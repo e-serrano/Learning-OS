@@ -12,11 +12,12 @@ prior task.
 (T103), so both can raise `AIProviderUnavailableError`/
 `AIInvalidOutputError` same as T101/T102's AI-calling routes.
 
-`/tutor` (docs/TASKS.md T132) is a separate, stateless interactive turn
-using the Tutor AI role -- unlike `/next`/`/answer`, it never touches
-`Activity`/`Evidence`/mastery. Only usable on a `mode="socratic"` session
-(`TutorService` rejects any other mode); the caller resends the
-conversation-so-far each call since nothing here persists it.
+`/tutor` (docs/TASKS.md T132, extended to `mode="interview"` by T141) is
+a separate, stateless interactive turn using the Tutor AI role -- unlike
+`/next`/`/answer`, it never touches `Activity`/`Evidence`/mastery. Only
+usable on a `mode="socratic"` or `mode="interview"` session (`TutorService`
+rejects any other mode); the caller resends the conversation-so-far each
+call since nothing here persists it.
 """
 
 from datetime import datetime
@@ -59,7 +60,7 @@ from app.services.session_service import (
     InvalidSessionTransitionError,
     SessionApplicationService,
 )
-from app.services.tutor_service import SessionNotSocraticError, TutorService, TutorTurn
+from app.services.tutor_service import SessionNotTutorableError, TutorService, TutorTurn
 
 router = APIRouter(tags=["sessions"])
 
@@ -284,9 +285,11 @@ async def tutor_turn(
         raise api_error(
             "SESSION_STATE_ERROR", f"Session '{session_id}' is not active", 409
         ) from exc
-    except SessionNotSocraticError as exc:
+    except SessionNotTutorableError as exc:
         raise api_error(
-            "SESSION_STATE_ERROR", f"Session '{session_id}' is not in socratic mode", 409
+            "SESSION_STATE_ERROR",
+            f"Session '{session_id}' is not in socratic or interview mode",
+            409,
         ) from exc
     except AIInvalidOutputError as exc:
         raise api_error("AI_INVALID_OUTPUT", str(exc), 422) from exc

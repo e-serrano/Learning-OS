@@ -22,7 +22,12 @@ from app.persistence.repositories import (
 )
 from app.services.context_builder import ContextBuilder, GoalNotFoundError
 from app.services.next_activity_service import InactiveSessionError, SessionNotFoundError
-from app.services.tutor_service import SessionNotSocraticError, TutorService, TutorTurn
+from app.services.tutor_service import (
+    INTERVIEW_STYLE_INSTRUCTION,
+    SessionNotTutorableError,
+    TutorService,
+    TutorTurn,
+)
 
 NOW = datetime(2026, 1, 1, tzinfo=UTC)
 
@@ -170,14 +175,51 @@ async def test_ask_raises_when_session_is_not_active(tmp_path: Path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_ask_raises_when_session_is_not_socratic_mode(tmp_path: Path) -> None:
+async def test_ask_raises_when_session_mode_is_not_tutorable(tmp_path: Path) -> None:
     engine = _engine(tmp_path)
     _seed_goal_and_concept(engine)
     _seed_session(engine, mode=SessionMode.GUIDED)
     service = _service(engine, NeverCalledProvider())
 
-    with pytest.raises(SessionNotSocraticError):
+    with pytest.raises(SessionNotTutorableError):
         await service.ask("session_1", "concept_1", [])
+
+
+@pytest.mark.asyncio
+async def test_ask_returns_the_ai_response_for_an_interview_session(tmp_path: Path) -> None:
+    engine = _engine(tmp_path)
+    _seed_goal_and_concept(engine)
+    _seed_session(engine, mode=SessionMode.INTERVIEW)
+    provider = MockProvider()
+    provider.set_response(TutorResponse, _tutor_response())
+    service = _service(engine, provider)
+
+    response = await service.ask("session_1", "concept_1", [])
+
+    assert response.mode == "question"
+
+
+@pytest.mark.asyncio
+async def test_ask_sends_interview_style_constraints_for_an_interview_session(
+    tmp_path: Path,
+) -> None:
+    engine = _engine(tmp_path)
+    _seed_goal_and_concept(engine)
+    _seed_session(engine, mode=SessionMode.INTERVIEW)
+    captured: list[AIRequest] = []
+
+    def _capture(request: AIRequest) -> TutorResponse:
+        captured.append(request)
+        return _tutor_response()
+
+    provider = MockProvider()
+    provider.set_response(TutorResponse, _capture)
+    service = _service(engine, provider)
+
+    await service.ask("session_1", "concept_1", [])
+
+    assert captured[0].constraints["style"] == "interview"
+    assert captured[0].constraints["instructions"] == INTERVIEW_STYLE_INSTRUCTION
 
 
 @pytest.mark.asyncio
