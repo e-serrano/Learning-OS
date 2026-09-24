@@ -523,3 +523,17 @@ Configuration endpoints must never return API keys. The frontend must not persis
 ```
 
 Rejects a code outside `supported_languages` with `VALIDATION_ERROR` (400). The stored value is a general app preference, not onboarding-gated — it can be changed at any time, before or after `/onboarding/complete`. Every AI request the app makes is steered by the configured language: `AIOrchestrator.generate` injects `constraints.language` into the common request envelope (docs/AI_CONTRACTS.md #2) for every role, which covers AI-generated Obsidian note content (the curator, docs/AI_CONTRACTS.md #9) as well as tutor/exercise/evaluator output.
+
+## 16. Sandbox
+
+`POST /sandbox/sql`
+
+```json
+{"sql": "CREATE TABLE t (id INTEGER); INSERT INTO t VALUES (1); SELECT * FROM t;"}
+```
+
+```json
+{"columns": ["id"], "rows": [[1]], "row_count": 1, "truncated": false, "statement_count": 3, "error": null}
+```
+
+A "try it" console (docs/TASKS.md T137): runs the caller's own SQL against a fresh, throwaway in-memory SQLite database, scoped to this one request only. Purely informational — never persisted, never linked to a concept/exercise/evidence, never influences evaluation or mastery. Blank or oversized SQL (over 20,000 characters, or over 50 statements) is a 400 `VALIDATION_ERROR`; a SQL error from the query itself (bad syntax, unknown table, `ATTACH DATABASE` — always denied) is a normal 200 response with `error` set, the same way a wrong quiz answer is not an HTTP error. Long-running queries are interrupted after 5 seconds; result sets are capped at 200 rows (`truncated: true` past that).

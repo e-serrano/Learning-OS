@@ -82,6 +82,7 @@ from app.services.roadmap_generation_service import RoadmapGenerationService
 from app.services.roadmap_service import RoadmapService
 from app.services.semantic_search_service import SemanticSearchService
 from app.services.session_service import SessionApplicationService
+from app.services.sql_sandbox_service import SqlSandboxService
 from app.services.teach_back_service import TeachBackService
 from app.services.teach_back_session_service import TeachBackSessionService
 from app.services.todays_reviews_service import TodaysReviewsService
@@ -168,6 +169,10 @@ def get_clip_service(
     vault: Annotated[VaultResolver, Depends(get_vault_resolver)],
 ) -> ClipService:
     return ClipService(proposals, vault, get_clock(), get_id_generator())
+
+
+def get_sql_sandbox_service() -> SqlSandboxService:
+    return SqlSandboxService()
 
 
 def get_apply_change_service(

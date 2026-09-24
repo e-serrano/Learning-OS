@@ -1,0 +1,65 @@
+.sql-sandbox {
+  margin: 16px 0;
+}
+
+.sql-sandbox-panel {
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid rgba(128, 128, 128, 0.3);
+  border-radius: 6px;
+}
+
+.sql-sandbox-panel textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+  border-radius: 6px;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.875rem;
+  background: transparent;
+  color: inherit;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+.sql-sandbox-panel label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.sql-sandbox-panel button[type='submit'] {
+  margin-top: 8px;
+  padding: 6px 14px;
+  border: none;
+  border-radius: 6px;
+  background: #222;
+  color: #fff;
+  cursor: pointer;
+}
+
+.sql-sandbox-panel button[type='submit']:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sql-sandbox-table {
+  margin-top: 12px;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  width: 100%;
+}
+
+.sql-sandbox-table th,
+.sql-sandbox-table td {
+  border: 1px solid rgba(128, 128, 128, 0.3);
+  padding: 4px 8px;
+  text-align: left;
+}
+
+.sql-sandbox-hint {
+  font-size: 0.8rem;
+  opacity: 0.75;
+  margin-top: 8px;
+}

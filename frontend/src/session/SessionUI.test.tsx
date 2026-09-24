@@ -80,6 +80,7 @@ describe('SessionUI', () => {
 
     expect(await screen.findByText('Write a query using ROW_NUMBER().')).toBeInTheDocument()
     expect(screen.getByText('Uses ROW_NUMBER()')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Try it: run SQL' })).toBeInTheDocument()
   })
 
   it('reveals hints on demand', async () => {

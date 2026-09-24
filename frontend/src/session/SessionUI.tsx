@@ -11,6 +11,7 @@ import {
   submitAnswer,
 } from '../api/sessions'
 import { ReadAloudButton } from '../shared/ReadAloudButton'
+import { SqlSandbox } from '../shared/SqlSandbox'
 import { VoiceInputButton } from '../shared/VoiceInputButton'
 import './session.css'
 
@@ -193,6 +194,8 @@ export function SessionUI() {
               )}
             </div>
           )}
+
+          <SqlSandbox />
 
           <form onSubmit={handleSubmit}>
             <label htmlFor="answer">Your answer</label>

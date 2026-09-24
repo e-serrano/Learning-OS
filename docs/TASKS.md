@@ -1053,6 +1053,24 @@ Verificación: igual que T135, no instalable en el navegador de esta sesión (Ob
 Sin tests nuevos (backend sin cambios) -- 931/931 suite completa sin regresión, `node --check`/JSON válidos en los dos archivos del plugin.
 
 ### T137 — Code execution sandbox
+**Estado:** DONE
+**Dep:** ninguna (sin persistencia, sin AI, sin vault)  
+Petición directa del usuario ("continue with T137", 2026-09-24) para el título suelto de Fase 11. Consola SQL "try it": el usuario ejecuta su propio SQL contra una base SQLite en memoria desechable, ve el resultado real, antes de responder un ejercicio.
+
+**Nota:** A diferencia de T135/T136 (tipo de entregable ambiguo pero de bajo riesgo), "code execution sandbox" es ambiguo Y de alto riesgo -- ejecutar código es una frontera de seguridad real (aislamiento, límites de recursos, qué lo dispara), no solo una elección de formato de artefacto. Se preguntó al usuario (`AskUserQuestion`, dos preguntas) antes de escribir nada: (1) para qué sirve -- consola "try it" informativa vs. el Evaluator ejecutando código para calificar vs. ambas; (2) qué puede ejecutar y con qué aislamiento -- SQL en SQLite en memoria vs. Python en subproceso vs. multi-lenguaje con contenedores. Usuario eligió las dos opciones recomendadas: consola "try it" (informativa, nunca alimenta evaluación -- docs/AGENTS.md #9, mastery sigue derivado solo de evidencia AI-evaluada) + SQL únicamente contra SQLite en memoria (ni subprocess propio ni Docker -- docs/AGENTS.md #25, "no añadas infraestructura prematuramente").
+
+Diseño (`app/services/sql_sandbox_service.py`, nuevo, sin dependencias -- ni domain, ni persistence, ni AI): cada llamada abre su propia conexión SQLite `:memory:`, la descarta al terminar -- nunca toca el engine real de la app ni ningún archivo. La única vía de escape de un `:memory:` normal es `ATTACH DATABASE 'ruta' AS nombre`, que SÍ podría abrir un archivo real -- denegada explícitamente vía el callback `set_authorizer` de `sqlite3` (verificado con test real, no solo documentado). `load_extension` (código nativo arbitrario) permanece deshabilitado por omisión -- nunca se llama `enable_load_extension(True)`. Límite de pared de 5s vía `threading.Timer` + `conn.interrupt()`; resultado capado a 200 filas (`truncated` si excede); hasta 50 statements por envío, 20.000 caracteres máx.
+
+El punto no trivial: `sqlite3.Connection.execute()` solo permite UN statement -- un script con DDL de setup + INSERT + SELECT final (el caso real de "prueba tu query") necesita partirse en statements individuales primero. `_split_statements()` (función pura, muy testeada: 6 tests dedicados) recorre carácter a carácter respetando comillas (con escape de comilla doblada), comentarios de línea `--` y de bloque `/* */`, para que un `;` dentro de un string o comentario nunca cuente como límite de statement -- solo el statement final que produce filas (si las produce) se devuelve.
+
+API (`app/api/sandbox.py`, nuevo): `POST /sandbox/sql` (docs/API_SPEC.md #16). Un SQL en blanco/sobredimensionado es 400 `VALIDATION_ERROR`; un error de SQL real (sintaxis, tabla inexistente, ATTACH denegado) es un 200 normal con `error` poblado -- igual que una respuesta de examen incorrecta no es un error HTTP, un error de SQL del propio usuario tampoco lo es.
+
+Frontend: `SqlSandbox.tsx` (nuevo, `frontend/src/shared/`, mismo patrón de componente compartido colapsable que T134) -- un toggle "Try it: run SQL" junto al formulario de respuesta. Integrado solo en `SessionUI.tsx` (el loop principal), no en `AssessmentUI.tsx`/`ProjectView.tsx` -- mismo criterio de alcance que T134 ("única página con el loop").
+
+Verificado real de punta a punta: servidor `uvicorn` real (no solo `TestClient`) -- `curl` contra el proceso real confirma script de 3 statements (CREATE+INSERT+SELECT) devuelve filas correctas, `ATTACH DATABASE` devuelve `"not authorized"`, SQL en blanco devuelve 400. No se sembró una sesión real de punta a punta en el navegador para el click-through de la UI -- el DB de desarrollo real del usuario solo tiene goals en estado `draft` (sin roadmap/diagnóstico), y generar una sesión completa habría requerido llamadas reales a IA y dejado más datos de prueba en su entorno real; límite honesto declarado en vez de fabricar una sesión falsa, cubierto en su lugar por tests de componente que ejercitan el toggle/ejecución/error contra fetch mockeado más una aserción de que el botón aparece dentro de `SessionUI` real.
+
+21 tests nuevos backend (17 en `test_sql_sandbox_service.py` -- 11 del servicio + 6 del splitter puro --, 4 en `test_sandbox.py`) + 974/974 suite backend completa (974 = 953 previos + 21 nuevos) y 77/77 suite frontend completa (77 = 74 previos + 3 nuevos en `SqlSandbox.test.tsx`; `SessionUI.test.tsx` gana una aserción dentro de un test existente, no un test nuevo), ruff/mypy/tsc/oxlint limpios.
+
 ### T138 — Git integration
 
 ### T139 — Auto-curate the vault note when a concept becomes mastered
