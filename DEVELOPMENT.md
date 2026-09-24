@@ -57,8 +57,25 @@ restarts (docs/TASKS.md T143).
 ```bash
 cp .env.docker.example .env
 # edit .env: VAULT_HOST_PATH (your vault's path on THIS machine) and
-# KEYRING_CRYPTFILE_PASSWORD (generate one: openssl rand -base64 32)
+# KEYRING_CRYPTFILE_PASSWORD (see below)
 docker compose up --build
+```
+
+`KEYRING_CRYPTFILE_PASSWORD` is generated once, on your host, in a regular
+terminal — no container is running yet at this point, so it isn't run
+"inside Docker" or "inside CMD" specifically:
+
+```bash
+openssl rand -base64 32
+```
+
+Works as-is in a macOS/Linux terminal or Windows Git Bash (bundled with Git
+for Windows — the same shell most `git`/`npm`/`uv` commands in this guide
+assume). Plain Windows `cmd.exe` has no equivalent built in; use PowerShell
+instead:
+
+```powershell
+-join ((48..57)+(65..90)+(97..122)|Get-Random -Count 32|%{[char]$_})
 ```
 
 That brings up the two containers — it does **not** finish setup by itself.
