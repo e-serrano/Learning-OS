@@ -19,6 +19,7 @@ frontend/build/
 .env
 .env.*
 !.env.example
+!.env.docker.example
 
 # Local databases and runtime config
 *.sqlite3

@@ -1,0 +1,58 @@
+# Learning OS -- Docker deployment (docs/TASKS.md T143).
+#
+# Both services are published to 127.0.0.1 only, matching
+# docs/AGENTS.md #19 ("bind to loopback by default") -- this is a
+# local-first, single-user tool with AI credentials and vault filesystem
+# access, not a multi-tenant server. Remove the "127.0.0.1:" prefix on a
+# port mapping only if you understand you're exposing it to your network.
+#
+# Setup: `cp .env.docker.example .env`, fill in VAULT_HOST_PATH and
+# KEYRING_CRYPTFILE_PASSWORD, then `docker compose up --build`.
+# Frontend: http://127.0.0.1:8080 -- backend: http://127.0.0.1:8000.
+
+services:
+  backend:
+    build: ./backend
+    volumes:
+      - learning-os-data:/data
+      - ${VAULT_HOST_PATH:?Set VAULT_HOST_PATH in .env to your Obsidian vault's host path -- see .env.docker.example}:/vault
+    environment:
+      - LEARNINGOS_DB_PATH=/data/learning_os.sqlite3
+      - KEYRING_CRYPTFILE_PASSWORD=${KEYRING_CRYPTFILE_PASSWORD:?Set KEYRING_CRYPTFILE_PASSWORD in .env -- see .env.docker.example}
+    # Lets an Ollama running on the host (rather than the optional
+    # "ollama" profile service below) be reached as host.docker.internal
+    # from inside the container, on Linux too (Docker Desktop already
+    # provides this on Mac/Windows without the extra_hosts entry).
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "127.0.0.1:8000:8000"
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8080:80"
+    restart: unless-stopped
+
+  # Optional, self-contained local AI provider -- not started by a plain
+  # `docker compose up`. Enable with `docker compose --profile ollama up`.
+  # During onboarding, configure the ollama provider's base URL as
+  # http://ollama:11434 (the Compose service name, reachable only from
+  # inside this network -- "localhost" from the backend container means
+  # the backend container itself, not this service).
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ["ollama"]
+    volumes:
+      - ollama-data:/root/.ollama
+    ports:
+      - "127.0.0.1:11434:11434"
+    restart: unless-stopped
+
+volumes:
+  learning-os-data:
+  ollama-data:

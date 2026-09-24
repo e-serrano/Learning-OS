@@ -16,14 +16,23 @@ from app.api.sessions import router as sessions_router
 from app.api.settings import router as settings_router
 from app.api.teach_back import router as teach_back_router
 from app.api.vault import router as vault_router
+from app.config.keyring_setup import configure_container_keyring
+from app.config.settings import Settings
+
+# No-op outside Docker (docs/TASKS.md T143) -- only activates when
+# KEYRING_CRYPTFILE_PASSWORD is set, which only the container image sets.
+configure_container_keyring()
 
 app = FastAPI(title="Learning OS API", version="0.1.0")
 
-# Local-only: the UI dev server runs on a different loopback port. Never add
-# non-loopback origins here -- see docs/AGENTS.md #19 / docs/API_SPEC.md #12.
+# Local-only by default -- see docs/AGENTS.md #19 / docs/API_SPEC.md #12.
+# `cors_origins` defaults to exactly the Vite dev server origins; Docker
+# Compose's nginx-proxied frontend (docs/TASKS.md T143) doesn't even need
+# this (same-origin via the proxy), but a standalone/custom deployment can
+# override it with LEARNINGOS_CORS_ORIGINS.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=Settings().cors_origins_list,
     allow_methods=["*"],
     allow_headers=["*"],
 )

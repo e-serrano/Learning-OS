@@ -4,7 +4,8 @@
 
 - Python 3.13+
 - [uv](https://docs.astral.sh/uv/)
-- Node.js 20+ and npm
+- Node.js ^22.22.2 || ^24.15.0 || >=26.0.0 (see `frontend/package.json`
+  `engines`; CI pins `22.22.2`) and npm
 - An Obsidian vault (or any plain folder of Markdown files) to point Learning OS at during onboarding
 - Optionally, an API key for one AI provider (OpenAI, Anthropic, OpenRouter, NVIDIA NIM) or a local [Ollama](https://ollama.com) install — the bundled Mock provider needs neither and is enough to explore the app
 
@@ -42,8 +43,48 @@ npm run dev
 ```
 
 Runs at `http://127.0.0.1:5173`. `backend/app/main.py` only allows CORS
-requests from this origin (and `localhost:5173`) — running the frontend on a
-different port means every API call will fail CORS.
+requests from this origin (and `localhost:5173`) by default — running the
+frontend on a different port means every API call will fail CORS, unless you
+override it with `LEARNINGOS_CORS_ORIGINS` (comma-separated, see
+`.env.example`).
+
+## Docker
+
+An alternative to the native setup above — one command brings up both
+services, backed by SQLite/credential storage that survive container
+restarts (docs/TASKS.md T143).
+
+```bash
+cp .env.docker.example .env
+# edit .env: VAULT_HOST_PATH (your vault's path on THIS machine) and
+# KEYRING_CRYPTFILE_PASSWORD (generate one: openssl rand -base64 32)
+docker compose up --build
+```
+
+Frontend at `http://127.0.0.1:8080`, backend at `http://127.0.0.1:8000`. Both
+are published to `127.0.0.1` only, matching `docs/AGENTS.md` #19 — this is a
+local-first, single-user tool with AI credentials and vault filesystem
+access, not something to expose to a network by default.
+
+A few things work differently than the native setup:
+
+- **CORS never comes up.** `frontend/nginx.conf` reverse-proxies `/api/` to
+  the backend container, so the browser only ever talks to one origin.
+- **Vault path.** `VAULT_HOST_PATH` is bind-mounted into the backend
+  container at `/vault` — during onboarding, enter `/vault` as the vault
+  path, not your host path.
+- **Credentials.** There is no OS keyring inside a Linux container, so
+  `KEYRING_CRYPTFILE_PASSWORD` activates an encrypted-file backend instead
+  (`app/config/keyring_setup.py`) — a no-op on native runs, where the real
+  OS keyring is used exactly as documented above.
+- **Ollama.** Not started by default. Either point the `ollama` provider's
+  base URL at an Ollama already running on your host
+  (`http://host.docker.internal:11434`), or run the bundled optional
+  service with `docker compose --profile ollama up` and use
+  `http://ollama:11434` instead.
+
+`docker compose down` stops both containers without losing data (named
+volumes); add `-v` to also delete the database and stored credentials.
 
 ## Onboarding
 
@@ -220,6 +261,20 @@ update the CORS origin / API base URL if you do), or stop the other process.
 library uses Windows Credential Manager by default and should work
 out of the box; if it doesn't, check that Credential Manager itself is
 reachable (some locked-down/managed machines restrict it).
+
+**Docker: `VAULT_UNAVAILABLE` even though the vault exists on your host.**
+Onboarding needs the path as it appears *inside the container* — enter
+`/vault` (the mount point `docker-compose.yml` sets up), not your host path.
+
+**Docker: `variable is not set` when running `docker compose up`.**
+`VAULT_HOST_PATH`/`KEYRING_CRYPTFILE_PASSWORD` are required, not optional —
+`cp .env.docker.example .env` and fill them in first.
+
+**Docker: `AI_UNAVAILABLE` with `ollama` configured.** Inside the backend
+container, `http://localhost:11434` means the backend container itself, not
+your host or the optional `ollama` Compose service — use
+`http://host.docker.internal:11434` (host-installed Ollama) or
+`http://ollama:11434` (the `--profile ollama` service).
 
 ## Architecture
 

@@ -32,9 +32,19 @@ See [DEVELOPMENT.md](DEVELOPMENT.md) for installation, the onboarding
 walkthrough, supported AI providers, testing, and troubleshooting.
 [CONTRIBUTING.md](CONTRIBUTING.md) covers branch/commit conventions.
 
+## Running with Docker
+
+```bash
+cp .env.docker.example .env   # fill in VAULT_HOST_PATH and KEYRING_CRYPTFILE_PASSWORD
+docker compose up --build
+```
+
+Frontend at `http://127.0.0.1:8080`, backend at `http://127.0.0.1:8000`, both
+loopback-only by default. See DEVELOPMENT.md's "Docker" section for details.
+
 ## Status
 
-MVP in progress: 123/138 tasks done (`docs/TASKS.md`). Phases 0-11 (bootstrap
-through the full frontend) are complete; Phase 12 (Release MVP — E2E tests,
-security audits, this documentation pass, then a `v0.1.0` tag) is the current
-phase. Phase 13 (post-MVP, including FSRS-based scheduling) hasn't started.
+All 143 tasks in `docs/TASKS.md` are done, including Phase 11 (advanced
+learning: FSRS, knowledge graph UI, Socratic/interview tutor chat,
+teach-back mode, voice, browser extension, Obsidian plugin, SQL sandbox,
+git integration) and Docker packaging (this section).

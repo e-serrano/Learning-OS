@@ -1,0 +1,8 @@
+# Docker/Linux-container-targeted files must never carry CRLF -- see
+# docs/TASKS.md T143 for why (a Windows checkout is the default dev
+# environment for this repo).
+Dockerfile text eol=lf
+*.dockerfile text eol=lf
+docker-compose.yml text eol=lf
+nginx.conf text eol=lf
+*.sh text eol=lf
