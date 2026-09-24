@@ -71,11 +71,12 @@ function mockFetchFor(
         return Promise.resolve(jsonResponse(progress))
       }
       if (url.match(/\/goals\/[^/]+\/sessions$/) && init?.method === 'POST') {
+        const body = JSON.parse((init.body as string) ?? '{}')
         return Promise.resolve(
           jsonResponse({
             id: 'session_1',
             goal_id: goal.id,
-            mode: 'guided',
+            mode: body.mode ?? 'guided',
             objective: 'Practice',
             status: 'active',
             started_at: '2026-01-01T00:00:00Z',
@@ -162,6 +163,23 @@ describe('GoalView', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Start session' }))
 
     await waitFor(() => expect(screen.getByText('session id: session_1')).toBeInTheDocument())
+  })
+
+  it('starts a session in the selected mode', async () => {
+    mockFetchFor(ACTIVE_GOAL, PROGRESS)
+
+    renderGoalView()
+
+    await screen.findByRole('heading', { name: 'Learn SQL' })
+    fireEvent.change(screen.getByLabelText('Session mode'), { target: { value: 'socratic' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Start session' }))
+
+    await waitFor(() => expect(screen.getByText('session id: session_1')).toBeInTheDocument())
+    const sessionCall = vi
+      .mocked(fetch)
+      .mock.calls.find(([input]) => String(input).match(/\/goals\/[^/]+\/sessions$/))
+    expect(sessionCall).toBeDefined()
+    expect(JSON.parse((sessionCall![1]?.body as string) ?? '{}').mode).toBe('socratic')
   })
 
   it('lists existing projects for the goal', async () => {

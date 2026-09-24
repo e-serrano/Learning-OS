@@ -1,0 +1,55 @@
+.tutor-chat select {
+  padding: 8px 10px;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+  border-radius: 6px;
+  font: inherit;
+  background: transparent;
+  color: inherit;
+}
+
+.tutor-chat-transcript {
+  margin: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tutor-chat-turn {
+  max-width: 80%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(128, 128, 128, 0.12);
+}
+
+.tutor-chat-turn.tutor {
+  align-self: flex-start;
+}
+
+.tutor-chat-turn.learner {
+  align-self: flex-end;
+  background: rgba(34, 34, 34, 0.9);
+  color: #fff;
+}
+
+.tutor-chat-turn p {
+  margin: 4px 0 0;
+  white-space: pre-wrap;
+}
+
+.tutor-chat-turn .speaker-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.65;
+}
+
+.tutor-chat-hint {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.tutor-chat-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}

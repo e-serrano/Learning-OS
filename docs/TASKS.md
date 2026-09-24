@@ -1143,6 +1143,26 @@ Alcance deliberadamente igual de acotado que T132: sin UI de chat nueva (ni para
 
 Con esto, Fase 11 — Advanced learning queda completa: los diez ítems de `docs/ROADMAP.md` (FSRS, knowledge graph UI, interview mode, Socratic mode, teach-back mode, voice, browser extension, Obsidian plugin, code execution sandbox, Git integration) tienen ahora tarea y estado DONE (T130-T141, sin T137→T141 estrictamente correlativo con el orden del bullet list, ya que dos de ellos -- T139, T140 -- fueron peticiones directas del usuario intercaladas fuera del backlog de Fase 13).
 
+### T142 — Chat UI para modo Socrático/Entrevista
+**Estado:** DONE
+**Dep:** T115 (Session UI), T132/T141 (contrato tutor)  
+Petición directa del usuario (2026-09-24), tras preguntarle explícitamente si era recomendable ("valora si es recomendable...") antes de construir nada -- respuesta: recomendado pero con alcance real (comparable a T131/T134), no un añadido trivial, precisamente porque `GoalView.tsx` no tenía NINGÚN selector de modo (`createSession(goalId, 'guided', ...)` fijo) -- el hueco era más profundo que solo "falta el chat".
+
+Cierra el alcance que T132/T141 dejaron explícitamente diferido: la ruta `/tutor` existía, probada, pero sin ningún consumidor real.
+
+Frontend, dos piezas nuevas:
+
+1. `GoalView.tsx`: selector `<select>` de modo de sesión junto a "Start session", limitado a `guided`/`socratic`/`interview` (`SESSION_MODE_OPTIONS`) -- deliberadamente NO cubre `practice`/`review`/`assessment`/`project`/`teach_back`, que ya tienen su propio flujo de creación dedicado (`AssessmentUI`, `ProjectView`, el servicio de teach-back de T133, reviews programadas automáticamente) y no pasan por "Start session".
+2. `TutorChat.tsx` (nuevo, `frontend/src/session/`): dueño del transcript completo en el cliente -- `POST /sessions/{id}/tutor` es stateless por turno (T132), así que nada se persiste server-side salvo el log de `ai_runs`. El tutor habla primero: una llamada de apertura con `message`/`history` vacíos en el montaje (mismo comportamiento que ya cubría el test de T132 `test_ask_defaults_message_to_empty_string_for_the_opening_turn`) en vez de dejar al usuario escribiendo hacia el silencio. Selector de concept (`GET /goals/{id}/knowledge`) que se bloquea en cuanto empieza la conversación -- cambiar de concept a mitad de diálogo mezclaría contexto que el tutor nunca tuvo.
+
+`SessionUI.tsx` gana una fase `'chat'`: `start()` detecta `TUTORABLE_MODES` (`socratic`/`interview`) justo después de cargar la sesión y renderiza `TutorChat` en vez de llamar a `/next` -- una sesión de estos dos modos nunca tiene cadena de actividades, así que el flujo de ejercicios no aplica en absoluto, no solo "no hace falta mostrarlo".
+
+Sin cambios de backend -- toda la superficie (`TutorService`, `POST /sessions/{id}/tutor`, `GET /goals/{id}/knowledge`) ya existía íntegra desde T132/T141/T114.
+
+6 tests nuevos de Vitest (4 en `TutorChat.test.tsx` -- pregunta de apertura, envío de turno, bloqueo del selector de concept, estado sin concepts --, 1 en `SessionUI.test.tsx` -- fase chat nunca llama a `/next`, aserción explícita --, 1 en `GoalView.test.tsx` -- el modo seleccionado viaja en el POST real) + 86/86 suite frontend completa (86 = 80 previos + 6 nuevos), `tsc -b` y `oxlint` limpios (mismo patrón preexistente `set-state-in-effect` que ya tienen Dashboard/GoalView/KnowledgeExplorer/RoadmapView, no una regresión nueva).
+
+Verificado real de punta a punta en el navegador de esta sesión, contra el propio backend de desarrollo real del usuario (provider por defecto ya era `mock`, vault apuntando a un directorio de prueba temporal -- ninguno de los dos es su entorno/vault real, cero riesgo de coste de IA o de tocar datos reales): selector de modo real en `GoalView` → `Start session` con `socratic` seleccionado → `POST /goals/{id}/sessions` real con `mode: "socratic"` → navegación a `/sessions/{id}` → `SessionUI` detecta el modo tutorable y renderiza `TutorChat` sin llamar jamás a `/next` (confirmado inspeccionando las peticiones de red reales) → `TutorChat` llama a `GET /goals/{id}/knowledge` real, el goal no tenía concepts (ninguno de los goals de prueba existentes en ese DB tenía roadmap generado), muestra correctamente el estado "no concepts yet" → `End session` completa la sesión de verdad (`POST /sessions/{id}/complete` real, 200) y transiciona a "Session complete". Ruta feliz con transcript real (pregunta de apertura de la IA, envío de mensaje) no verificada en este navegador real por el mismo límite ya documentado en T113/T114/T115/T131/T134/T139 (`MockProvider` sin respuesta configurada fuera de tests automatizados) -- cubierta en su lugar por `TutorChat.test.tsx` con fetch mockeado.
+
 ---
 
 # Vertical slice mínimo recomendado

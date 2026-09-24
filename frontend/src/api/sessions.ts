@@ -106,3 +106,27 @@ export function submitAnswer(
 export function completeSession(sessionId: string): Promise<Session> {
   return request(`/sessions/${sessionId}/complete`, { method: 'POST' })
 }
+
+export interface TutorTurn {
+  speaker: 'tutor' | 'learner'
+  content: string
+}
+
+export interface TutorTurnResult {
+  mode: string
+  content: string
+  check_for_understanding: string | null
+  next_activity: string | null
+}
+
+export function askTutor(
+  sessionId: string,
+  conceptId: string,
+  history: TutorTurn[],
+  message: string,
+): Promise<TutorTurnResult> {
+  return request(`/sessions/${sessionId}/tutor`, {
+    method: 'POST',
+    body: JSON.stringify({ concept_id: conceptId, message, history }),
+  })
+}

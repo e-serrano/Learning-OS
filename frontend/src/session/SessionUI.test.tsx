@@ -219,6 +219,40 @@ describe('SessionUI', () => {
     expect(await screen.findByText('Nothing to work on yet')).toBeInTheDocument()
   })
 
+  it('renders the tutor chat instead of the exercise flow for a socratic session', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((input: RequestInfo | URL) => {
+        const url = String(input)
+        if (url.match(/\/sessions\/[^/]+$/)) {
+          return Promise.resolve(jsonResponse({ ...SESSION, mode: 'socratic' }))
+        }
+        if (url.includes('/knowledge')) {
+          return Promise.resolve(jsonResponse({ concepts: [{ id: 'concept_1', title: 'CTEs' }] }))
+        }
+        if (url.endsWith('/tutor')) {
+          return Promise.resolve(
+            jsonResponse({
+              mode: 'question',
+              content: 'What is a CTE?',
+              check_for_understanding: null,
+              next_activity: null,
+            }),
+          )
+        }
+        if (url.endsWith('/next')) {
+          throw new Error('the chat phase must never call /next')
+        }
+        return Promise.resolve(jsonResponse(SESSION))
+      }),
+    )
+
+    renderAt('/sessions/session_1')
+
+    expect(await screen.findByText('What is a CTE?')).toBeInTheDocument()
+    expect(screen.getByLabelText('Concept')).toBeInTheDocument()
+  })
+
   it('shows session complete immediately for an already-completed session', async () => {
     vi.stubGlobal(
       'fetch',

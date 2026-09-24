@@ -11,11 +11,21 @@ import {
 } from '../api/goals'
 import { listKnowledge } from '../api/knowledge'
 import { type Project, createProject, listProjects } from '../api/projects'
-import { createSession } from '../api/sessions'
+import { type SessionMode, createSession } from '../api/sessions'
 import { MasteryBar } from '../shared/MasteryBar'
 import './goal.css'
 
 const DEFAULT_SESSION_DURATION_MINUTES = 30
+
+/** Only the modes reachable from "Start session" -- practice/review/
+ * assessment/project/teach_back each already have their own dedicated
+ * creation flow elsewhere (AssessmentUI, ProjectView, teach-back
+ * service, T133), so this picker doesn't try to cover them too. */
+const SESSION_MODE_OPTIONS: { value: SessionMode; label: string }[] = [
+  { value: 'guided', label: 'Guided' },
+  { value: 'socratic', label: 'Socratic' },
+  { value: 'interview', label: 'Interview' },
+]
 
 /** Goal view (docs/TASKS.md T112, dep T096+T107): mastery, weak-concept
  * and due-review counts, and links out to the roadmap (T113) and
@@ -36,6 +46,7 @@ export function GoalView() {
   const [projects, setProjects] = useState<Project[]>([])
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [sessionMode, setSessionMode] = useState<SessionMode>('guided')
 
   const load = useCallback(async () => {
     if (!goalId) return
@@ -86,7 +97,7 @@ export function GoalView() {
     if (!goalId) return
     setBusy(true)
     try {
-      const session = await createSession(goalId, 'guided', DEFAULT_SESSION_DURATION_MINUTES)
+      const session = await createSession(goalId, sessionMode, DEFAULT_SESSION_DURATION_MINUTES)
       navigate(`/sessions/${session.id}`)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
@@ -174,6 +185,21 @@ export function GoalView() {
 
       {(goal.status === 'draft' || goal.status === 'active') && (
         <div className="goal-view-actions">
+          <label htmlFor="session-mode" className="sr-only">
+            Session mode
+          </label>
+          <select
+            id="session-mode"
+            value={sessionMode}
+            onChange={(e) => setSessionMode(e.target.value as SessionMode)}
+            disabled={busy}
+          >
+            {SESSION_MODE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
           <button type="button" onClick={handleStartSession} disabled={busy}>
             Start session
           </button>

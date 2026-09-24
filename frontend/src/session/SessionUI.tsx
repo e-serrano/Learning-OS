@@ -14,10 +14,12 @@ import { ReadAloudButton } from '../shared/ReadAloudButton'
 import { SqlSandbox } from '../shared/SqlSandbox'
 import { VoiceInputButton } from '../shared/VoiceInputButton'
 import './session.css'
+import { TutorChat } from './TutorChat'
 
 const DEFAULT_CONFIDENCE = 70
+const TUTORABLE_MODES = new Set(['socratic', 'interview'])
 
-type Phase = 'loading' | 'error' | 'no-candidates' | 'answering' | 'result' | 'complete'
+type Phase = 'loading' | 'error' | 'no-candidates' | 'answering' | 'chat' | 'result' | 'complete'
 
 /** Session UI (docs/TASKS.md T115, dep T103): the core learning loop --
  * activity, answer, confidence, hints, feedback, and next. `/next`'s
@@ -26,7 +28,12 @@ type Phase = 'loading' | 'error' | 'no-candidates' | 'answering' | 'result' | 'c
  * (`AnswerFlowService`, T103) -- so "Continue" never calls `/next`
  * again, it just swaps in `result.next_activity.content` directly. When
  * `next_activity` comes back `null` there are no more candidates for
- * this goal right now, so the only way forward is `/complete`. */
+ * this goal right now, so the only way forward is `/complete`.
+ *
+ * A `socratic`/`interview` session (docs/TASKS.md T142, dep T132/T141)
+ * never has an activity chain -- `/next` doesn't apply -- so `start()`
+ * detects `TUTORABLE_MODES` right after loading the session and renders
+ * `TutorChat` instead, skipping the exercise flow entirely. */
 export function SessionUI() {
   const { sessionId } = useParams<{ sessionId: string }>()
   const [session, setSession] = useState<Session | null>(null)
@@ -50,6 +57,10 @@ export function SessionUI() {
         setSession(s)
         if (s.status !== 'active') {
           setPhase('complete')
+          return
+        }
+        if (TUTORABLE_MODES.has(s.mode)) {
+          setPhase('chat')
           return
         }
         const next = await getNextActivity(sessionId!)
@@ -147,6 +158,22 @@ export function SessionUI() {
       <div className="session-ui">
         <h2>Session complete</h2>
         {session && <BackToGoalLink goalId={session.goal_id} />}
+      </div>
+    )
+  }
+
+  if (phase === 'chat') {
+    if (!session) {
+      return (
+        <div className="session-ui">
+          <p>Loading…</p>
+        </div>
+      )
+    }
+    return (
+      <div className="session-ui">
+        <BackToGoalLink goalId={session.goal_id} />
+        <TutorChat sessionId={session.id} goalId={session.goal_id} onEnd={handleFinish} />
       </div>
     )
   }

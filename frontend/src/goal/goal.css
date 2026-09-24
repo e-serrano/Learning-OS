@@ -70,8 +70,18 @@
 
 .goal-view-actions {
   display: flex;
+  align-items: center;
   gap: 12px;
   margin-bottom: 16px;
+}
+
+.goal-view-actions select {
+  padding: 8px 10px;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+  border-radius: 6px;
+  font: inherit;
+  background: transparent;
+  color: inherit;
 }
 
 .goal-projects {

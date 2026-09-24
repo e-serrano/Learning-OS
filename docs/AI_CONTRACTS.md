@@ -148,10 +148,13 @@ of Socratic questioning). `TutorService.TUTOR_STYLE_INSTRUCTIONS` maps
 each supported mode to its instruction, so a third tutor-style mode only
 needs a new map entry, not a new route/contract/exception type.
 
-No frontend consumes this route yet, for either mode -- a session-mode
-selector and a chat UI are a distinct, larger task than wiring the
-contract itself, left for later (T132's own original scoping decision,
-unchanged by T141).
+T142 built that deferred piece: a session-mode selector on the goal page
+(`GoalView.tsx`, limited to guided/socratic/interview -- the other
+`SessionMode` values already have their own dedicated creation flows)
+and a `TutorChat` component that owns the transcript client-side and
+calls this route once per turn, opening with a blank-message call so the
+tutor speaks first. `SessionUI.tsx` renders it instead of the exercise
+flow whenever a session's mode is socratic/interview.
 
 ---
 
