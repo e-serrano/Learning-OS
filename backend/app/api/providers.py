@@ -42,6 +42,7 @@ class ConfiguredProvider(BaseModel):
     provider_id: ProviderId
     model: str
     base_url: str | None
+    fallback_model: str | None
     enabled: bool
     is_default: bool
 
@@ -77,6 +78,7 @@ def get_provider_config(store: ConfigStoreDep) -> ProviderConfigResponse:
                 provider_id=p.provider_id,
                 model=p.model,
                 base_url=p.base_url,
+                fallback_model=p.fallback_model,
                 enabled=p.enabled,
                 is_default=p.is_default,
             )

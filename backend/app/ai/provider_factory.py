@@ -101,4 +101,18 @@ def build_default_provider(
 
     credential = _resolve_credential(default, credentials)
     adapter = _build_adapter(default, credential)
-    return RetryingProvider(adapter), default.provider_id.value, default.model
+
+    fallback_adapter: AIProvider | None = None
+    if default.fallback_model:
+        # Same provider/credential/base_url, just a different model
+        # (docs/TASKS.md T148, user request) -- e.g. OpenRouter's free
+        # models rate-limit independently, so a second free model is a
+        # real fallback rather than retrying the same exhausted one.
+        fallback_config = default.model_copy(update={"model": default.fallback_model})
+        fallback_adapter = _build_adapter(fallback_config, credential)
+
+    return (
+        RetryingProvider(adapter, fallback=fallback_adapter),
+        default.provider_id.value,
+        default.model,
+    )

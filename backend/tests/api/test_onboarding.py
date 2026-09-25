@@ -248,6 +248,42 @@ def test_a_fake_credential_against_a_real_remote_provider_fails_live_and_is_neve
     assert status.json()["ai_providers"] == []  # never stored -- validation never succeeded
 
 
+def test_fallback_model_is_saved_alongside_the_primary_provider(
+    client: TestClient, vault_dir: Path
+) -> None:
+    """docs/TASKS.md T148, user request: a second model (e.g. OpenRouter's
+    `openrouter/free` auto-router) saved as the configured provider's
+    fallback -- tried by RetryingProvider if the primary model errors out
+    or is rate-limited. Only the primary model is live-validated (T145);
+    the fallback is trusted as-is, same as `base_url`."""
+    client.post("/api/v1/onboarding/vault", json={"path": str(vault_dir)})
+    client.post(
+        "/api/v1/onboarding/ai-provider",
+        json={
+            "provider_id": "mock",
+            "model": "mock-1",
+            "fallback_model": "mock-2",
+        },
+    )
+
+    response = client.post("/api/v1/onboarding/ai-provider/validate", json={})
+    assert response.status_code == 200
+    assert response.json()["ok"] is True
+
+    status = client.get("/api/v1/onboarding/status")
+    provider = status.json()["ai_providers"][0]
+    assert provider["fallback_model"] == "mock-2"
+
+
+def test_fallback_model_is_optional(client: TestClient, vault_dir: Path) -> None:
+    client.post("/api/v1/onboarding/vault", json={"path": str(vault_dir)})
+    client.post("/api/v1/onboarding/ai-provider", json={"provider_id": "mock", "model": "mock-1"})
+    client.post("/api/v1/onboarding/ai-provider/validate", json={})
+
+    status = client.get("/api/v1/onboarding/status")
+    assert status.json()["ai_providers"][0]["fallback_model"] is None
+
+
 def test_complete_is_idempotent_once_already_complete(client: TestClient, vault_dir: Path) -> None:
     client.post("/api/v1/onboarding/vault", json={"path": str(vault_dir)})
     client.post("/api/v1/onboarding/ai-provider", json={"provider_id": "mock", "model": "mock-1"})

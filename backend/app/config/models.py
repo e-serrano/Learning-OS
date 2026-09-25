@@ -32,6 +32,14 @@ class AIProviderConfig(BaseModel):
     credential_ref: str | None = None
     enabled: bool = True
     is_default: bool = False
+    fallback_model: str | None = None
+    """Same provider/credential/base_url, different model -- tried once by
+    `RetryingProvider` (app/ai/provider_factory.py) if `model` errors out
+    or is rate-limited. Never validated at save time (docs/TASKS.md T148):
+    only `model` goes through `check_provider_capability`/
+    `validate_provider_connection` (T145) -- checking two models on every
+    onboarding/Settings save would double that call's cost and latency for
+    a model that may never actually get used."""
 
 
 class AppConfig(BaseModel):
@@ -45,6 +53,7 @@ class AppConfig(BaseModel):
     provider_id: str | None = None
     model: str | None = None
     base_url: str | None = None
+    fallback_model: str | None = None
     language: str = "es"
     git_auto_commit: bool = False
     onboarding_step: OnboardingStep = OnboardingStep.WELCOME

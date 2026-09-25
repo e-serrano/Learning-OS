@@ -479,8 +479,10 @@ without a separate backend route.
 `POST /onboarding/ai-provider`
 
 ```json
-{"provider_id":"openrouter","model":"provider/model","base_url":null}
+{"provider_id":"openrouter","model":"provider/model","base_url":null,"fallback_model":null}
 ```
+
+`fallback_model` is optional (docs/TASKS.md T148, user request): a second model on the same provider/credential/base_url, tried once by `RetryingProvider` if the primary `model` errors out or is rate-limited (`app/ai/provider_factory.py`). Stored as-is, never live-validated the way `model` is by `/ai-provider/validate` below -- checking two models on every save would double that call's cost for a model that may never actually get used. The wizard pre-fills both `model` and `fallback_model` with suggested free-tier defaults for `openrouter` specifically (`frontend/src/onboarding/providers.ts`); every other provider still starts blank.
 
 `POST /onboarding/ai-provider/validate`
 

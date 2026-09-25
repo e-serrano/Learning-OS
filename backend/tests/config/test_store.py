@@ -55,6 +55,26 @@ def test_save_then_load_roundtrips_ai_providers(db_path: Path) -> None:
     assert loaded.ai_providers[0].credential_ref == "openai:abc123"
 
 
+def test_save_then_load_roundtrips_fallback_model(db_path: Path) -> None:
+    store = ConfigStore(str(db_path))
+    original = AppConfig(
+        fallback_model="openrouter/free",
+        ai_providers=[
+            AIProviderConfig(
+                provider_id=ProviderId.OPENROUTER,
+                model="qwen/qwen3.8-27b:free",
+                fallback_model="openrouter/free",
+                is_default=True,
+            ),
+        ],
+    )
+    store.save(original)
+
+    loaded = store.load()
+    assert loaded == original
+    assert loaded.ai_providers[0].fallback_model == "openrouter/free"
+
+
 def test_save_overwrites_previous_content(db_path: Path) -> None:
     store = ConfigStore(str(db_path))
     store.save(AppConfig(language="en"))

@@ -27,6 +27,7 @@ export function AIProviderSettings() {
   const [providerId, setProviderId] = useState('')
   const [baseUrl, setBaseUrl] = useState('')
   const [model, setModel] = useState('')
+  const [fallbackModel, setFallbackModel] = useState('')
   const [credential, setCredential] = useState('')
   const [saving, setSaving] = useState(false)
   const [result, setResult] = useState<{ ok: boolean; reason: string | null } | null>(null)
@@ -38,6 +39,11 @@ export function AIProviderSettings() {
         if (status.model) setModel(status.model)
         const current = status.ai_providers.find((p) => p.is_default)
         if (current?.base_url) setBaseUrl(current.base_url)
+        // Prefilled from the already-saved config, not the provider's
+        // suggested default -- unlike onboarding's first-time setup, a
+        // blank field here must mean "no fallback configured", never
+        // silently reset an existing one on the next save.
+        if (current?.fallback_model) setFallbackModel(current.fallback_model)
         setPhase('ready')
       })
       .catch((err: unknown) => {
@@ -58,6 +64,7 @@ export function AIProviderSettings() {
         provider_id: providerId,
         model: model.trim(),
         base_url: provider?.requiresBaseUrl ? baseUrl.trim() : null,
+        fallback_model: fallbackModel.trim() || null,
       })
       const validation = await validateAIProvider(credential.trim() || null)
       setResult({ ok: validation.ok, reason: validation.reason })
@@ -123,6 +130,29 @@ export function AIProviderSettings() {
           disabled={saving}
           required
         />
+        {provider?.reasoningModelHint && (
+          <p className="field-hint">
+            {t('aiProvider.reasoningModelHint')} <code>{provider.reasoningModelHint}</code>
+          </p>
+        )}
+
+        <label htmlFor="ai-fallback-model">{t('aiProvider.fallbackModel')}</label>
+        <input
+          id="ai-fallback-model"
+          type="text"
+          value={fallbackModel}
+          onChange={(e) => setFallbackModel(e.target.value)}
+          disabled={saving}
+        />
+        <p className="field-hint">
+          {t('aiProvider.fallbackModelHint')}
+          {provider?.fallbackModelHint && (
+            <>
+              {' '}
+              {t('aiProvider.fallbackModelSuggestion')} <code>{provider.fallbackModelHint}</code>
+            </>
+          )}
+        </p>
 
         {provider?.requiresApiKey && (
           <>

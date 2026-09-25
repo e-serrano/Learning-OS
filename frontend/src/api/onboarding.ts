@@ -17,6 +17,7 @@ export interface AIProviderConfig {
   model: string
   base_url: string | null
   credential_ref: string | null
+  fallback_model: string | null
   enabled: boolean
   is_default: boolean
 }
@@ -70,6 +71,7 @@ export function configureAIProvider(input: {
   provider_id: string
   model: string
   base_url?: string | null
+  fallback_model?: string | null
 }): Promise<AIProviderResponse> {
   return request('/onboarding/ai-provider', { method: 'POST', body: JSON.stringify(input) })
 }

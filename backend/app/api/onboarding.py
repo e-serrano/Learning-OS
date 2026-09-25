@@ -52,6 +52,7 @@ class AIProviderRequest(BaseModel):
     provider_id: ProviderId
     model: str
     base_url: str | None = None
+    fallback_model: str | None = None
 
 
 class AIProviderResponse(BaseModel):
@@ -115,6 +116,7 @@ def configure_ai_provider(request: AIProviderRequest, store: ConfigStoreDep) -> 
     config.provider_id = request.provider_id.value
     config.model = request.model
     config.base_url = request.base_url
+    config.fallback_model = request.fallback_model
     if config.onboarding_step != OnboardingStep.COMPLETE:
         config.onboarding_step = _advance_to(config.onboarding_step, OnboardingStep.AI_PROVIDER)
 
@@ -162,6 +164,7 @@ async def validate_ai_provider(
             model=config.model,
             base_url=config.base_url,
             credential_ref=credential_ref,
+            fallback_model=config.fallback_model,
             enabled=True,
             is_default=True,
         )

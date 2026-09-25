@@ -520,6 +520,7 @@ provider_id TEXT NOT NULL
 model TEXT NOT NULL
 base_url TEXT
 credential_ref TEXT
+fallback_model TEXT
 enabled INTEGER NOT NULL DEFAULT 1
 is_default INTEGER NOT NULL DEFAULT 0
 created_at TEXT NOT NULL
@@ -527,3 +528,5 @@ updated_at TEXT NOT NULL
 ```
 
 `credential_ref` is only an OS keyring identifier, never the secret itself. Enforce at most one default provider. Prefer migration `002_local_configuration` after the initial schema.
+
+`fallback_model` (docs/TASKS.md T148, user request, nullable, added by a later migration): same `provider_id`/`credential_ref`/`base_url` as the row it belongs to, just a different model. `app/ai/provider_factory.py::build_default_provider` wires it into `RetryingProvider`'s `fallback` parameter (previously always `None` in practice) -- tried once if the primary `model` errors out or is rate-limited. Never live-validated at save time the way `model` is (docs/TASKS.md T145) -- only stored as-is, same trust level as `base_url`.

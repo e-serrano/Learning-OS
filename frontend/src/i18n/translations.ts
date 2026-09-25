@@ -255,6 +255,16 @@ export const translations: Record<string, Record<Language, string>> = {
     en: 'e.g. gpt-5, claude-sonnet-5, llama3',
     es: 'p. ej. gpt-5, claude-sonnet-5, llama3',
   },
+  'aiProvider.reasoningModelHint': {
+    en: 'For reasoning-heavy tasks, try:',
+    es: 'Para tareas que requieran mucho razonamiento, prueba:',
+  },
+  'aiProvider.fallbackModel': { en: 'Fallback model (optional)', es: 'Modelo de fallback (opcional)' },
+  'aiProvider.fallbackModelHint': {
+    en: 'Tried automatically if the primary model fails or is rate-limited.',
+    es: 'Se usa automáticamente si el modelo principal falla o se queda sin cupo (rate limit).',
+  },
+  'aiProvider.fallbackModelSuggestion': { en: 'Alternative:', es: 'Alternativa:' },
   'aiProvider.apiKey': { en: 'API key', es: 'Clave de API' },
   'aiProvider.apiKeyHint': {
     en: 'Re-enter your key every time you save here, even just to change the model -- it is never stored in the browser or database, only sent once to the OS keyring (or the encrypted equivalent in Docker).',
@@ -305,6 +315,16 @@ export const translations: Record<string, Record<Language, string>> = {
     en: 'e.g. gpt-5, claude-opus-5, llama3',
     es: 'p. ej. gpt-5, claude-opus-5, llama3',
   },
+  'onboarding.reasoningModelHint': {
+    en: 'For reasoning-heavy tasks, try:',
+    es: 'Para tareas que requieran mucho razonamiento, prueba:',
+  },
+  'onboarding.fallbackModel': { en: 'Fallback model (optional)', es: 'Modelo de fallback (opcional)' },
+  'onboarding.fallbackModelHint': {
+    en: 'Tried automatically if the primary model fails or is rate-limited.',
+    es: 'Se usa automáticamente si el modelo principal falla o se queda sin cupo (rate limit).',
+  },
+  'onboarding.fallbackModelSuggestion': { en: 'Alternative:', es: 'Alternativa:' },
   'onboarding.apiKey': { en: 'API key', es: 'Clave de API' },
   'onboarding.testConnection': { en: 'Test connection', es: 'Probar conexión' },
   'onboarding.testing': { en: 'Testing…', es: 'Probando…' },

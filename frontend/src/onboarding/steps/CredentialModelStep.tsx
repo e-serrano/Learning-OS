@@ -24,7 +24,8 @@ export function CredentialModelStep({
 }: CredentialModelStepProps) {
   const { t } = useTranslation()
   const provider = PROVIDER_OPTIONS.find((p) => p.id === providerId)
-  const [model, setModel] = useState('')
+  const [model, setModel] = useState(provider?.defaultModel ?? '')
+  const [fallbackModel, setFallbackModel] = useState(provider?.defaultFallbackModel ?? '')
   const [credential, setCredential] = useState('')
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<{ ok: boolean; reason: string | null } | null>(null)
@@ -34,7 +35,12 @@ export function CredentialModelStep({
     setBusy(true)
     setResult(null)
     try {
-      await configureAIProvider({ provider_id: providerId, model: model.trim(), base_url: baseUrl })
+      await configureAIProvider({
+        provider_id: providerId,
+        model: model.trim(),
+        base_url: baseUrl,
+        fallback_model: fallbackModel.trim() || null,
+      })
       const validation = await validateAIProvider(credential.trim() || null)
       setResult({ ok: validation.ok, reason: validation.reason })
       if (validation.ok) {
@@ -67,6 +73,29 @@ export function CredentialModelStep({
           placeholder={t('onboarding.modelPlaceholder')}
           required
         />
+        {provider?.reasoningModelHint && (
+          <p className="field-hint">
+            {t('onboarding.reasoningModelHint')} <code>{provider.reasoningModelHint}</code>
+          </p>
+        )}
+
+        <label htmlFor="fallback-model">{t('onboarding.fallbackModel')}</label>
+        <input
+          id="fallback-model"
+          type="text"
+          value={fallbackModel}
+          onChange={(e) => setFallbackModel(e.target.value)}
+        />
+        <p className="field-hint">
+          {t('onboarding.fallbackModelHint')}
+          {provider?.fallbackModelHint && (
+            <>
+              {' '}
+              {t('onboarding.fallbackModelSuggestion')} <code>{provider.fallbackModelHint}</code>
+            </>
+          )}
+        </p>
+
         {provider?.requiresApiKey && (
           <>
             <label htmlFor="credential">{t('onboarding.apiKey')}</label>

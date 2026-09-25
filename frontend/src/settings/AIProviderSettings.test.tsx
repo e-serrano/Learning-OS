@@ -26,6 +26,24 @@ const STATUS_WITH_ANTHROPIC = {
   ],
 }
 
+const STATUS_WITH_OPENROUTER = {
+  ...STATUS_WITH_ANTHROPIC,
+  provider_id: 'openrouter',
+  model: 'qwen/qwen3.8-27b:free',
+  ai_providers: [
+    {
+      id: 'p1',
+      provider_id: 'openrouter',
+      model: 'qwen/qwen3.8-27b:free',
+      base_url: 'https://openrouter.ai/api/v1',
+      credential_ref: 'openrouter:abc',
+      fallback_model: 'custom/already-saved-fallback',
+      enabled: true,
+      is_default: true,
+    },
+  ],
+}
+
 const STATUS_WITH_OLLAMA = {
   ...STATUS_WITH_ANTHROPIC,
   provider_id: 'ollama',
@@ -75,6 +93,47 @@ describe('AIProviderSettings', () => {
 
     expect(screen.getByLabelText('Endpoint URL')).toHaveValue('http://localhost:11434')
     expect(screen.queryByLabelText('API key')).not.toBeInTheDocument()
+  })
+
+  it('prefills the fallback model from the saved config, not the provider suggestion', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(STATUS_WITH_OPENROUTER)))
+
+    render(<AIProviderSettings />, { wrapper: LanguageProvider })
+
+    expect(await screen.findByLabelText('Fallback model (optional)')).toHaveValue(
+      'custom/already-saved-fallback',
+    )
+  })
+
+  it('saves the current fallback model value, not the provider suggestion', async () => {
+    const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.endsWith('/onboarding/status')) {
+        return Promise.resolve(jsonResponse(STATUS_WITH_OPENROUTER))
+      }
+      if (url.endsWith('/onboarding/ai-provider')) {
+        return Promise.resolve(jsonResponse({ onboarding_step: 'AI_PROVIDER' }))
+      }
+      if (url.endsWith('/onboarding/ai-provider/validate')) {
+        return Promise.resolve(jsonResponse({ onboarding_step: 'VALIDATE', ok: true, reason: null }))
+      }
+      return Promise.reject(new Error(`unexpected fetch: ${url}`))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<AIProviderSettings />, { wrapper: LanguageProvider })
+    await screen.findByLabelText('Fallback model (optional)')
+
+    fireEvent.change(screen.getByLabelText('API key'), { target: { value: 'sk-or-new' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save & test connection' }))
+
+    await screen.findByText('Connected successfully.')
+    const call = fetchMock.mock.calls.find((args: unknown[]) =>
+      String(args[0]).endsWith('/onboarding/ai-provider'),
+    )
+    expect(JSON.parse((call![1]?.body as string) ?? '{}').fallback_model).toBe(
+      'custom/already-saved-fallback',
+    )
   })
 
   it('saves and reports a successful connection', async () => {

@@ -27,7 +27,21 @@ def test_ai_provider_config_defaults() -> None:
     assert config.enabled is True
     assert config.is_default is False
     assert config.credential_ref is None
+    assert config.fallback_model is None
     assert config.id  # generated
+
+
+def test_ai_provider_config_accepts_a_fallback_model() -> None:
+    config = AIProviderConfig(
+        provider_id=ProviderId.OPENROUTER,
+        model="qwen/qwen3.8-27b:free",
+        fallback_model="openrouter/free",
+    )
+    assert config.fallback_model == "openrouter/free"
+
+
+def test_default_app_config_has_no_fallback_model() -> None:
+    assert AppConfig().fallback_model is None
 
 
 def test_ai_provider_config_ids_are_unique() -> None:

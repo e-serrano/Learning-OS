@@ -23,6 +23,7 @@ class AIProviderConfigModel(Base):
     model: Mapped[str]
     base_url: Mapped[str | None]
     credential_ref: Mapped[str | None]
+    fallback_model: Mapped[str | None]
     enabled: Mapped[bool] = mapped_column(default=True)
     is_default: Mapped[bool] = mapped_column(default=False)
     created_at: Mapped[str]

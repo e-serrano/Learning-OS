@@ -1,5 +1,6 @@
 import pytest
 
+import app.ai.provider_factory as provider_factory_module
 from app.ai.provider_factory import (
     MissingBaseUrlError,
     MissingCredentialError,
@@ -101,3 +102,42 @@ def test_build_default_provider_ollama_defaults_base_url() -> None:
     provider, _, _ = build_default_provider(configs, _credentials())
 
     assert isinstance(provider, RetryingProvider)
+
+
+def test_build_default_provider_has_no_fallback_when_unset() -> None:
+    configs = [AIProviderConfig(provider_id=ProviderId.MOCK, model="mock-1", is_default=True)]
+
+    provider, _, _ = build_default_provider(configs, _credentials())
+
+    assert isinstance(provider, RetryingProvider)
+    assert provider._fallback is None  # noqa: SLF001
+
+
+def test_build_default_provider_wires_the_fallback_model(monkeypatch: pytest.MonkeyPatch) -> None:
+    """docs/TASKS.md T148, user request: a second free OpenRouter model
+    tried automatically if the primary one errors out or is rate-limited
+    -- same provider/credential/base_url as the primary, only the model
+    id differs."""
+    seen_models: list[str] = []
+    real_build_adapter = provider_factory_module._build_adapter
+
+    def _spy_build_adapter(config: AIProviderConfig, credential: str | None):
+        seen_models.append(config.model)
+        return real_build_adapter(config, credential)
+
+    monkeypatch.setattr(provider_factory_module, "_build_adapter", _spy_build_adapter)
+
+    configs = [
+        AIProviderConfig(
+            provider_id=ProviderId.MOCK,
+            model="mock-1",
+            fallback_model="mock-2",
+            is_default=True,
+        )
+    ]
+
+    provider, _, _ = build_default_provider(configs, _credentials())
+
+    assert isinstance(provider, RetryingProvider)
+    assert provider._fallback is not None  # noqa: SLF001
+    assert seen_models == ["mock-1", "mock-2"]

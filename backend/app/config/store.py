@@ -13,6 +13,7 @@ _SETTINGS_KEYS = (
     "provider_id",
     "model",
     "base_url",
+    "fallback_model",
     "language",
     "git_auto_commit",
     "onboarding_step",
@@ -51,6 +52,7 @@ class ConfigStore:
                     credential_ref=row.credential_ref,
                     enabled=row.enabled,
                     is_default=row.is_default,
+                    fallback_model=row.fallback_model,
                 )
                 for row in db.scalars(select(AIProviderConfigModel))
             ]
@@ -65,6 +67,7 @@ class ConfigStore:
             "provider_id": config.provider_id,
             "model": config.model,
             "base_url": config.base_url,
+            "fallback_model": config.fallback_model,
             "language": config.language,
             "git_auto_commit": config.git_auto_commit,
             "onboarding_step": config.onboarding_step.value,
@@ -89,6 +92,7 @@ class ConfigStore:
                         model=provider.model,
                         base_url=provider.base_url,
                         credential_ref=provider.credential_ref,
+                        fallback_model=provider.fallback_model,
                         enabled=provider.enabled,
                         is_default=provider.is_default,
                         created_at=now,
