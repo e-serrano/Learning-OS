@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useParams } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { KnowledgeExplorer } from './KnowledgeExplorer'
+import { LanguageProvider } from '../i18n/LanguageContext'
 
 function FakeAssessmentPage() {
   const { assessmentId } = useParams<{ assessmentId: string }>()
@@ -38,6 +39,7 @@ function renderAt(path: string) {
         <Route path="/assessments/:assessmentId" element={<FakeAssessmentPage />} />
       </Routes>
     </MemoryRouter>,
+    { wrapper: LanguageProvider },
   )
 }
 

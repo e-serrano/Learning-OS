@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from '../i18n/LanguageContext'
 import './voice.css'
 
 /** Voice output via the standard `SpeechSynthesis` API -- docs/TASKS.md
@@ -12,6 +13,7 @@ function isVoiceOutputSupported(): boolean {
 }
 
 export function ReadAloudButton({ text }: { text: string }) {
+  const { language, t } = useTranslation()
   const [speaking, setSpeaking] = useState(false)
 
   useEffect(() => {
@@ -29,6 +31,7 @@ export function ReadAloudButton({ text }: { text: string }) {
       return
     }
     const utterance = new SpeechSynthesisUtterance(text)
+    utterance.lang = language === 'es' ? 'es-ES' : 'en-US'
     utterance.onend = () => setSpeaking(false)
     utterance.onerror = () => setSpeaking(false)
     window.speechSynthesis.speak(utterance)
@@ -43,7 +46,7 @@ export function ReadAloudButton({ text }: { text: string }) {
       aria-pressed={speaking}
       disabled={text.trim().length === 0}
     >
-      {speaking ? 'Stop reading' : 'Read aloud'}
+      {speaking ? t('voice.stopReading') : t('voice.readAloud')}
     </button>
   )
 }

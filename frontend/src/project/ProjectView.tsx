@@ -8,6 +8,7 @@ import {
   getProject,
   submitTask,
 } from '../api/projects'
+import { useTranslation } from '../i18n/LanguageContext'
 import './project.css'
 
 interface LocationState {
@@ -24,6 +25,7 @@ interface LocationState {
  * task list -- a real, documented limitation of T106's API, not
  * something this page can work around without a backend change. */
 export function ProjectView() {
+  const { t } = useTranslation()
   const { projectId } = useParams<{ projectId: string }>()
   const location = useLocation()
   const [project, setProject] = useState<Project | null>(null)
@@ -39,9 +41,9 @@ export function ProjectView() {
     getProject(projectId)
       .then(setProject)
       .catch((err: unknown) => {
-        setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+        setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
       })
-  }, [projectId])
+  }, [projectId, t])
 
   function toggleTask(taskId: string) {
     setExpandedTaskId((current) => (current === taskId ? null : taskId))
@@ -59,7 +61,7 @@ export function ProjectView() {
       setExpandedTaskId(null)
       setDeliverable('')
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+      setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
     } finally {
       setBusy(false)
     }
@@ -76,7 +78,7 @@ export function ProjectView() {
   if (!project) {
     return (
       <div className="project-view">
-        <p>Loading…</p>
+        <p>{t('common.loading')}</p>
       </div>
     )
   }
@@ -84,7 +86,7 @@ export function ProjectView() {
   return (
     <div className="project-view">
       <Link to={`/goals/${project.goal_id}`} className="back-link">
-        ← Goal
+        {t('common.backToGoal')}
       </Link>
       <div className="project-view-header">
         <h2>{project.title}</h2>
@@ -93,10 +95,7 @@ export function ProjectView() {
       <p className="subtitle">{project.objective}</p>
 
       {tasks.length === 0 ? (
-        <p className="subtitle">
-          Tasks aren't available after leaving this page -- reopen it right after starting the
-          project to submit deliverables.
-        </p>
+        <p className="subtitle">{t('project.tasksUnavailable')}</p>
       ) : (
         <div className="task-list">
           {tasks.map((task) => {
@@ -119,7 +118,7 @@ export function ProjectView() {
                 </button>
                 {expandedTaskId === task.task_id && !completed && (
                   <form className="task-form" onSubmit={(e) => handleSubmit(e, task.task_id)}>
-                    <label htmlFor={`deliverable-${task.task_id}`}>Deliverable</label>
+                    <label htmlFor={`deliverable-${task.task_id}`}>{t('project.deliverable')}</label>
                     <textarea
                       id={`deliverable-${task.task_id}`}
                       value={deliverable}
@@ -128,7 +127,7 @@ export function ProjectView() {
                       required
                     />
                     <button type="submit" disabled={busy || deliverable.trim().length === 0}>
-                      {busy ? 'Submitting…' : 'Submit'}
+                      {busy ? t('project.submitting') : t('project.submit')}
                     </button>
                   </form>
                 )}
@@ -138,9 +137,17 @@ export function ProjectView() {
                       <>
                         <p className="feedback">{result.evaluation.feedback}</p>
                         <div className="evaluation-scores">
-                          <span>{Math.round(result.evaluation.correctness * 100)}% correctness</span>
-                          <span>{Math.round(result.evaluation.independence * 100)}% independence</span>
-                          <span>{Math.round(result.evaluation.transfer * 100)}% transfer</span>
+                          <span>
+                            {Math.round(result.evaluation.correctness * 100)}%{' '}
+                            {t('project.correctness')}
+                          </span>
+                          <span>
+                            {Math.round(result.evaluation.independence * 100)}%{' '}
+                            {t('project.independence')}
+                          </span>
+                          <span>
+                            {Math.round(result.evaluation.transfer * 100)}% {t('project.transfer')}
+                          </span>
                         </div>
                       </>
                     )}

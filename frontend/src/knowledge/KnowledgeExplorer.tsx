@@ -9,6 +9,7 @@ import {
   getConceptRelations,
   listKnowledge,
 } from '../api/knowledge'
+import { useTranslation } from '../i18n/LanguageContext'
 import { MasteryBar } from '../shared/MasteryBar'
 import { KnowledgeGraph } from './KnowledgeGraph'
 import './knowledge.css'
@@ -54,6 +55,7 @@ const STATUS_FILTERS: ConceptStatus[] = [
  * `toggleExpand`/`ConceptDetailsPanel` -- one detail-rendering path for
  * both views. */
 export function KnowledgeExplorer() {
+  const { t } = useTranslation()
   const { goalId } = useParams<{ goalId: string }>()
   const navigate = useNavigate()
   const [status, setStatus] = useState<ConceptStatus | ''>('')
@@ -72,9 +74,9 @@ export function KnowledgeExplorer() {
       setConcepts(list)
       setError(null)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+      setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
     }
-  }, [goalId, status])
+  }, [goalId, status, t])
 
   useEffect(() => {
     load()
@@ -138,7 +140,7 @@ export function KnowledgeExplorer() {
       const assessment = await createAssessment(goalId, conceptId)
       navigate(`/assessments/${assessment.assessment_id}`)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+      setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
       setAssessing(false)
     }
   }
@@ -148,19 +150,19 @@ export function KnowledgeExplorer() {
   return (
     <div className="knowledge-explorer">
       <Link to={goalId ? `/goals/${goalId}` : '/'} className="back-link">
-        ← Goal
+        {t('common.backToGoal')}
       </Link>
-      <h2>Knowledge Explorer</h2>
+      <h2>{t('knowledge.title')}</h2>
 
       <div className="knowledge-toolbar">
         <div>
-          <label htmlFor="status-filter">Status</label>
+          <label htmlFor="status-filter">{t('knowledge.status')}</label>
           <select
             id="status-filter"
             value={status}
             onChange={(e) => setStatus(e.target.value as ConceptStatus | '')}
           >
-            <option value="">All</option>
+            <option value="">{t('knowledge.all')}</option>
             {STATUS_FILTERS.map((s) => (
               <option key={s} value={s}>
                 {s}
@@ -168,29 +170,29 @@ export function KnowledgeExplorer() {
             ))}
           </select>
         </div>
-        <div className="view-toggle" role="group" aria-label="View">
+        <div className="view-toggle" role="group" aria-label={t('knowledge.view')}>
           <button
             type="button"
             className={view === 'list' ? 'active' : ''}
             onClick={() => setView('list')}
           >
-            List
+            {t('knowledge.list')}
           </button>
           <button
             type="button"
             className={view === 'graph' ? 'active' : ''}
             onClick={() => setView('graph')}
           >
-            Graph
+            {t('knowledge.graph')}
           </button>
         </div>
       </div>
 
       {error && <div className="message error">{error}</div>}
 
-      {!error && !concepts && <p>Loading…</p>}
+      {!error && !concepts && <p>{t('common.loading')}</p>}
 
-      {concepts && concepts.length === 0 && <p className="subtitle">No concepts match.</p>}
+      {concepts && concepts.length === 0 && <p className="subtitle">{t('knowledge.noMatch')}</p>}
 
       {concepts && concepts.length > 0 && view === 'list' && (
         <div className="concept-list">
@@ -211,7 +213,7 @@ export function KnowledgeExplorer() {
 
       {concepts && concepts.length > 0 && view === 'graph' && (
         <div className="knowledge-graph-wrapper">
-          {loadingGraph && <p className="subtitle">Loading relations…</p>}
+          {loadingGraph && <p className="subtitle">{t('knowledge.loadingRelations')}</p>}
           <KnowledgeGraph
             concepts={concepts}
             relations={concepts.flatMap((c) => relationsById[c.id] ?? [])}
@@ -292,21 +294,32 @@ function ConceptDetailsPanel({
   onStartAssessment: () => void
   assessing: boolean
 }) {
+  const { t } = useTranslation()
   return (
     <div className="concept-details">
       <MasteryBar mastery={concept.mastery / MAX_MASTERY} />
       <div className="concept-stats">
-        <span>{concept.confidence}% confidence</span>
-        <span>{concept.retention}% retention</span>
+        <span>
+          {concept.confidence}% {t('knowledge.confidence')}
+        </span>
+        <span>
+          {concept.retention}% {t('knowledge.retention')}
+        </span>
         {concept.next_review && (
-          <span>Next review {new Date(concept.next_review).toLocaleDateString()}</span>
+          <span>
+            {t('knowledge.nextReview')} {new Date(concept.next_review).toLocaleDateString()}
+          </span>
         )}
         {concept.last_practiced && (
-          <span>Last practiced {new Date(concept.last_practiced).toLocaleDateString()}</span>
+          <span>
+            {t('knowledge.lastPracticed')} {new Date(concept.last_practiced).toLocaleDateString()}
+          </span>
         )}
       </div>
-      {relations === undefined && <p className="subtitle">Loading relations…</p>}
-      {relations && relations.length === 0 && <p className="subtitle">No related concepts.</p>}
+      {relations === undefined && <p className="subtitle">{t('knowledge.loadingRelations')}</p>}
+      {relations && relations.length === 0 && (
+        <p className="subtitle">{t('knowledge.noRelated')}</p>
+      )}
       {relations && relations.length > 0 && (
         <ul className="relation-list">
           {relations.map((r) => (
@@ -318,7 +331,7 @@ function ConceptDetailsPanel({
         </ul>
       )}
       <button type="button" className="secondary" onClick={onStartAssessment} disabled={assessing}>
-        {assessing ? 'Starting…' : 'Start transfer assessment'}
+        {assessing ? t('knowledge.starting') : t('knowledge.startTransferAssessment')}
       </button>
     </div>
   )

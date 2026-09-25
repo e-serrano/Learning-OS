@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ProjectView } from './ProjectView'
+import { LanguageProvider } from '../i18n/LanguageContext'
 
 function jsonResponse(body: unknown) {
   return { ok: true, json: async () => body } as Response
@@ -28,6 +29,7 @@ function renderAt(path: string, state?: unknown) {
         <Route path="/projects/:projectId" element={<ProjectView />} />
       </Routes>
     </MemoryRouter>,
+    { wrapper: LanguageProvider },
   )
 }
 

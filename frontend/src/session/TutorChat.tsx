@@ -2,6 +2,7 @@ import { type FormEvent, useEffect, useState } from 'react'
 import { ApiError } from '../api/client'
 import { type Concept, listKnowledge } from '../api/knowledge'
 import { type TutorTurn, askTutor } from '../api/sessions'
+import { useTranslation } from '../i18n/LanguageContext'
 import './tutor-chat.css'
 
 interface TutorChatProps {
@@ -23,6 +24,7 @@ interface TutorChatProps {
  * the conversation has a first exchange -- switching concepts mid-chat
  * would mix context the tutor was never given. */
 export function TutorChat({ sessionId, goalId, onEnd }: TutorChatProps) {
+  const { t } = useTranslation()
   const [concepts, setConcepts] = useState<Concept[]>([])
   const [conceptId, setConceptId] = useState('')
   const [loadingConcepts, setLoadingConcepts] = useState(true)
@@ -42,13 +44,13 @@ export function TutorChat({ sessionId, goalId, onEnd }: TutorChatProps) {
       })
       .catch((err: unknown) => {
         if (cancelled) return
-        setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+        setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
         setLoadingConcepts(false)
       })
     return () => {
       cancelled = true
     }
-  }, [goalId])
+  }, [goalId, t])
 
   useEffect(() => {
     if (!conceptId) return
@@ -61,7 +63,7 @@ export function TutorChat({ sessionId, goalId, onEnd }: TutorChatProps) {
       })
       .catch((err: unknown) => {
         if (cancelled) return
-        setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+        setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
       })
       .finally(() => {
         if (!cancelled) setBusy(false)
@@ -72,7 +74,7 @@ export function TutorChat({ sessionId, goalId, onEnd }: TutorChatProps) {
     // conceptId only ever changes once, before the first exchange (the
     // picker locks after that), so this fires the opening turn exactly
     // once per real chat.
-  }, [sessionId, conceptId])
+  }, [sessionId, conceptId, t])
 
   async function handleSend(event: FormEvent) {
     event.preventDefault()
@@ -86,7 +88,7 @@ export function TutorChat({ sessionId, goalId, onEnd }: TutorChatProps) {
       setHistory((prev) => [...prev, learnerTurn, { speaker: 'tutor', content: response.content }])
       setMessage('')
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+      setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
     } finally {
       setBusy(false)
     }
@@ -95,7 +97,7 @@ export function TutorChat({ sessionId, goalId, onEnd }: TutorChatProps) {
   if (loadingConcepts) {
     return (
       <div className="tutor-chat">
-        <p>Loading…</p>
+        <p>{t('common.loading')}</p>
       </div>
     )
   }
@@ -103,9 +105,9 @@ export function TutorChat({ sessionId, goalId, onEnd }: TutorChatProps) {
   if (concepts.length === 0) {
     return (
       <div className="tutor-chat">
-        <p>This goal has no concepts yet -- generate a roadmap first.</p>
+        <p>{t('tutorChat.noConcepts')}</p>
         <button type="button" onClick={onEnd}>
-          End session
+          {t('session.endSession')}
         </button>
       </div>
     )
@@ -115,7 +117,7 @@ export function TutorChat({ sessionId, goalId, onEnd }: TutorChatProps) {
 
   return (
     <div className="tutor-chat">
-      <label htmlFor="tutor-concept">Concept</label>
+      <label htmlFor="tutor-concept">{t('tutorChat.concept')}</label>
       <select
         id="tutor-concept"
         value={conceptId}
@@ -132,11 +134,13 @@ export function TutorChat({ sessionId, goalId, onEnd }: TutorChatProps) {
       <div className="tutor-chat-transcript">
         {history.map((turn, i) => (
           <div key={i} className={`tutor-chat-turn ${turn.speaker}`}>
-            <span className="speaker-label">{turn.speaker === 'tutor' ? 'Tutor' : 'You'}</span>
+            <span className="speaker-label">
+              {turn.speaker === 'tutor' ? t('tutorChat.speakerTutor') : t('tutorChat.speakerYou')}
+            </span>
             <p>{turn.content}</p>
           </div>
         ))}
-        {busy && history.length === 0 && <p className="tutor-chat-hint">Thinking…</p>}
+        {busy && history.length === 0 && <p className="tutor-chat-hint">{t('tutorChat.thinking')}</p>}
       </div>
 
       {error && <div className="message error">{error}</div>}
@@ -150,15 +154,15 @@ export function TutorChat({ sessionId, goalId, onEnd }: TutorChatProps) {
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           rows={3}
-          placeholder="Type your response…"
+          placeholder={t('tutorChat.typeResponse')}
           disabled={busy}
         />
         <div className="tutor-chat-actions">
           <button type="submit" disabled={busy || message.trim().length === 0}>
-            {busy ? 'Sending…' : 'Send'}
+            {busy ? t('tutorChat.sending') : t('tutorChat.send')}
           </button>
           <button type="button" className="secondary" onClick={onEnd} disabled={busy}>
-            End session
+            {t('session.endSession')}
           </button>
         </div>
       </form>

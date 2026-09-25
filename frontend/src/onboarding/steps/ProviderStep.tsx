@@ -1,4 +1,5 @@
 import { type FormEvent, useState } from 'react'
+import { useTranslation } from '../../i18n/LanguageContext'
 import { PROVIDER_OPTIONS } from '../providers'
 
 interface ProviderStepProps {
@@ -6,6 +7,7 @@ interface ProviderStepProps {
 }
 
 export function ProviderStep({ onSelected }: ProviderStepProps) {
+  const { t } = useTranslation()
   const [providerId, setProviderId] = useState<string | null>(null)
   const [baseUrl, setBaseUrl] = useState('')
 
@@ -19,11 +21,8 @@ export function ProviderStep({ onSelected }: ProviderStepProps) {
 
   return (
     <div className="onboarding">
-      <h1>Choose an AI provider</h1>
-      <p className="subtitle">
-        Learning OS never has direct database or filesystem access -- it only proposes content
-        through this provider. Local providers keep your data on this machine.
-      </p>
+      <h1>{t('onboarding.chooseProvider')}</h1>
+      <p className="subtitle">{t('onboarding.providerIntro')}</p>
       <form onSubmit={handleSubmit}>
         <div className="provider-cards">
           {PROVIDER_OPTIONS.map((option) => (
@@ -38,15 +37,17 @@ export function ProviderStep({ onSelected }: ProviderStepProps) {
             >
               <strong>{option.displayName}</strong>
               <div className="tag">
-                {option.local ? 'Runs locally' : 'Remote API'}
-                {option.requiresApiKey ? ' · requires API key' : ' · no API key required'}
+                {option.local ? t('onboarding.runsLocally') : t('onboarding.remoteApi')}
+                {option.requiresApiKey
+                  ? ` · ${t('onboarding.requiresApiKey')}`
+                  : ` · ${t('onboarding.noApiKeyRequired')}`}
               </div>
             </button>
           ))}
         </div>
         {selected?.requiresBaseUrl && (
           <>
-            <label htmlFor="base-url">Endpoint URL</label>
+            <label htmlFor="base-url">{t('onboarding.endpointUrl')}</label>
             <input
               id="base-url"
               type="text"
@@ -58,7 +59,7 @@ export function ProviderStep({ onSelected }: ProviderStepProps) {
           </>
         )}
         <button type="submit" disabled={!selected || (selected.requiresBaseUrl && !baseUrl.trim())}>
-          Continue
+          {t('onboarding.continue')}
         </button>
       </form>
     </div>

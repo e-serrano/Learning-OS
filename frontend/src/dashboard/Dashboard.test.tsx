@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Dashboard } from './Dashboard'
+import { LanguageProvider } from '../i18n/LanguageContext'
 
 function jsonResponse(body: unknown) {
   return { ok: true, json: async () => body } as Response
@@ -35,6 +36,7 @@ function renderDashboard() {
     <MemoryRouter>
       <Dashboard />
     </MemoryRouter>,
+    { wrapper: LanguageProvider },
   )
 }
 

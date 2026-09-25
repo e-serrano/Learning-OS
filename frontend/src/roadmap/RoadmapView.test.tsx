@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { RoadmapView } from './RoadmapView'
+import { LanguageProvider } from '../i18n/LanguageContext'
 
 function jsonResponse(body: unknown, ok = true) {
   return { ok, json: async () => body } as Response
@@ -34,6 +35,7 @@ function renderAt(path: string) {
         <Route path="/goals/:goalId/roadmap" element={<RoadmapView />} />
       </Routes>
     </MemoryRouter>,
+    { wrapper: LanguageProvider },
   )
 }
 

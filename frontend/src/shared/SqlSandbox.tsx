@@ -1,5 +1,6 @@
 import { type FormEvent, useState } from 'react'
 import { ApiError, type SqlSandboxResult, runSql } from '../api/sandbox'
+import { useTranslation } from '../i18n/LanguageContext'
 import './sql-sandbox.css'
 
 /** "Try it" SQL console (docs/TASKS.md T137, user request via
@@ -8,6 +9,7 @@ import './sql-sandbox.css'
  * answering -- purely informational, never fed into evaluation
  * (mastery/scoring stays AI-evaluation-derived, docs/AGENTS.md #9). */
 export function SqlSandbox() {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const [sql, setSql] = useState('')
   const [result, setResult] = useState<SqlSandboxResult | null>(null)
@@ -22,7 +24,7 @@ export function SqlSandbox() {
     try {
       setResult(await runSql(sql))
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+      setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
     } finally {
       setBusy(false)
     }
@@ -31,12 +33,12 @@ export function SqlSandbox() {
   return (
     <div className="sql-sandbox">
       <button type="button" className="secondary" onClick={() => setOpen((v) => !v)}>
-        {open ? 'Hide SQL sandbox' : 'Try it: run SQL'}
+        {open ? t('sandbox.hide') : t('sandbox.tryIt')}
       </button>
       {open && (
         <div className="sql-sandbox-panel">
           <form onSubmit={handleRun}>
-            <label htmlFor="sandbox-sql">SQL</label>
+            <label htmlFor="sandbox-sql">{t('sandbox.sql')}</label>
             <textarea
               id="sandbox-sql"
               value={sql}
@@ -45,7 +47,7 @@ export function SqlSandbox() {
               placeholder="CREATE TABLE t (id INTEGER); INSERT INTO t VALUES (1); SELECT * FROM t;"
             />
             <button type="submit" disabled={busy || sql.trim().length === 0}>
-              {busy ? 'Running…' : 'Run'}
+              {busy ? t('sandbox.running') : t('sandbox.run')}
             </button>
           </form>
           {error && <div className="message error">{error}</div>}
@@ -57,11 +59,12 @@ export function SqlSandbox() {
 }
 
 function SqlSandboxOutput({ result }: { result: SqlSandboxResult }) {
+  const { t } = useTranslation()
   if (result.error) {
     return <div className="message error">{result.error}</div>
   }
   if (result.columns.length === 0) {
-    return <p className="sql-sandbox-hint">Ran with no result set.</p>
+    return <p className="sql-sandbox-hint">{t('sandbox.noResultSet')}</p>
   }
   return (
     <>
@@ -84,7 +87,9 @@ function SqlSandboxOutput({ result }: { result: SqlSandboxResult }) {
         </tbody>
       </table>
       {result.truncated && (
-        <p className="sql-sandbox-hint">Showing first {result.row_count} rows.</p>
+        <p className="sql-sandbox-hint">
+          {t('sandbox.showingFirst')} {result.row_count} {t('sandbox.rows')}
+        </p>
       )}
     </>
   )

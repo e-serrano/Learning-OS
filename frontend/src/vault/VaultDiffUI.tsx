@@ -7,6 +7,7 @@ import {
   rejectVaultChange,
   scanVault,
 } from '../api/vault'
+import { useTranslation } from '../i18n/LanguageContext'
 import './vault.css'
 
 /** Vault diff UI (docs/TASKS.md T119, dep T097): before/after +
@@ -23,6 +24,7 @@ import './vault.css'
  * `result.status` after the call rather than relying on a thrown
  * `ApiError` to detect it. */
 export function VaultDiffUI() {
+  const { t } = useTranslation()
   const [changes, setChanges] = useState<ChangeProposal[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -36,9 +38,9 @@ export function VaultDiffUI() {
       setChanges(list)
       setError(null)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+      setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     load()
@@ -54,7 +56,7 @@ export function VaultDiffUI() {
       )
       await load()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+      setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
     } finally {
       setScanning(false)
     }
@@ -70,7 +72,7 @@ export function VaultDiffUI() {
     try {
       updateChange(await applyVaultChange(id))
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+      setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
     } finally {
       setBusyId(null)
     }
@@ -82,7 +84,7 @@ export function VaultDiffUI() {
     try {
       updateChange(await rejectVaultChange(id))
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+      setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
     } finally {
       setBusyId(null)
     }
@@ -90,18 +92,16 @@ export function VaultDiffUI() {
 
   return (
     <div className="vault-ui">
-      <h2>Vault Changes</h2>
+      <h2>{t('vault.title')}</h2>
       <button type="button" className="secondary" onClick={handleScan} disabled={scanning}>
-        {scanning ? 'Scanning…' : 'Rescan vault'}
+        {scanning ? t('vault.scanning') : t('vault.rescan')}
       </button>
       {scanSummary && <p className="subtitle">{scanSummary}</p>}
       {error && <div className="message error">{error}</div>}
 
-      {!error && !changes && <p>Loading…</p>}
+      {!error && !changes && <p>{t('common.loading')}</p>}
 
-      {changes && changes.length === 0 && (
-        <p className="subtitle">No pending changes.</p>
-      )}
+      {changes && changes.length === 0 && <p className="subtitle">{t('vault.noPending')}</p>}
 
       {changes && changes.length > 0 && (
         <div className="change-list">
@@ -137,7 +137,8 @@ function ChangeRow({
   onApprove: () => void
   onReject: () => void
 }) {
-  const before = change.operation === 'create_file' ? '(new file)' : '(current content not available via this API)'
+  const { t } = useTranslation()
+  const before = change.operation === 'create_file' ? t('vault.newFile') : t('vault.beforeUnavailable')
 
   return (
     <div className="change-row">
@@ -148,14 +149,18 @@ function ChangeRow({
       </button>
       {expanded && (
         <div className="change-details">
-          {change.section && <p className="section-label">Section: {change.section}</p>}
+          {change.section && (
+            <p className="section-label">
+              {t('vault.section')} {change.section}
+            </p>
+          )}
           <div className="diff-columns">
             <div className="diff-column">
-              <h4>Before</h4>
+              <h4>{t('vault.before')}</h4>
               <pre>{before}</pre>
             </div>
             <div className="diff-column">
-              <h4>After</h4>
+              <h4>{t('vault.after')}</h4>
               <pre>{change.content}</pre>
             </div>
           </div>
@@ -163,10 +168,10 @@ function ChangeRow({
           {change.status === 'pending' && (
             <div className="change-actions">
               <button type="button" onClick={onApprove} disabled={busy}>
-                {busy ? 'Working…' : 'Approve'}
+                {busy ? t('vault.working') : t('vault.approve')}
               </button>
               <button type="button" className="secondary" onClick={onReject} disabled={busy}>
-                Reject
+                {t('vault.reject')}
               </button>
             </div>
           )}

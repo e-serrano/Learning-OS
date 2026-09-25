@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { LanguageProvider } from '../i18n/LanguageContext'
 import { SqlSandbox } from './SqlSandbox'
 
 function jsonResponse(body: unknown) {
@@ -12,7 +13,7 @@ describe('SqlSandbox', () => {
   })
 
   it('is collapsed by default', () => {
-    render(<SqlSandbox />)
+    render(<SqlSandbox />, { wrapper: LanguageProvider })
 
     expect(screen.queryByLabelText('SQL')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Try it: run SQL' })).toBeInTheDocument()
@@ -33,7 +34,7 @@ describe('SqlSandbox', () => {
       ),
     )
 
-    render(<SqlSandbox />)
+    render(<SqlSandbox />, { wrapper: LanguageProvider })
     fireEvent.click(screen.getByRole('button', { name: 'Try it: run SQL' }))
     fireEvent.change(screen.getByLabelText('SQL'), { target: { value: 'SELECT 1 AS n' } })
     fireEvent.click(screen.getByRole('button', { name: 'Run' }))
@@ -57,7 +58,7 @@ describe('SqlSandbox', () => {
       ),
     )
 
-    render(<SqlSandbox />)
+    render(<SqlSandbox />, { wrapper: LanguageProvider })
     fireEvent.click(screen.getByRole('button', { name: 'Try it: run SQL' }))
     fireEvent.change(screen.getByLabelText('SQL'), { target: { value: 'SELEKT 1' } })
     fireEvent.click(screen.getByRole('button', { name: 'Run' }))

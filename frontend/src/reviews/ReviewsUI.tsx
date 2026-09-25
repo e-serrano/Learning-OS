@@ -6,6 +6,7 @@ import {
   completeReview,
   listTodaysReviews,
 } from '../api/reviews'
+import { useTranslation } from '../i18n/LanguageContext'
 import { MasteryBar } from '../shared/MasteryBar'
 import './reviews.css'
 
@@ -22,6 +23,7 @@ type Phase = 'loading' | 'error' | 'empty' | 'reviewing' | 'result'
  * for "what's next", the full queue is already the `GET /reviews/today`
  * list, advanced locally after each `/complete` call. */
 export function ReviewsUI() {
+  const { t } = useTranslation()
   const [reviews, setReviews] = useState<Review[]>([])
   const [index, setIndex] = useState(0)
   const [phase, setPhase] = useState<Phase>('loading')
@@ -38,10 +40,10 @@ export function ReviewsUI() {
         setPhase(list.length > 0 ? 'reviewing' : 'empty')
       })
       .catch((err: unknown) => {
-        setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+        setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
         setPhase('error')
       })
-  }, [])
+  }, [t])
 
   const current = reviews[index]
 
@@ -55,7 +57,7 @@ export function ReviewsUI() {
       setResult(res)
       setPhase('result')
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+      setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
     } finally {
       setBusy(false)
     }
@@ -77,7 +79,7 @@ export function ReviewsUI() {
   if (phase === 'loading') {
     return (
       <div className="reviews-ui">
-        <p>Loading…</p>
+        <p>{t('common.loading')}</p>
       </div>
     )
   }
@@ -93,17 +95,17 @@ export function ReviewsUI() {
   if (phase === 'empty') {
     return (
       <div className="reviews-ui">
-        <h2>Reviews</h2>
-        <div className="message success">You're all caught up -- no reviews due.</div>
+        <h2>{t('reviews.title')}</h2>
+        <div className="message success">{t('reviews.allCaughtUp')}</div>
       </div>
     )
   }
 
   return (
     <div className="reviews-ui">
-      <h2>Reviews</h2>
+      <h2>{t('reviews.title')}</h2>
       <p className="progress-label">
-        {index + 1} of {reviews.length}
+        {index + 1} {t('reviews.of')} {reviews.length}
       </p>
       {error && <div className="message error">{error}</div>}
 
@@ -111,7 +113,7 @@ export function ReviewsUI() {
         <>
           <p className="concept-label">{current.concept_id}</p>
           <form onSubmit={handleSubmit}>
-            <label htmlFor="answer">What do you recall?</label>
+            <label htmlFor="answer">{t('reviews.whatDoYouRecall')}</label>
             <textarea
               id="answer"
               value={answer}
@@ -119,7 +121,9 @@ export function ReviewsUI() {
               rows={5}
               required
             />
-            <label htmlFor="confidence">Confidence: {confidence}%</label>
+            <label htmlFor="confidence">
+              {t('reviews.confidence')}: {confidence}%
+            </label>
             <input
               id="confidence"
               type="range"
@@ -129,7 +133,7 @@ export function ReviewsUI() {
               onChange={(e) => setConfidence(Number(e.target.value))}
             />
             <button type="submit" disabled={busy || answer.trim().length === 0}>
-              {busy ? 'Submitting…' : 'Submit'}
+              {busy ? t('reviews.submitting') : t('reviews.submit')}
             </button>
           </form>
         </>
@@ -138,16 +142,21 @@ export function ReviewsUI() {
       {phase === 'result' && result && (
         <div className="review-result">
           <p>
-            Next review in {Math.round(result.next_review.interval_days)} day
-            {Math.round(result.next_review.interval_days) === 1 ? '' : 's'}.
+            {t('reviews.nextReviewIn')} {Math.round(result.next_review.interval_days)}{' '}
+            {Math.round(result.next_review.interval_days) === 1
+              ? t('reviews.day')
+              : t('reviews.days')}
+            .
           </p>
           <MasteryBar mastery={result.concept.mastery / MAX_MASTERY} />
           <div className="review-stats">
-            <span>{Math.round(result.concept.retention)}% retention</span>
+            <span>
+              {Math.round(result.concept.retention)}% {t('reviews.retention')}
+            </span>
             <span className="status-tag">{result.concept.status}</span>
           </div>
           <button type="button" onClick={handleContinue}>
-            {index + 1 < reviews.length ? 'Next review' : 'Done'}
+            {index + 1 < reviews.length ? t('reviews.nextReview') : t('reviews.done')}
           </button>
         </div>
       )}

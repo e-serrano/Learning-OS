@@ -40,6 +40,13 @@ system prompt verbatim -- vault/context content stays untrusted data
 (#11), and this closed list keeps a config field from becoming a second
 injection surface.
 
+`app/config/languages.SUPPORTED_LANGUAGES` narrowed to exactly `{en, es}`
+(docs/TASKS.md T147, user request: the app and AI responses restricted to
+English or Spanish, Spanish preferred) -- `AppConfig.language` now defaults
+to `"es"`. The frontend's own translation dictionary
+(`frontend/src/i18n/translations.ts`) only ever has `en`/`es` copy, so
+widening this list again would need matching frontend work first.
+
 ---
 
 ## 3. Provider interface

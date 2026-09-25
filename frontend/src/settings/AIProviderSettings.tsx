@@ -6,6 +6,7 @@ import {
   getStatus,
   validateAIProvider,
 } from '../api/onboarding'
+import { useTranslation } from '../i18n/LanguageContext'
 import { PROVIDER_OPTIONS } from '../onboarding/providers'
 
 type Phase = 'loading' | 'error' | 'ready'
@@ -20,6 +21,7 @@ type Phase = 'loading' | 'error' | 'ready'
  * `docs/API_SPEC.md` #13 documents as callable at any time, not gated
  * to the onboarding flow) -- no new backend route needed. */
 export function AIProviderSettings() {
+  const { t } = useTranslation()
   const [phase, setPhase] = useState<Phase>('loading')
   const [error, setError] = useState<string | null>(null)
   const [providerId, setProviderId] = useState('')
@@ -39,10 +41,10 @@ export function AIProviderSettings() {
         setPhase('ready')
       })
       .catch((err: unknown) => {
-        setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+        setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
         setPhase('error')
       })
-  }, [])
+  }, [t])
 
   const provider = PROVIDER_OPTIONS.find((p) => p.id === providerId) ?? null
 
@@ -60,7 +62,7 @@ export function AIProviderSettings() {
       const validation = await validateAIProvider(credential.trim() || null)
       setResult({ ok: validation.ok, reason: validation.reason })
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+      setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
     } finally {
       setCredential('') // never keep the secret around once it's no longer needed, pass or fail
       setSaving(false)
@@ -68,7 +70,7 @@ export function AIProviderSettings() {
   }
 
   if (phase === 'loading') {
-    return <p>Loading…</p>
+    return <p>{t('common.loading')}</p>
   }
 
   if (phase === 'error') {
@@ -77,7 +79,7 @@ export function AIProviderSettings() {
 
   return (
     <div className="ai-provider-settings">
-      <label htmlFor="ai-provider">AI provider</label>
+      <label htmlFor="ai-provider">{t('aiProvider.label')}</label>
       <select
         id="ai-provider"
         value={providerId}
@@ -98,7 +100,7 @@ export function AIProviderSettings() {
       <form onSubmit={handleSubmit}>
         {provider?.requiresBaseUrl && (
           <>
-            <label htmlFor="ai-base-url">Endpoint URL</label>
+            <label htmlFor="ai-base-url">{t('aiProvider.endpointUrl')}</label>
             <input
               id="ai-base-url"
               type="text"
@@ -111,20 +113,20 @@ export function AIProviderSettings() {
           </>
         )}
 
-        <label htmlFor="ai-model">Model</label>
+        <label htmlFor="ai-model">{t('aiProvider.model')}</label>
         <input
           id="ai-model"
           type="text"
           value={model}
           onChange={(e) => setModel(e.target.value)}
-          placeholder="e.g. gpt-5, claude-sonnet-5, llama3"
+          placeholder={t('aiProvider.modelPlaceholder')}
           disabled={saving}
           required
         />
 
         {provider?.requiresApiKey && (
           <>
-            <label htmlFor="ai-credential">API key</label>
+            <label htmlFor="ai-credential">{t('aiProvider.apiKey')}</label>
             <input
               id="ai-credential"
               type="password"
@@ -134,23 +136,21 @@ export function AIProviderSettings() {
               disabled={saving}
               required
             />
-            <p className="field-hint">
-              Re-enter your key every time you save here, even just to change the model -- it is
-              never stored in the browser or database, only sent once to the OS keyring (or the
-              encrypted equivalent in Docker).
-            </p>
+            <p className="field-hint">{t('aiProvider.apiKeyHint')}</p>
           </>
         )}
 
         <button type="submit" disabled={saving || !providerId || model.trim().length === 0}>
-          {saving ? 'Testing…' : 'Save & test connection'}
+          {saving ? t('aiProvider.testing') : t('aiProvider.saveAndTest')}
         </button>
       </form>
 
       {result && !result.ok && (
-        <div className="message error">Connection failed: {result.reason}</div>
+        <div className="message error">
+          {t('aiProvider.connectionFailed')} {result.reason}
+        </div>
       )}
-      {result?.ok && <div className="message success">Connected successfully.</div>}
+      {result?.ok && <div className="message success">{t('aiProvider.connectedSuccessfully')}</div>}
       {error && <div className="message error">{error}</div>}
     </div>
   )

@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { LanguageProvider } from '../i18n/LanguageContext'
 import { TutorChat } from './TutorChat'
 
 function jsonResponse(body: unknown) {
@@ -35,7 +36,9 @@ describe('TutorChat', () => {
       }),
     )
 
-    render(<TutorChat sessionId="session_1" goalId="goal_1" onEnd={vi.fn()} />)
+    render(<TutorChat sessionId="session_1" goalId="goal_1" onEnd={vi.fn()} />, {
+      wrapper: LanguageProvider,
+    })
 
     expect(await screen.findByText('What is a window function?')).toBeInTheDocument()
     expect(screen.getByLabelText('Concept')).toHaveValue('concept_1')
@@ -56,7 +59,9 @@ describe('TutorChat', () => {
       }),
     )
 
-    render(<TutorChat sessionId="session_1" goalId="goal_1" onEnd={vi.fn()} />)
+    render(<TutorChat sessionId="session_1" goalId="goal_1" onEnd={vi.fn()} />, {
+      wrapper: LanguageProvider,
+    })
     await screen.findByText('What is a window function?')
 
     fireEvent.change(screen.getByPlaceholderText('Type your response…'), {
@@ -78,7 +83,9 @@ describe('TutorChat', () => {
       }),
     )
 
-    render(<TutorChat sessionId="session_1" goalId="goal_1" onEnd={vi.fn()} />)
+    render(<TutorChat sessionId="session_1" goalId="goal_1" onEnd={vi.fn()} />, {
+      wrapper: LanguageProvider,
+    })
     await screen.findByText('What is a window function?')
 
     fireEvent.change(screen.getByPlaceholderText('Type your response…'), {
@@ -92,7 +99,9 @@ describe('TutorChat', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({ concepts: [] })))
     const onEnd = vi.fn()
 
-    render(<TutorChat sessionId="session_1" goalId="goal_1" onEnd={onEnd} />)
+    render(<TutorChat sessionId="session_1" goalId="goal_1" onEnd={onEnd} />, {
+      wrapper: LanguageProvider,
+    })
 
     expect(
       await screen.findByText('This goal has no concepts yet -- generate a roadmap first.'),

@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { SessionUI } from './SessionUI'
+import { LanguageProvider } from '../i18n/LanguageContext'
 
 function jsonResponse(body: unknown, ok = true, status = 200) {
   return { ok, status, json: async () => body } as Response
@@ -58,6 +59,7 @@ function renderAt(path: string) {
         <Route path="/sessions/:sessionId" element={<SessionUI />} />
       </Routes>
     </MemoryRouter>,
+    { wrapper: LanguageProvider },
   )
 }
 

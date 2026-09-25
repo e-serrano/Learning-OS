@@ -8,7 +8,7 @@ def test_default_app_config_starts_at_welcome() -> None:
     config = AppConfig()
     assert config.onboarding_step == OnboardingStep.WELCOME
     assert config.vault_path is None
-    assert config.language == "en"
+    assert config.language == "es"
 
 
 def test_app_config_has_no_credential_field() -> None:

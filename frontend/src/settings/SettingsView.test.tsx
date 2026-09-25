@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { LanguageProvider } from '../i18n/LanguageContext'
 import { SettingsView } from './SettingsView'
 
 function jsonResponse(body: unknown) {
@@ -21,7 +22,7 @@ describe('SettingsView', () => {
   it('shows the current language once loaded', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(SETTINGS)))
 
-    render(<SettingsView />)
+    render(<SettingsView />, { wrapper: LanguageProvider })
 
     expect(await screen.findByLabelText('Language')).toHaveValue('en')
     expect(screen.getByRole('option', { name: 'Spanish' })).toBeInTheDocument()
@@ -38,13 +39,16 @@ describe('SettingsView', () => {
       }),
     )
 
-    render(<SettingsView />)
+    render(<SettingsView />, { wrapper: LanguageProvider })
     await screen.findByLabelText('Language')
 
     fireEvent.change(screen.getByLabelText('Language'), { target: { value: 'es' } })
 
-    expect(await screen.findByText('Saved.')).toBeInTheDocument()
-    expect(screen.getByLabelText('Language')).toHaveValue('es')
+    // The confirmation itself renders in the just-selected language --
+    // switching to Spanish flips the whole UI immediately, this message
+    // included (docs/TASKS.md T147).
+    expect(await screen.findByText('Guardado.')).toBeInTheDocument()
+    expect(screen.getByLabelText('Idioma')).toHaveValue('es')
   })
 
   it('shows an error message when loading fails', async () => {
@@ -56,7 +60,7 @@ describe('SettingsView', () => {
       }),
     )
 
-    render(<SettingsView />)
+    render(<SettingsView />, { wrapper: LanguageProvider })
 
     expect(await screen.findByText('boom')).toBeInTheDocument()
   })
@@ -64,7 +68,7 @@ describe('SettingsView', () => {
   it('enables the git auto-commit checkbox when the vault is a git repo', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(SETTINGS)))
 
-    render(<SettingsView />)
+    render(<SettingsView />, { wrapper: LanguageProvider })
 
     const checkbox = await screen.findByLabelText('Git auto-commit')
     expect(checkbox).not.toBeChecked()
@@ -77,7 +81,7 @@ describe('SettingsView', () => {
       vi.fn().mockResolvedValue(jsonResponse({ ...SETTINGS, git_available: false })),
     )
 
-    render(<SettingsView />)
+    render(<SettingsView />, { wrapper: LanguageProvider })
 
     expect(await screen.findByLabelText('Git auto-commit')).toBeDisabled()
     expect(screen.getByText('Your configured vault is not a git repository, so this is unavailable.')).toBeInTheDocument()
@@ -94,7 +98,7 @@ describe('SettingsView', () => {
       }),
     )
 
-    render(<SettingsView />)
+    render(<SettingsView />, { wrapper: LanguageProvider })
     const checkbox = await screen.findByLabelText('Git auto-commit')
 
     fireEvent.click(checkbox)

@@ -21,12 +21,12 @@ def client(tmp_path: Path) -> TestClient:
     app.dependency_overrides.clear()
 
 
-def test_get_settings_defaults_to_english(client: TestClient) -> None:
+def test_get_settings_defaults_to_spanish(client: TestClient) -> None:
     response = client.get("/api/v1/settings")
     assert response.status_code == 200
     body = response.json()
-    assert body["language"] == "en"
-    assert body["supported_languages"]["es"] == "Spanish"
+    assert body["language"] == "es"
+    assert body["supported_languages"] == {"en": "English", "es": "Spanish"}
 
 
 def test_update_language_persists_the_new_value(client: TestClient) -> None:

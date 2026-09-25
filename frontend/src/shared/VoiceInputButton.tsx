@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from '../i18n/LanguageContext'
 import './voice.css'
 
 interface SpeechRecognitionAlternative {
@@ -70,6 +71,7 @@ export function VoiceInputButton({
   onTranscript: (text: string) => void
   disabled?: boolean
 }) {
+  const { language, t } = useTranslation()
   const [listening, setListening] = useState(false)
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null)
 
@@ -89,7 +91,7 @@ export function VoiceInputButton({
     const Ctor = getSpeechRecognitionCtor()
     if (!Ctor) return
     const recognition = new Ctor()
-    recognition.lang = 'en-US'
+    recognition.lang = language === 'es' ? 'es-ES' : 'en-US'
     recognition.interimResults = false
     recognition.continuous = false
     recognition.onresult = (event) => onTranscript(transcriptOf(event))
@@ -108,7 +110,7 @@ export function VoiceInputButton({
       disabled={disabled}
       aria-pressed={listening}
     >
-      {listening ? 'Stop listening' : 'Speak answer'}
+      {listening ? t('voice.stopListening') : t('voice.speakAnswer')}
     </button>
   )
 }

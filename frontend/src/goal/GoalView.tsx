@@ -12,6 +12,7 @@ import {
 import { listKnowledge } from '../api/knowledge'
 import { type Project, createProject, listProjects } from '../api/projects'
 import { type SessionMode, createSession } from '../api/sessions'
+import { useTranslation } from '../i18n/LanguageContext'
 import { MasteryBar } from '../shared/MasteryBar'
 import './goal.css'
 
@@ -21,11 +22,13 @@ const DEFAULT_SESSION_DURATION_MINUTES = 30
  * assessment/project/teach_back each already have their own dedicated
  * creation flow elsewhere (AssessmentUI, ProjectView, teach-back
  * service, T133), so this picker doesn't try to cover them too. */
-const SESSION_MODE_OPTIONS: { value: SessionMode; label: string }[] = [
-  { value: 'guided', label: 'Guided' },
-  { value: 'socratic', label: 'Socratic' },
-  { value: 'interview', label: 'Interview' },
-]
+function sessionModeOptions(t: (key: string) => string): { value: SessionMode; label: string }[] {
+  return [
+    { value: 'guided', label: t('goalView.modeGuided') },
+    { value: 'socratic', label: t('goalView.modeSocratic') },
+    { value: 'interview', label: t('goalView.modeInterview') },
+  ]
+}
 
 /** Goal view (docs/TASKS.md T112, dep T096+T107): mastery, weak-concept
  * and due-review counts, and links out to the roadmap (T113) and
@@ -39,6 +42,7 @@ const SESSION_MODE_OPTIONS: { value: SessionMode; label: string }[] = [
  * (T096's own note: activation is a side effect of generating a roadmap,
  * T101), so this page doesn't invent one. */
 export function GoalView() {
+  const { t } = useTranslation()
   const { goalId } = useParams<{ goalId: string }>()
   const navigate = useNavigate()
   const [goal, setGoal] = useState<Goal | null>(null)
@@ -61,9 +65,9 @@ export function GoalView() {
       setProjects(projectsResult.projects)
       setError(null)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+      setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
     }
-  }, [goalId])
+  }, [goalId, t])
 
   useEffect(() => {
     load()
@@ -75,7 +79,7 @@ export function GoalView() {
     try {
       setGoal(await pauseGoal(goalId))
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+      setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
     } finally {
       setBusy(false)
     }
@@ -87,7 +91,7 @@ export function GoalView() {
     try {
       setGoal(await completeGoal(goalId))
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+      setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
     } finally {
       setBusy(false)
     }
@@ -100,7 +104,7 @@ export function GoalView() {
       const session = await createSession(goalId, sessionMode, DEFAULT_SESSION_DURATION_MINUTES)
       navigate(`/sessions/${session.id}`)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+      setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
       setBusy(false)
     }
   }
@@ -112,7 +116,7 @@ export function GoalView() {
     try {
       const { concepts } = await listKnowledge(goalId)
       if (concepts.length === 0) {
-        setError('This goal has no concepts yet -- generate a roadmap first.')
+        setError(t('goalView.noConceptsGenerateRoadmap'))
         setBusy(false)
         return
       }
@@ -122,7 +126,7 @@ export function GoalView() {
       )
       navigate(`/projects/${created.project.id}`, { state: { tasks: created.tasks } })
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+      setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
       setBusy(false)
     }
   }
@@ -137,7 +141,7 @@ export function GoalView() {
   if (!goal || !progress) {
     return (
       <div className="goal-view">
-        <p>Loading…</p>
+        <p>{t('common.loading')}</p>
       </div>
     )
   }
@@ -145,7 +149,7 @@ export function GoalView() {
   return (
     <div className="goal-view">
       <Link to="/" className="back-link">
-        ← Dashboard
+        {t('common.backToDashboard')}
       </Link>
       <div className="goal-view-header">
         <h2>{goal.title}</h2>
@@ -158,35 +162,35 @@ export function GoalView() {
       <div className="goal-stats-grid">
         <div className="stat">
           <strong>{progress.concepts_total}</strong>
-          <span>concepts</span>
+          <span>{t('dashboard.concepts')}</span>
         </div>
         <div className="stat">
           <strong>{progress.mastered}</strong>
-          <span>mastered</span>
+          <span>{t('dashboard.mastered')}</span>
         </div>
         <div className="stat">
           <strong>{progress.weak}</strong>
-          <span>weak</span>
+          <span>{t('dashboard.weak')}</span>
         </div>
         <div className="stat">
           <strong>{progress.due_reviews}</strong>
-          <span>reviews due</span>
+          <span>{t('goalView.reviewsDue')}</span>
         </div>
         <div className="stat">
           <strong>{progress.recent_sessions}</strong>
-          <span>recent sessions</span>
+          <span>{t('goalView.recentSessions')}</span>
         </div>
       </div>
 
       <div className="goal-view-links">
-        <Link to={`/goals/${goal.id}/roadmap`}>Roadmap</Link>
-        <Link to={`/goals/${goal.id}/knowledge`}>Knowledge explorer</Link>
+        <Link to={`/goals/${goal.id}/roadmap`}>{t('goalView.roadmap')}</Link>
+        <Link to={`/goals/${goal.id}/knowledge`}>{t('goalView.knowledgeExplorer')}</Link>
       </div>
 
       {(goal.status === 'draft' || goal.status === 'active') && (
         <div className="goal-view-actions">
           <label htmlFor="session-mode" className="sr-only">
-            Session mode
+            {t('goalView.sessionMode')}
           </label>
           <select
             id="session-mode"
@@ -194,24 +198,24 @@ export function GoalView() {
             onChange={(e) => setSessionMode(e.target.value as SessionMode)}
             disabled={busy}
           >
-            {SESSION_MODE_OPTIONS.map((option) => (
+            {sessionModeOptions(t).map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
             ))}
           </select>
           <button type="button" onClick={handleStartSession} disabled={busy}>
-            Start session
+            {t('goalView.startSession')}
           </button>
           <button type="button" className="secondary" onClick={handleStartProject} disabled={busy}>
-            Start project
+            {t('goalView.startProject')}
           </button>
         </div>
       )}
 
       {projects.length > 0 && (
         <div className="goal-projects">
-          <h3>Projects</h3>
+          <h3>{t('goalView.projects')}</h3>
           <ul>
             {projects.map((p) => (
               <li key={p.id}>
@@ -226,10 +230,10 @@ export function GoalView() {
       {goal.status === 'active' && (
         <div className="goal-view-actions">
           <button type="button" className="secondary" onClick={handlePause} disabled={busy}>
-            Pause goal
+            {t('goalView.pauseGoal')}
           </button>
           <button type="button" onClick={handleComplete} disabled={busy}>
-            Mark complete
+            {t('goalView.markComplete')}
           </button>
         </div>
       )}

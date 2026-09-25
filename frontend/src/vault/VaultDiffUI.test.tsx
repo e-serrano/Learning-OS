@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { LanguageProvider } from '../i18n/LanguageContext'
 import { VaultDiffUI } from './VaultDiffUI'
 
 function jsonResponse(body: unknown) {
@@ -27,7 +28,7 @@ describe('VaultDiffUI', () => {
   it('shows a no-pending-changes message when the list is empty', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({ changes: [] })))
 
-    render(<VaultDiffUI />)
+    render(<VaultDiffUI />, { wrapper: LanguageProvider })
 
     expect(await screen.findByText('No pending changes.')).toBeInTheDocument()
   })
@@ -38,7 +39,7 @@ describe('VaultDiffUI', () => {
       vi.fn().mockResolvedValue(jsonResponse({ changes: [PENDING_CHANGE] })),
     )
 
-    render(<VaultDiffUI />)
+    render(<VaultDiffUI />, { wrapper: LanguageProvider })
 
     const row = await screen.findByRole('button', { name: /Window Functions.md/ })
     fireEvent.click(row)
@@ -57,7 +58,7 @@ describe('VaultDiffUI', () => {
       ),
     )
 
-    render(<VaultDiffUI />)
+    render(<VaultDiffUI />, { wrapper: LanguageProvider })
 
     fireEvent.click(await screen.findByRole('button', { name: /Window Functions.md/ }))
 
@@ -78,7 +79,7 @@ describe('VaultDiffUI', () => {
       }),
     )
 
-    render(<VaultDiffUI />)
+    render(<VaultDiffUI />, { wrapper: LanguageProvider })
 
     fireEvent.click(await screen.findByRole('button', { name: /Window Functions.md/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Approve' }))
@@ -98,7 +99,7 @@ describe('VaultDiffUI', () => {
       }),
     )
 
-    render(<VaultDiffUI />)
+    render(<VaultDiffUI />, { wrapper: LanguageProvider })
 
     fireEvent.click(await screen.findByRole('button', { name: /Window Functions.md/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Reject' }))
@@ -120,7 +121,7 @@ describe('VaultDiffUI', () => {
       }),
     )
 
-    render(<VaultDiffUI />)
+    render(<VaultDiffUI />, { wrapper: LanguageProvider })
     await screen.findByText('No pending changes.')
 
     fireEvent.click(screen.getByRole('button', { name: 'Rescan vault' }))

@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AssessmentUI } from './AssessmentUI'
+import { LanguageProvider } from '../i18n/LanguageContext'
 
 function jsonResponse(body: unknown) {
   return { ok: true, json: async () => body } as Response
@@ -30,6 +31,7 @@ function renderAt(path: string) {
         <Route path="/assessments/:assessmentId" element={<AssessmentUI />} />
       </Routes>
     </MemoryRouter>,
+    { wrapper: LanguageProvider },
   )
 }
 

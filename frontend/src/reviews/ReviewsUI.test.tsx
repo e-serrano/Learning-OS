@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { LanguageProvider } from '../i18n/LanguageContext'
 import { ReviewsUI } from './ReviewsUI'
 
 function jsonResponse(body: unknown) {
@@ -28,7 +29,7 @@ describe('ReviewsUI', () => {
   it('shows the caught-up message when there are no reviews due', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({ reviews: [] })))
 
-    render(<ReviewsUI />)
+    render(<ReviewsUI />, { wrapper: LanguageProvider })
 
     expect(
       await screen.findByText("You're all caught up -- no reviews due."),
@@ -41,7 +42,7 @@ describe('ReviewsUI', () => {
       vi.fn().mockResolvedValue(jsonResponse({ reviews: [REVIEW_1, REVIEW_2] })),
     )
 
-    render(<ReviewsUI />)
+    render(<ReviewsUI />, { wrapper: LanguageProvider })
 
     expect(await screen.findByText('window_functions')).toBeInTheDocument()
     expect(screen.getByText('1 of 2')).toBeInTheDocument()
@@ -65,7 +66,7 @@ describe('ReviewsUI', () => {
       }),
     )
 
-    render(<ReviewsUI />)
+    render(<ReviewsUI />, { wrapper: LanguageProvider })
     await screen.findByText('window_functions')
 
     fireEvent.change(screen.getByLabelText('What do you recall?'), {
@@ -99,7 +100,7 @@ describe('ReviewsUI', () => {
       }),
     )
 
-    render(<ReviewsUI />)
+    render(<ReviewsUI />, { wrapper: LanguageProvider })
     await screen.findByText('window_functions')
 
     fireEvent.change(screen.getByLabelText('What do you recall?'), { target: { value: 'x' } })

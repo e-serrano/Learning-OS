@@ -6,12 +6,14 @@ import {
   configureVault,
   getStatus,
 } from '../../api/onboarding'
+import { useTranslation } from '../../i18n/LanguageContext'
 
 interface VaultStepProps {
   onDone: (status: OnboardingStatus) => void
 }
 
 export function VaultStep({ onDone }: VaultStepProps) {
+  const { t } = useTranslation()
   const [path, setPath] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -25,7 +27,7 @@ export function VaultStep({ onDone }: VaultStepProps) {
       const result = await configureVault(path.trim())
       setScan(result.scan)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+      setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
     } finally {
       setBusy(false)
     }
@@ -42,14 +44,11 @@ export function VaultStep({ onDone }: VaultStepProps) {
 
   return (
     <div className="onboarding">
-      <h1>Welcome to Learning OS</h1>
-      <p className="subtitle">
-        Point Learning OS at your Obsidian vault. It only reads it to count Markdown files --
-        nothing is modified during this scan.
-      </p>
+      <h1>{t('onboarding.welcome')}</h1>
+      <p className="subtitle">{t('onboarding.vaultIntro')}</p>
       {!scan && (
         <form onSubmit={handleScan}>
-          <label htmlFor="vault-path">Vault folder path</label>
+          <label htmlFor="vault-path">{t('onboarding.vaultPathLabel')}</label>
           <input
             id="vault-path"
             type="text"
@@ -59,22 +58,28 @@ export function VaultStep({ onDone }: VaultStepProps) {
             required
           />
           <button type="submit" disabled={busy || path.trim().length === 0}>
-            {busy ? 'Scanning…' : 'Scan vault'}
+            {busy ? t('onboarding.scanning') : t('onboarding.scanVault')}
           </button>
         </form>
       )}
       {scan && (
         <>
           <div className="message success">
-            Found {scan.markdown_file_count} Markdown file
-            {scan.markdown_file_count === 1 ? '' : 's'} in <code>{path}</code>.
-            {scan.errors.length > 0 && ` (${scan.errors.length} read error(s))`}
+            {t(
+              scan.markdown_file_count === 1
+                ? 'onboarding.foundMarkdownFile'
+                : 'onboarding.foundMarkdownFilePlural',
+            )}{' '}
+            {scan.markdown_file_count}{' '}
+            {t(scan.markdown_file_count === 1 ? 'onboarding.markdownFile' : 'onboarding.markdownFiles')}{' '}
+            in <code>{path}</code>.
+            {scan.errors.length > 0 && ` (${scan.errors.length} ${t('onboarding.readErrors')})`}
           </div>
           <button type="button" onClick={handleContinue} disabled={busy}>
-            Continue
+            {t('onboarding.continue')}
           </button>
           <button type="button" className="secondary" onClick={() => setScan(null)}>
-            Choose a different folder
+            {t('onboarding.chooseDifferentFolder')}
           </button>
         </>
       )}

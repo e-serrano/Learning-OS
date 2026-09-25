@@ -527,7 +527,7 @@ Configuration endpoints must never return API keys. The frontend must not persis
 `GET /settings`
 
 ```json
-{"language": "en", "supported_languages": {"en": "English", "es": "Spanish", "fr": "French", "de": "German", "pt": "Portuguese", "it": "Italian"}, "git_auto_commit": false, "git_available": true}
+{"language": "es", "supported_languages": {"en": "English", "es": "Spanish"}, "git_auto_commit": false, "git_available": true}
 ```
 
 `PATCH /settings/language`
@@ -536,7 +536,7 @@ Configuration endpoints must never return API keys. The frontend must not persis
 {"language": "es"}
 ```
 
-Rejects a code outside `supported_languages` with `VALIDATION_ERROR` (400). The stored value is a general app preference, not onboarding-gated — it can be changed at any time, before or after `/onboarding/complete`. Every AI request the app makes is steered by the configured language: `AIOrchestrator.generate` injects `constraints.language` into the common request envelope (docs/AI_CONTRACTS.md #2) for every role, which covers AI-generated Obsidian note content (the curator, docs/AI_CONTRACTS.md #9) as well as tutor/exercise/evaluator output.
+Rejects a code outside `supported_languages` with `VALIDATION_ERROR` (400). `supported_languages` is deliberately just `{en, es}` (docs/TASKS.md T147, user request: the app and AI responses restricted to English or Spanish, Spanish preferred/default) — the frontend's own translation dictionary only ever has `en`/`es` copy, so a third accepted code would silently fall back to English in the UI while still being accepted by the API. The stored value is a general app preference, not onboarding-gated — it can be changed at any time, before or after `/onboarding/complete`. Every AI request the app makes is steered by the configured language: `AIOrchestrator.generate` injects `constraints.language` into the common request envelope (docs/AI_CONTRACTS.md #2) for every role, which covers AI-generated Obsidian note content (the curator, docs/AI_CONTRACTS.md #9) as well as tutor/exercise/evaluator output.
 
 `PATCH /settings/git-auto-commit`
 

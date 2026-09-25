@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { LanguageProvider } from '../i18n/LanguageContext'
 import { ReadAloudButton } from './ReadAloudButton'
 
 class FakeUtterance {
@@ -17,7 +18,7 @@ describe('ReadAloudButton', () => {
   })
 
   it('renders nothing when the browser has no speechSynthesis support', () => {
-    const { container } = render(<ReadAloudButton text="hello" />)
+    const { container } = render(<ReadAloudButton text="hello" />, { wrapper: LanguageProvider })
 
     expect(container).toBeEmptyDOMElement()
   })
@@ -28,7 +29,9 @@ describe('ReadAloudButton', () => {
     vi.stubGlobal('speechSynthesis', { speak, cancel })
     vi.stubGlobal('SpeechSynthesisUtterance', FakeUtterance)
 
-    render(<ReadAloudButton text="A window function computes a value." />)
+    render(<ReadAloudButton text="A window function computes a value." />, {
+      wrapper: LanguageProvider,
+    })
     fireEvent.click(screen.getByRole('button', { name: 'Read aloud' }))
 
     expect(speak).toHaveBeenCalledTimes(1)
@@ -43,7 +46,7 @@ describe('ReadAloudButton', () => {
     vi.stubGlobal('speechSynthesis', { speak, cancel })
     vi.stubGlobal('SpeechSynthesisUtterance', FakeUtterance)
 
-    render(<ReadAloudButton text="hello" />)
+    render(<ReadAloudButton text="hello" />, { wrapper: LanguageProvider })
     fireEvent.click(screen.getByRole('button', { name: 'Read aloud' }))
     fireEvent.click(screen.getByRole('button', { name: 'Stop reading' }))
 
@@ -56,7 +59,7 @@ describe('ReadAloudButton', () => {
     vi.stubGlobal('speechSynthesis', { speak, cancel: vi.fn() })
     vi.stubGlobal('SpeechSynthesisUtterance', FakeUtterance)
 
-    render(<ReadAloudButton text="hello" />)
+    render(<ReadAloudButton text="hello" />, { wrapper: LanguageProvider })
     fireEvent.click(screen.getByRole('button', { name: 'Read aloud' }))
     const utterance = speak.mock.calls[0][0] as FakeUtterance
     act(() => utterance.onend?.())
@@ -68,7 +71,7 @@ describe('ReadAloudButton', () => {
     vi.stubGlobal('speechSynthesis', { speak: vi.fn(), cancel: vi.fn() })
     vi.stubGlobal('SpeechSynthesisUtterance', FakeUtterance)
 
-    render(<ReadAloudButton text="   " />)
+    render(<ReadAloudButton text="   " />, { wrapper: LanguageProvider })
 
     expect(screen.getByRole('button', { name: 'Read aloud' })).toBeDisabled()
   })

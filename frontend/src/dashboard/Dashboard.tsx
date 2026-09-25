@@ -9,6 +9,7 @@ import {
   getGoalProgress,
   listGoals,
 } from '../api/goals'
+import { useTranslation } from '../i18n/LanguageContext'
 import { MasteryBar } from '../shared/MasteryBar'
 import './dashboard.css'
 
@@ -25,6 +26,7 @@ const TARGET_LEVELS: TargetLevel[] = ['beginner', 'intermediate', 'advanced', 'p
  * also the only way to create a goal from the UI -- otherwise a fresh
  * install with zero goals would be a dead end with no path forward. */
 export function Dashboard() {
+  const { t } = useTranslation()
   const [goals, setGoals] = useState<GoalWithProgress[] | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
 
@@ -37,9 +39,9 @@ export function Dashboard() {
       setGoals(withProgress)
       setLoadError(null)
     } catch (err) {
-      setLoadError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+      setLoadError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     load()
@@ -55,7 +57,7 @@ export function Dashboard() {
   if (!goals) {
     return (
       <div className="dashboard">
-        <p>Loading…</p>
+        <p>{t('common.loading')}</p>
       </div>
     )
   }
@@ -64,7 +66,7 @@ export function Dashboard() {
 
   return (
     <div className="dashboard">
-      <h2>Dashboard</h2>
+      <h2>{t('dashboard.title')}</h2>
       <NextAction dueReviews={dueReviews} />
       {goals.length === 0 ? (
         <CreateGoalForm onCreated={load} />
@@ -83,20 +85,23 @@ export function Dashboard() {
 }
 
 function NextAction({ dueReviews }: { dueReviews: number }) {
+  const { t } = useTranslation()
   if (dueReviews === 0) {
-    return <div className="message success">You're all caught up -- no reviews due.</div>
+    return <div className="message success">{t('dashboard.allCaughtUp')}</div>
   }
   return (
     <div className="next-action">
       <p>
-        You have {dueReviews} review{dueReviews === 1 ? '' : 's'} due.
+        {t('dashboard.youHave')} {dueReviews}{' '}
+        {dueReviews === 1 ? t('dashboard.reviewsDue') : t('dashboard.reviewsDuePlural')}
       </p>
-      <Link to="/reviews">Review now</Link>
+      <Link to="/reviews">{t('dashboard.reviewNow')}</Link>
     </div>
   )
 }
 
 function GoalCard({ goal, progress }: GoalWithProgress) {
+  const { t } = useTranslation()
   return (
     <Link to={`/goals/${goal.id}`} className="goal-card">
       <div className="goal-card-header">
@@ -105,10 +110,20 @@ function GoalCard({ goal, progress }: GoalWithProgress) {
       </div>
       <MasteryBar mastery={progress.mastery} />
       <div className="goal-card-stats">
-        <span>{progress.concepts_total} concepts</span>
-        <span>{progress.mastered} mastered</span>
-        <span>{progress.weak} weak</span>
-        {progress.due_reviews > 0 && <span>{progress.due_reviews} due</span>}
+        <span>
+          {progress.concepts_total} {t('dashboard.concepts')}
+        </span>
+        <span>
+          {progress.mastered} {t('dashboard.mastered')}
+        </span>
+        <span>
+          {progress.weak} {t('dashboard.weak')}
+        </span>
+        {progress.due_reviews > 0 && (
+          <span>
+            {progress.due_reviews} {t('dashboard.due')}
+          </span>
+        )}
       </div>
     </Link>
   )
@@ -121,6 +136,7 @@ function CreateGoalForm({
   onCreated: () => void
   collapsedByDefault?: boolean
 }) {
+  const { t } = useTranslation()
   const [expanded, setExpanded] = useState(!collapsedByDefault)
   const [title, setTitle] = useState('')
   const [targetLevel, setTargetLevel] = useState<TargetLevel>('intermediate')
@@ -130,7 +146,7 @@ function CreateGoalForm({
   if (!expanded) {
     return (
       <button type="button" className="secondary" onClick={() => setExpanded(true)}>
-        + New goal
+        {t('dashboard.newGoal')}
       </button>
     )
   }
@@ -145,7 +161,7 @@ function CreateGoalForm({
       setExpanded(collapsedByDefault ? false : true)
       onCreated()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+      setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
     } finally {
       setBusy(false)
     }
@@ -153,17 +169,17 @@ function CreateGoalForm({
 
   return (
     <form className="create-goal-form" onSubmit={handleSubmit}>
-      <h3>New goal</h3>
-      <label htmlFor="goal-title">What do you want to learn?</label>
+      <h3>{t('dashboard.newGoalTitle')}</h3>
+      <label htmlFor="goal-title">{t('dashboard.whatToLearn')}</label>
       <input
         id="goal-title"
         type="text"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        placeholder="e.g. Advanced SQL for analytics"
+        placeholder={t('dashboard.goalPlaceholder')}
         required
       />
-      <label htmlFor="goal-level">Target level</label>
+      <label htmlFor="goal-level">{t('dashboard.targetLevel')}</label>
       <select
         id="goal-level"
         value={targetLevel}
@@ -176,7 +192,7 @@ function CreateGoalForm({
         ))}
       </select>
       <button type="submit" disabled={busy || title.trim().length === 0}>
-        {busy ? 'Creating…' : 'Create goal'}
+        {busy ? t('dashboard.creating') : t('dashboard.createGoal')}
       </button>
       {error && <div className="message error">{error}</div>}
     </form>

@@ -1,15 +1,25 @@
 import { type ChangeEvent, useEffect, useState } from 'react'
-import { ApiError, getSettings, updateGitAutoCommit, updateLanguage } from '../api/settings'
+import { ApiError, getSettings, updateGitAutoCommit } from '../api/settings'
+import { type Language, useTranslation } from '../i18n/LanguageContext'
 import { AIProviderSettings } from './AIProviderSettings'
 import './settings.css'
 
 type Phase = 'loading' | 'error' | 'ready'
+
+function isSupportedLanguage(value: string): value is Language {
+  return value === 'en' || value === 'es'
+}
 
 /** Settings page (user request, 2026-09-24): a single app-wide language
  * preference that steers both the UI's own copy and every AI-generated
  * response, including Obsidian note content the curator writes
  * (`AIOrchestrator.generate` injects `constraints.language` into every
  * AI call from the configured value -- see docs/AI_CONTRACTS.md #2).
+ * Narrowed to just English/Spanish and reads/writes through the shared
+ * `LanguageContext` (docs/TASKS.md T147) rather than its own local
+ * state -- otherwise this dropdown and the nav-bar flag toggle
+ * (`AppShell`) would each hold their own copy of "the current
+ * language" and drift out of sync with each other.
  *
  * Also carries the opt-in git auto-commit toggle (docs/TASKS.md T138):
  * once on, every vault write the app makes is committed to the vault's
@@ -21,9 +31,9 @@ type Phase = 'loading' | 'error' | 'ready'
  * `AIProviderSettings` -- separate data source (`GET /onboarding/status`,
  * not `GET /settings`), so it loads/errors independently. */
 export function SettingsView() {
+  const { language, setLanguage, t } = useTranslation()
   const [phase, setPhase] = useState<Phase>('loading')
   const [error, setError] = useState<string | null>(null)
-  const [language, setLanguage] = useState('en')
   const [languages, setLanguages] = useState<Record<string, string>>({})
   const [gitAutoCommit, setGitAutoCommit] = useState(false)
   const [gitAvailable, setGitAvailable] = useState(false)
@@ -33,30 +43,28 @@ export function SettingsView() {
   useEffect(() => {
     getSettings()
       .then((settings) => {
-        setLanguage(settings.language)
         setLanguages(settings.supported_languages)
         setGitAutoCommit(settings.git_auto_commit)
         setGitAvailable(settings.git_available)
         setPhase('ready')
       })
       .catch((err: unknown) => {
-        setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+        setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
         setPhase('error')
       })
-  }, [])
+  }, [t])
 
   async function handleLanguageChange(event: ChangeEvent<HTMLSelectElement>) {
     const next = event.target.value
-    setLanguage(next)
+    if (!isSupportedLanguage(next)) return
     setSaving(true)
     setSaved(false)
     setError(null)
     try {
-      const settings = await updateLanguage(next)
-      setLanguage(settings.language)
+      await setLanguage(next)
       setSaved(true)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+      setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
     } finally {
       setSaving(false)
     }
@@ -73,7 +81,7 @@ export function SettingsView() {
       setGitAutoCommit(settings.git_auto_commit)
       setSaved(true)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+      setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
     } finally {
       setSaving(false)
     }
@@ -82,7 +90,7 @@ export function SettingsView() {
   if (phase === 'loading') {
     return (
       <div className="settings-view">
-        <p>Loading…</p>
+        <p>{t('common.loading')}</p>
       </div>
     )
   }
@@ -97,12 +105,10 @@ export function SettingsView() {
 
   return (
     <div className="settings-view">
-      <h2>Settings</h2>
+      <h2>{t('settings.title')}</h2>
 
-      <label htmlFor="language">Language</label>
-      <p className="field-hint">
-        Applies to the app and to notes the AI writes into your Obsidian vault.
-      </p>
+      <label htmlFor="language">{t('settings.language')}</label>
+      <p className="field-hint">{t('settings.languageHint')}</p>
       <select id="language" value={language} onChange={handleLanguageChange} disabled={saving}>
         {Object.entries(languages).map(([code, name]) => (
           <option key={code} value={code}>
@@ -119,19 +125,19 @@ export function SettingsView() {
           onChange={handleGitAutoCommitChange}
           disabled={saving || !gitAvailable}
         />
-        Git auto-commit
+        {t('settings.gitAutoCommit')}
       </label>
       <p className="field-hint">
         {gitAvailable
-          ? 'Automatically commits each vault change the app applies, one commit per file.'
-          : 'Your configured vault is not a git repository, so this is unavailable.'}
+          ? t('settings.gitAutoCommitHintAvailable')
+          : t('settings.gitAutoCommitHintUnavailable')}
       </p>
 
-      {saving && <p className="field-hint">Saving…</p>}
-      {saved && !saving && <div className="message success">Saved.</div>}
+      {saving && <p className="field-hint">{t('settings.saving')}</p>}
+      {saved && !saving && <div className="message success">{t('settings.saved')}</div>}
       {error && <div className="message error">{error}</div>}
 
-      <h3>AI provider</h3>
+      <h3>{t('settings.aiProvider')}</h3>
       <AIProviderSettings />
     </div>
   )

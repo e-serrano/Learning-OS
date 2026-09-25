@@ -6,6 +6,7 @@ import {
   getStatus,
   validateAIProvider,
 } from '../../api/onboarding'
+import { useTranslation } from '../../i18n/LanguageContext'
 import { PROVIDER_OPTIONS } from '../providers'
 
 interface CredentialModelStepProps {
@@ -21,6 +22,7 @@ export function CredentialModelStep({
   onValidated,
   onBack,
 }: CredentialModelStepProps) {
+  const { t } = useTranslation()
   const provider = PROVIDER_OPTIONS.find((p) => p.id === providerId)
   const [model, setModel] = useState('')
   const [credential, setCredential] = useState('')
@@ -41,7 +43,7 @@ export function CredentialModelStep({
     } catch (err) {
       setResult({
         ok: false,
-        reason: err instanceof ApiError ? err.message : 'Could not reach the backend',
+        reason: err instanceof ApiError ? err.message : t('common.couldNotReachBackend'),
       })
     } finally {
       setCredential('') // never keep the secret around once it's no longer needed, pass or fail
@@ -51,24 +53,23 @@ export function CredentialModelStep({
 
   return (
     <div className="onboarding">
-      <h1>Connect {provider?.displayName ?? providerId}</h1>
-      <p className="subtitle">
-        The API key is sent once to store it in your OS keyring, then discarded -- it is never
-        saved in this browser or in Learning OS's database.
-      </p>
+      <h1>
+        {t('onboarding.connectProvider')} {provider?.displayName ?? providerId}
+      </h1>
+      <p className="subtitle">{t('onboarding.apiKeyIntro')}</p>
       <form onSubmit={handleSubmit}>
-        <label htmlFor="model">Model</label>
+        <label htmlFor="model">{t('onboarding.model')}</label>
         <input
           id="model"
           type="text"
           value={model}
           onChange={(e) => setModel(e.target.value)}
-          placeholder="e.g. gpt-5, claude-opus-5, llama3"
+          placeholder={t('onboarding.modelPlaceholder')}
           required
         />
         {provider?.requiresApiKey && (
           <>
-            <label htmlFor="credential">API key</label>
+            <label htmlFor="credential">{t('onboarding.apiKey')}</label>
             <input
               id="credential"
               type="password"
@@ -80,16 +81,18 @@ export function CredentialModelStep({
           </>
         )}
         <button type="submit" disabled={busy || model.trim().length === 0}>
-          {busy ? 'Testing…' : 'Test connection'}
+          {busy ? t('onboarding.testing') : t('onboarding.testConnection')}
         </button>
         <button type="button" className="secondary" onClick={onBack} disabled={busy}>
-          Back
+          {t('onboarding.back')}
         </button>
       </form>
       {result && !result.ok && (
-        <div className="message error">Connection failed: {result.reason}</div>
+        <div className="message error">
+          {t('onboarding.connectionFailed')} {result.reason}
+        </div>
       )}
-      {result?.ok && <div className="message success">Connected successfully.</div>}
+      {result?.ok && <div className="message success">{t('onboarding.connectedSuccessfully')}</div>}
     </div>
   )
 }

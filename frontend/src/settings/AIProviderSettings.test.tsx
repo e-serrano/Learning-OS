@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { LanguageProvider } from '../i18n/LanguageContext'
 import { AIProviderSettings } from './AIProviderSettings'
 
 function jsonResponse(body: unknown) {
@@ -50,7 +51,7 @@ describe('AIProviderSettings', () => {
   it('prefills the current provider and model', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(STATUS_WITH_ANTHROPIC)))
 
-    render(<AIProviderSettings />)
+    render(<AIProviderSettings />, { wrapper: LanguageProvider })
 
     expect(await screen.findByLabelText('AI provider')).toHaveValue('anthropic')
     expect(screen.getByLabelText('Model')).toHaveValue('claude-sonnet-5')
@@ -59,7 +60,7 @@ describe('AIProviderSettings', () => {
   it('shows the API key field only for a provider that requires one', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(STATUS_WITH_ANTHROPIC)))
 
-    render(<AIProviderSettings />)
+    render(<AIProviderSettings />, { wrapper: LanguageProvider })
     await screen.findByLabelText('AI provider')
 
     expect(screen.getByLabelText('API key')).toBeInTheDocument()
@@ -69,7 +70,7 @@ describe('AIProviderSettings', () => {
   it('shows the endpoint URL field for ollama, prefilled, and no API key field', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(STATUS_WITH_OLLAMA)))
 
-    render(<AIProviderSettings />)
+    render(<AIProviderSettings />, { wrapper: LanguageProvider })
     await screen.findByLabelText('AI provider')
 
     expect(screen.getByLabelText('Endpoint URL')).toHaveValue('http://localhost:11434')
@@ -96,7 +97,7 @@ describe('AIProviderSettings', () => {
       }),
     )
 
-    render(<AIProviderSettings />)
+    render(<AIProviderSettings />, { wrapper: LanguageProvider })
     await screen.findByLabelText('AI provider')
 
     fireEvent.change(screen.getByLabelText('API key'), { target: { value: 'sk-ant-new' } })
@@ -129,7 +130,7 @@ describe('AIProviderSettings', () => {
       }),
     )
 
-    render(<AIProviderSettings />)
+    render(<AIProviderSettings />, { wrapper: LanguageProvider })
     await screen.findByLabelText('AI provider')
 
     fireEvent.change(screen.getByLabelText('API key'), { target: { value: 'sk-ant-broke' } })
@@ -155,7 +156,7 @@ describe('AIProviderSettings', () => {
       }),
     )
 
-    render(<AIProviderSettings />)
+    render(<AIProviderSettings />, { wrapper: LanguageProvider })
     await screen.findByLabelText('AI provider')
 
     fireEvent.change(screen.getByLabelText('API key'), { target: { value: 'sk-ant-new' } })
@@ -174,7 +175,7 @@ describe('AIProviderSettings', () => {
       }),
     )
 
-    render(<AIProviderSettings />)
+    render(<AIProviderSettings />, { wrapper: LanguageProvider })
 
     expect(await screen.findByText('boom')).toBeInTheDocument()
   })

@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useParams } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { GoalView } from './GoalView'
+import { LanguageProvider } from '../i18n/LanguageContext'
 
 function FakeSessionPage() {
   const { sessionId } = useParams<{ sessionId: string }>()
@@ -49,6 +50,7 @@ function renderGoalView() {
         <Route path="/projects/:projectId" element={<FakeProjectPage />} />
       </Routes>
     </MemoryRouter>,
+    { wrapper: LanguageProvider },
   )
 }
 

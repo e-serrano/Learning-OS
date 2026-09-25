@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { LanguageProvider } from '../i18n/LanguageContext'
 import { VoiceInputButton } from './VoiceInputButton'
 
 class FakeSpeechRecognition {
@@ -42,7 +43,7 @@ describe('VoiceInputButton', () => {
   })
 
   it('renders nothing when the browser has no SpeechRecognition support', () => {
-    const { container } = render(<VoiceInputButton onTranscript={() => {}} />)
+    const { container } = render(<VoiceInputButton onTranscript={() => {}} />, { wrapper: LanguageProvider })
 
     expect(container).toBeEmptyDOMElement()
   })
@@ -51,7 +52,7 @@ describe('VoiceInputButton', () => {
     const holder = stubSpeechRecognition()
     const onTranscript = vi.fn()
 
-    render(<VoiceInputButton onTranscript={onTranscript} />)
+    render(<VoiceInputButton onTranscript={onTranscript} />, { wrapper: LanguageProvider })
     fireEvent.click(screen.getByRole('button', { name: 'Speak answer' }))
 
     expect(holder.instance).not.toBeNull()
@@ -66,7 +67,7 @@ describe('VoiceInputButton', () => {
   it('stops listening when the recognizer ends', () => {
     const holder = stubSpeechRecognition()
 
-    render(<VoiceInputButton onTranscript={() => {}} />)
+    render(<VoiceInputButton onTranscript={() => {}} />, { wrapper: LanguageProvider })
     fireEvent.click(screen.getByRole('button', { name: 'Speak answer' }))
     act(() => holder.instance!.onend?.())
 
@@ -76,7 +77,7 @@ describe('VoiceInputButton', () => {
   it('stops the recognizer when clicked again while listening', () => {
     const holder = stubSpeechRecognition()
 
-    render(<VoiceInputButton onTranscript={() => {}} />)
+    render(<VoiceInputButton onTranscript={() => {}} />, { wrapper: LanguageProvider })
     fireEvent.click(screen.getByRole('button', { name: 'Speak answer' }))
     fireEvent.click(screen.getByRole('button', { name: 'Stop listening' }))
 
@@ -86,7 +87,7 @@ describe('VoiceInputButton', () => {
   it('disables the button when disabled is passed', () => {
     stubSpeechRecognition()
 
-    render(<VoiceInputButton onTranscript={() => {}} disabled />)
+    render(<VoiceInputButton onTranscript={() => {}} disabled />, { wrapper: LanguageProvider })
 
     expect(screen.getByRole('button', { name: 'Speak answer' })).toBeDisabled()
   })

@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { LanguageProvider } from '../../i18n/LanguageContext'
 import { CredentialModelStep } from './CredentialModelStep'
 
 function jsonResponse(body: unknown) {
@@ -23,6 +24,7 @@ describe('CredentialModelStep', () => {
         onValidated={onValidated}
         onBack={vi.fn()}
       />,
+      { wrapper: LanguageProvider },
     )
   }
 

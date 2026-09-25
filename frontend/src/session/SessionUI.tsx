@@ -10,6 +10,7 @@ import {
   getSession,
   submitAnswer,
 } from '../api/sessions'
+import { useTranslation } from '../i18n/LanguageContext'
 import { ReadAloudButton } from '../shared/ReadAloudButton'
 import { SqlSandbox } from '../shared/SqlSandbox'
 import { VoiceInputButton } from '../shared/VoiceInputButton'
@@ -35,6 +36,7 @@ type Phase = 'loading' | 'error' | 'no-candidates' | 'answering' | 'chat' | 'res
  * detects `TUTORABLE_MODES` right after loading the session and renders
  * `TutorChat` instead, skipping the exercise flow entirely. */
 export function SessionUI() {
+  const { t } = useTranslation()
   const { sessionId } = useParams<{ sessionId: string }>()
   const [session, setSession] = useState<Session | null>(null)
   const [phase, setPhase] = useState<Phase>('loading')
@@ -72,7 +74,7 @@ export function SessionUI() {
         if (err instanceof ApiError && err.code === 'SESSION_STATE_ERROR') {
           setPhase('no-candidates')
         } else {
-          setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+          setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
           setPhase('error')
         }
       }
@@ -82,7 +84,7 @@ export function SessionUI() {
     return () => {
       cancelled = true
     }
-  }, [sessionId])
+  }, [sessionId, t])
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
@@ -94,7 +96,7 @@ export function SessionUI() {
       setResult(res)
       setPhase('result')
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+      setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
     } finally {
       setBusy(false)
     }
@@ -118,7 +120,7 @@ export function SessionUI() {
       setSession(await completeSession(sessionId))
       setPhase('complete')
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+      setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
     } finally {
       setBusy(false)
     }
@@ -127,7 +129,7 @@ export function SessionUI() {
   if (phase === 'loading') {
     return (
       <div className="session-ui">
-        <p>Loading…</p>
+        <p>{t('common.loading')}</p>
       </div>
     )
   }
@@ -143,11 +145,8 @@ export function SessionUI() {
   if (phase === 'no-candidates') {
     return (
       <div className="session-ui">
-        <h2>Nothing to work on yet</h2>
-        <p className="subtitle">
-          This goal has no activity candidates right now -- generate a roadmap and a diagnostic
-          first.
-        </p>
+        <h2>{t('session.nothingToWorkOn')}</h2>
+        <p className="subtitle">{t('session.noCandidates')}</p>
         {session && <BackToGoalLink goalId={session.goal_id} />}
       </div>
     )
@@ -156,7 +155,7 @@ export function SessionUI() {
   if (phase === 'complete') {
     return (
       <div className="session-ui">
-        <h2>Session complete</h2>
+        <h2>{t('session.complete')}</h2>
         {session && <BackToGoalLink goalId={session.goal_id} />}
       </div>
     )
@@ -166,7 +165,7 @@ export function SessionUI() {
     if (!session) {
       return (
         <div className="session-ui">
-          <p>Loading…</p>
+          <p>{t('common.loading')}</p>
         </div>
       )
     }
@@ -181,7 +180,7 @@ export function SessionUI() {
   if (!activity) {
     return (
       <div className="session-ui">
-        <p>Loading…</p>
+        <p>{t('common.loading')}</p>
       </div>
     )
   }
@@ -210,7 +209,7 @@ export function SessionUI() {
           {activity.content.hints.length > 0 && (
             <div className="hints">
               <button type="button" className="secondary" onClick={() => setShowHints((v) => !v)}>
-                {showHints ? 'Hide hints' : 'Show hints'}
+                {showHints ? t('session.hideHints') : t('session.showHints')}
               </button>
               {showHints && (
                 <ul>
@@ -225,7 +224,7 @@ export function SessionUI() {
           <SqlSandbox />
 
           <form onSubmit={handleSubmit}>
-            <label htmlFor="answer">Your answer</label>
+            <label htmlFor="answer">{t('session.yourAnswer')}</label>
             <textarea
               id="answer"
               value={answer}
@@ -239,7 +238,9 @@ export function SessionUI() {
                 setAnswer((prev) => (prev.trim().length > 0 ? `${prev} ${text}` : text))
               }
             />
-            <label htmlFor="confidence">Confidence: {confidence}%</label>
+            <label htmlFor="confidence">
+              {t('session.confidence')}: {confidence}%
+            </label>
             <input
               id="confidence"
               type="range"
@@ -250,10 +251,10 @@ export function SessionUI() {
             />
             <div className="session-actions">
               <button type="submit" disabled={busy || answer.trim().length === 0}>
-                {busy ? 'Submitting…' : 'Submit answer'}
+                {busy ? t('session.submitting') : t('session.submitAnswer')}
               </button>
               <button type="button" className="secondary" onClick={handleFinish} disabled={busy}>
-                End session
+                {t('session.endSession')}
               </button>
             </div>
           </form>
@@ -263,11 +264,14 @@ export function SessionUI() {
       {phase === 'result' && result && (
         <div className="result">
           <div className="evaluation-scores">
-            <Score label="Correctness" value={result.evaluation.correctness} />
-            <Score label="Reasoning" value={result.evaluation.reasoning} />
-            <Score label="Completeness" value={result.evaluation.completeness} />
-            <Score label="Independence" value={result.evaluation.independence} />
-            <Score label="Transfer" value={result.evaluation.transfer} />
+            <Score label={t('session.scoreCorrectness')} value={result.evaluation.correctness} />
+            <Score label={t('session.scoreReasoning')} value={result.evaluation.reasoning} />
+            <Score
+              label={t('session.scoreCompleteness')}
+              value={result.evaluation.completeness}
+            />
+            <Score label={t('session.scoreIndependence')} value={result.evaluation.independence} />
+            <Score label={t('session.scoreTransfer')} value={result.evaluation.transfer} />
           </div>
           <p className="feedback">{result.evaluation.feedback}</p>
           {result.evaluation.misconceptions.length > 0 && (
@@ -289,11 +293,11 @@ export function SessionUI() {
           <div className="session-actions">
             {result.next_activity ? (
               <button type="button" onClick={handleContinue}>
-                Continue
+                {t('session.continue')}
               </button>
             ) : (
               <button type="button" onClick={handleFinish} disabled={busy}>
-                {busy ? 'Finishing…' : 'Finish session'}
+                {busy ? t('session.finishing') : t('session.finishSession')}
               </button>
             )}
           </div>
@@ -304,9 +308,10 @@ export function SessionUI() {
 }
 
 function BackToGoalLink({ goalId }: { goalId: string }) {
+  const { t } = useTranslation()
   return (
     <Link to={`/goals/${goalId}`} className="back-link">
-      ← Goal
+      {t('common.backToGoal')}
     </Link>
   )
 }

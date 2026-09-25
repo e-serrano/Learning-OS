@@ -8,6 +8,7 @@ import {
   getRoadmap,
   recalculateRoadmap,
 } from '../api/roadmap'
+import { useTranslation } from '../i18n/LanguageContext'
 import { MasteryBar } from '../shared/MasteryBar'
 import './roadmap.css'
 
@@ -22,6 +23,7 @@ const MAX_MASTERY = 5
  * `PREREQUISITE_OF` edges) without the added complexity of a layout
  * engine for an MVP page. */
 export function RoadmapView() {
+  const { t } = useTranslation()
   const { goalId } = useParams<{ goalId: string }>()
   const [roadmap, setRoadmap] = useState<Roadmap | null>(null)
   const [notGenerated, setNotGenerated] = useState(false)
@@ -39,10 +41,10 @@ export function RoadmapView() {
         setNotGenerated(true)
         setError(null)
       } else {
-        setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+        setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
       }
     }
-  }, [goalId])
+  }, [goalId, t])
 
   useEffect(() => {
     load()
@@ -56,7 +58,7 @@ export function RoadmapView() {
       setRoadmap(await generateRoadmap(goalId))
       setNotGenerated(false)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+      setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
     } finally {
       setBusy(false)
     }
@@ -69,7 +71,7 @@ export function RoadmapView() {
     try {
       setRoadmap(await recalculateRoadmap(goalId))
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+      setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
     } finally {
       setBusy(false)
     }
@@ -88,10 +90,10 @@ export function RoadmapView() {
     return (
       <div className="roadmap-view">
         <BackLink goalId={goalId} />
-        <h2>Roadmap</h2>
-        <p className="subtitle">No roadmap has been generated for this goal yet.</p>
+        <h2>{t('roadmap.title')}</h2>
+        <p className="subtitle">{t('roadmap.notGenerated')}</p>
         <button type="button" onClick={handleGenerate} disabled={busy}>
-          {busy ? 'Generating…' : 'Generate roadmap'}
+          {busy ? t('roadmap.generating') : t('roadmap.generate')}
         </button>
       </div>
     )
@@ -100,7 +102,7 @@ export function RoadmapView() {
   if (!roadmap) {
     return (
       <div className="roadmap-view">
-        <p>Loading…</p>
+        <p>{t('common.loading')}</p>
       </div>
     )
   }
@@ -114,11 +116,11 @@ export function RoadmapView() {
     <div className="roadmap-view">
       <BackLink goalId={goalId} />
       <div className="roadmap-header">
-        <h2>Roadmap</h2>
+        <h2>{t('roadmap.title')}</h2>
         <span className="version-tag">v{roadmap.version}</span>
       </div>
       <button type="button" className="secondary" onClick={handleRecalculate} disabled={busy}>
-        {busy ? 'Recalculating…' : 'Recalculate'}
+        {busy ? t('roadmap.recalculating') : t('roadmap.recalculate')}
       </button>
       <div className="roadmap-nodes">
         {roadmap.nodes.map((node) => (
@@ -130,9 +132,10 @@ export function RoadmapView() {
 }
 
 function BackLink({ goalId }: { goalId: string | undefined }) {
+  const { t } = useTranslation()
   return (
     <Link to={goalId ? `/goals/${goalId}` : '/'} className="back-link">
-      ← Goal
+      {t('common.backToGoal')}
     </Link>
   )
 }
@@ -144,6 +147,7 @@ function RoadmapNodeCard({
   node: RoadmapNode
   prerequisites: string[]
 }) {
+  const { t } = useTranslation()
   return (
     <div className="roadmap-node">
       <div className="roadmap-node-header">
@@ -153,7 +157,12 @@ function RoadmapNodeCard({
       <MasteryBar mastery={node.mastery / MAX_MASTERY} />
       <div className="roadmap-node-meta">
         <span>{node.status}</span>
-        {prerequisites.length > 0 && <span>Requires: {prerequisites.join(', ')}</span>}
+        {prerequisites.length > 0 && (
+          <span>
+            {t('roadmap.requires')}
+            {prerequisites.join(', ')}
+          </span>
+        )}
       </div>
     </div>
   )

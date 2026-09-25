@@ -8,6 +8,7 @@ import {
   getAssessment,
 } from '../api/assessments'
 import { ApiError } from '../api/client'
+import { useTranslation } from '../i18n/LanguageContext'
 import './assessment.css'
 
 const DEFAULT_CONFIDENCE = 70
@@ -24,6 +25,7 @@ type Phase = 'loading' | 'error' | 'answering' | 'result' | 'complete'
  * `concept_id`, T089), and that's the only page that already lists
  * concepts individually to pick one from. */
 export function AssessmentUI() {
+  const { t } = useTranslation()
   const { assessmentId } = useParams<{ assessmentId: string }>()
   const [assessment, setAssessment] = useState<Assessment | null>(null)
   const [phase, setPhase] = useState<Phase>('loading')
@@ -42,10 +44,10 @@ export function AssessmentUI() {
         setPhase('answering')
       })
       .catch((err: unknown) => {
-        setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+        setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
         setPhase('error')
       })
-  }, [assessmentId])
+  }, [assessmentId, t])
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
@@ -57,7 +59,7 @@ export function AssessmentUI() {
       setResult(res)
       setPhase('result')
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+      setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
     } finally {
       setBusy(false)
     }
@@ -71,7 +73,7 @@ export function AssessmentUI() {
       await completeAssessment(assessmentId)
       setPhase('complete')
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not reach the backend')
+      setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
     } finally {
       setBusy(false)
     }
@@ -80,7 +82,7 @@ export function AssessmentUI() {
   if (phase === 'loading') {
     return (
       <div className="assessment-ui">
-        <p>Loading…</p>
+        <p>{t('common.loading')}</p>
       </div>
     )
   }
@@ -96,7 +98,7 @@ export function AssessmentUI() {
   if (phase === 'complete') {
     return (
       <div className="assessment-ui">
-        <h2>Assessment complete</h2>
+        <h2>{t('assessment.complete')}</h2>
         {assessment && <BackLink goalId={assessment.goal_id} />}
       </div>
     )
@@ -105,7 +107,7 @@ export function AssessmentUI() {
   if (!assessment) {
     return (
       <div className="assessment-ui">
-        <p>Loading…</p>
+        <p>{t('common.loading')}</p>
       </div>
     )
   }
@@ -117,7 +119,9 @@ export function AssessmentUI() {
 
       {phase === 'answering' && (
         <>
-          <p className="concept-label">Transfer assessment: {assessment.concept_id}</p>
+          <p className="concept-label">
+            {t('assessment.transferAssessment')} {assessment.concept_id}
+          </p>
           <p className="prompt">{assessment.exercise.prompt}</p>
 
           {assessment.exercise.success_criteria.length > 0 && (
@@ -131,7 +135,7 @@ export function AssessmentUI() {
           {assessment.exercise.hints.length > 0 && (
             <div className="hints">
               <button type="button" className="secondary" onClick={() => setShowHints((v) => !v)}>
-                {showHints ? 'Hide hints' : 'Show hints'}
+                {showHints ? t('assessment.hideHints') : t('assessment.showHints')}
               </button>
               {showHints && (
                 <ul>
@@ -144,7 +148,7 @@ export function AssessmentUI() {
           )}
 
           <form onSubmit={handleSubmit}>
-            <label htmlFor="answer">Your answer</label>
+            <label htmlFor="answer">{t('assessment.yourAnswer')}</label>
             <textarea
               id="answer"
               value={answer}
@@ -152,7 +156,9 @@ export function AssessmentUI() {
               rows={6}
               required
             />
-            <label htmlFor="confidence">Confidence: {confidence}%</label>
+            <label htmlFor="confidence">
+              {t('assessment.confidence')}: {confidence}%
+            </label>
             <input
               id="confidence"
               type="range"
@@ -162,7 +168,7 @@ export function AssessmentUI() {
               onChange={(e) => setConfidence(Number(e.target.value))}
             />
             <button type="submit" disabled={busy || answer.trim().length === 0}>
-              {busy ? 'Submitting…' : 'Submit answer'}
+              {busy ? t('assessment.submitting') : t('assessment.submitAnswer')}
             </button>
           </form>
         </>
@@ -172,17 +178,24 @@ export function AssessmentUI() {
         <div className="result">
           <div className="demonstrated-badges">
             <span className={result.transfer_demonstrated ? 'badge yes' : 'badge no'}>
-              Transfer {result.transfer_demonstrated ? 'demonstrated' : 'not demonstrated'}
+              {t('assessment.transfer')}{' '}
+              {result.transfer_demonstrated ? t('assessment.demonstrated') : t('assessment.notDemonstrated')}
             </span>
             <span className={result.independence_demonstrated ? 'badge yes' : 'badge no'}>
-              Independence {result.independence_demonstrated ? 'demonstrated' : 'not demonstrated'}
+              {t('assessment.independence')}{' '}
+              {result.independence_demonstrated
+                ? t('assessment.demonstrated')
+                : t('assessment.notDemonstrated')}
             </span>
           </div>
           <div className="evaluation-scores">
-            <Score label="Correctness" value={result.evaluation.correctness} />
-            <Score label="Reasoning" value={result.evaluation.reasoning} />
-            <Score label="Independence" value={result.evaluation.independence} />
-            <Score label="Transfer" value={result.evaluation.transfer} />
+            <Score label={t('assessment.scoreCorrectness')} value={result.evaluation.correctness} />
+            <Score label={t('assessment.scoreReasoning')} value={result.evaluation.reasoning} />
+            <Score
+              label={t('assessment.scoreIndependence')}
+              value={result.evaluation.independence}
+            />
+            <Score label={t('assessment.scoreTransfer')} value={result.evaluation.transfer} />
           </div>
           <p className="feedback">{result.evaluation.feedback}</p>
           {result.evaluation.misconceptions.length > 0 && (
@@ -193,7 +206,7 @@ export function AssessmentUI() {
             </ul>
           )}
           <button type="button" onClick={handleComplete} disabled={busy}>
-            {busy ? 'Finishing…' : 'Complete assessment'}
+            {busy ? t('assessment.finishing') : t('assessment.completeAssessment')}
           </button>
         </div>
       )}
@@ -202,9 +215,10 @@ export function AssessmentUI() {
 }
 
 function BackLink({ goalId }: { goalId: string }) {
+  const { t } = useTranslation()
   return (
     <Link to={`/goals/${goalId}`} className="back-link">
-      ← Goal
+      {t('common.backToGoal')}
     </Link>
   )
 }

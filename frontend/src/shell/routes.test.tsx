@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { LanguageProvider } from '../i18n/LanguageContext'
 import { AppRoutes } from './routes'
 
 function renderAt(path: string) {
@@ -8,6 +9,7 @@ function renderAt(path: string) {
     <MemoryRouter initialEntries={[path]}>
       <AppRoutes />
     </MemoryRouter>,
+    { wrapper: LanguageProvider },
   )
 }
 
