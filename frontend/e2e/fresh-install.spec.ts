@@ -35,7 +35,10 @@ test('fresh install reaches the dashboard and creates a first goal', async ({ pa
   await page.getByRole('button', { name: 'Continuar' }).click()
 
   await expect(page.getByRole('heading', { name: /Conectar con Mock/ })).toBeVisible()
-  await page.getByLabel('Modelo').fill('mock-1')
+  // exact: true -- "Modelo" is otherwise also a substring match of the
+  // "Modelo de fallback (opcional)" field every provider now has
+  // (docs/TASKS.md T148).
+  await page.getByLabel('Modelo', { exact: true }).fill('mock-1')
   await page.getByRole('button', { name: 'Probar conexión' }).click()
 
   await expect(page.getByRole('heading', { name: 'Todo preparado' })).toBeVisible()
