@@ -20,27 +20,31 @@ const VAULT_PATH = path.resolve(__dirname, 'fixtures/vault')
 test('fresh install reaches the dashboard and creates a first goal', async ({ page }) => {
   await page.goto('/')
 
-  await expect(page.getByRole('heading', { name: 'Welcome to Learning OS' })).toBeVisible()
-  await page.getByLabel('Vault folder path').fill(VAULT_PATH)
-  await page.getByRole('button', { name: 'Scan vault' }).click()
-  await expect(page.getByText(/Found \d+ Markdown file/)).toBeVisible()
-  await page.getByRole('button', { name: 'Continue' }).click()
+  // A fresh install has no stored AppConfig.language yet, so it defaults
+  // to Spanish (docs/TASKS.md T147, user request: Spanish preferred) --
+  // every onboarding/dashboard string below asserts the Spanish copy,
+  // not the English one this scenario used before that default changed.
+  await expect(page.getByRole('heading', { name: 'Bienvenido a Learning OS' })).toBeVisible()
+  await page.getByLabel('Ruta de la carpeta del vault').fill(VAULT_PATH)
+  await page.getByRole('button', { name: 'Escanear vault' }).click()
+  await expect(page.getByText(/archivos? Markdown/)).toBeVisible()
+  await page.getByRole('button', { name: 'Continuar' }).click()
 
-  await expect(page.getByRole('heading', { name: 'Choose an AI provider' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Elige un proveedor de IA' })).toBeVisible()
   await page.getByRole('button', { name: /Mock \(offline, deterministic\)/ }).click()
-  await page.getByRole('button', { name: 'Continue' }).click()
+  await page.getByRole('button', { name: 'Continuar' }).click()
 
-  await expect(page.getByRole('heading', { name: /Connect Mock/ })).toBeVisible()
-  await page.getByLabel('Model').fill('mock-1')
-  await page.getByRole('button', { name: 'Test connection' }).click()
+  await expect(page.getByRole('heading', { name: /Conectar con Mock/ })).toBeVisible()
+  await page.getByLabel('Modelo').fill('mock-1')
+  await page.getByRole('button', { name: 'Probar conexión' }).click()
 
-  await expect(page.getByRole('heading', { name: 'Ready to go' })).toBeVisible()
-  await page.getByRole('button', { name: 'Finish setup' }).click()
+  await expect(page.getByRole('heading', { name: 'Todo preparado' })).toBeVisible()
+  await page.getByRole('button', { name: 'Finalizar configuración' }).click()
 
-  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Panel' })).toBeVisible()
 
-  await page.getByLabel('What do you want to learn?').fill('Learn advanced SQL')
-  await page.getByRole('button', { name: 'Create goal' }).click()
+  await page.getByLabel('¿Qué quieres aprender?').fill('Learn advanced SQL')
+  await page.getByRole('button', { name: 'Crear objetivo' }).click()
 
   await expect(page.getByText('Learn advanced SQL')).toBeVisible()
   await expect(page.getByText('draft')).toBeVisible()

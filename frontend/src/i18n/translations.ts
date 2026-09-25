@@ -278,6 +278,7 @@ export const translations: Record<string, Record<Language, string>> = {
   'onboarding.foundMarkdownFilePlural': { en: 'Found', es: 'Se encontraron' },
   'onboarding.markdownFile': { en: 'Markdown file', es: 'archivo Markdown' },
   'onboarding.markdownFiles': { en: 'Markdown files', es: 'archivos Markdown' },
+  'onboarding.in': { en: 'in', es: 'en' },
   'onboarding.readErrors': { en: 'read error(s)', es: 'error(es) de lectura' },
   'onboarding.continue': { en: 'Continue', es: 'Continuar' },
   'onboarding.chooseDifferentFolder': {

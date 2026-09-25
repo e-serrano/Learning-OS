@@ -72,7 +72,7 @@ export function VaultStep({ onDone }: VaultStepProps) {
             )}{' '}
             {scan.markdown_file_count}{' '}
             {t(scan.markdown_file_count === 1 ? 'onboarding.markdownFile' : 'onboarding.markdownFiles')}{' '}
-            in <code>{path}</code>.
+            {t('onboarding.in')} <code>{path}</code>.
             {scan.errors.length > 0 && ` (${scan.errors.length} ${t('onboarding.readErrors')})`}
           </div>
           <button type="button" onClick={handleContinue} disabled={busy}>
