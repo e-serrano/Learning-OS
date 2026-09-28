@@ -3,9 +3,13 @@ self-relations, cycles) and persists it as Concepts, ConceptRelations,
 and a versioned Roadmap marker (docs/TASKS.md T068).
 
 Input is the planner's `roadmap_nodes`/`roadmap_edges` (T067,
-docs/AI_CONTRACTS.md #4) -- untyped dicts in the AI contract because
-AI_CONTRACTS.md never pins their shape beyond an empty example. This
-service defines and enforces that shape via `RoadmapNode`/`RoadmapEdge`.
+docs/AI_CONTRACTS.md #4) -- untyped dicts in the AI contract, since the
+schema itself doesn't pin their shape beyond a documented example
+(`planner.v2`'s prompt does describe it, docs/TASKS.md T150). This
+service defines and enforces that shape via `RoadmapNode`/`RoadmapEdge`,
+including a deterministic domain fallback (T150) when a node's proposed
+`domain` and the goal's own are both missing -- a merely-cosmetic gap
+should never hard-fail an otherwise-valid roadmap.
 
 The graph itself is not duplicated into the `roadmaps` table --
 "nodes reference concepts and skills, edges contain a relationship
@@ -18,6 +22,7 @@ point: a malformed or cyclic graph is rejected before a single row is
 written.
 """
 
+import re
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -64,7 +69,24 @@ class RoadmapGraph:
     edges: list[ConceptRelation]
 
 
+def _domain_from_title(title: str) -> str:
+    """Deterministic, always-non-empty last resort (docs/TASKS.md T150)
+    when neither a roadmap node nor the goal itself carries a domain."""
+    slug = re.sub(r"[^a-z0-9]+", "_", title.lower()).strip("_")
+    return slug or "general"
+
+
 def _validate(nodes: list[RoadmapNode], edges: list[RoadmapEdge]) -> None:
+    if not nodes:
+        # A degraded/rate-limited AI response can come back with a
+        # structurally valid but empty `roadmap_nodes: []` -- accepting
+        # that as a "successful" roadmap left goals with an active
+        # Roadmap row but zero linked concepts, so every later session
+        # failed opaquely with "no activity candidates" instead of the
+        # real cause. Rejected here, before any row is written, so the
+        # user gets a clear error and can just retry generation.
+        raise RoadmapValidationError("the AI proposed no concepts for this roadmap")
+
     node_ids = [n.id for n in nodes]
     if len(set(node_ids)) != len(node_ids):
         raise RoadmapValidationError("duplicate node ids in roadmap")
@@ -128,8 +150,14 @@ class RoadmapService:
         _validate(nodes, edges)
 
         now = self._clock.now()
+        # The AI contract doesn't yet guarantee every node carries a
+        # domain (docs/TASKS.md T150), and not every goal has one set
+        # either (the create-goal form never asks for one) -- deriving
+        # one from the goal's own title keeps a merely-cosmetic gap from
+        # hard-failing the whole roadmap.
+        fallback_domain = goal.domain or _domain_from_title(goal.title)
         for node in nodes:
-            self._upsert_concept(node, goal_domain=goal.domain, now=now)
+            self._upsert_concept(node, goal_domain=fallback_domain, now=now)
             self._concepts.link_to_goal(goal_id, node.id, importance=node.importance)
         for edge in edges:
             self._add_edge_if_new(edge)
@@ -167,12 +195,8 @@ class RoadmapService:
 
         return RoadmapGraph(roadmap=roadmap, nodes=nodes, edges=edges)
 
-    def _upsert_concept(self, node: RoadmapNode, goal_domain: str | None, now: datetime) -> None:
+    def _upsert_concept(self, node: RoadmapNode, goal_domain: str, now: datetime) -> None:
         domain = node.domain or goal_domain
-        if domain is None:
-            raise RoadmapValidationError(
-                f"node {node.id!r} has no domain and the goal has none to fall back to"
-            )
 
         existing = self._concepts.get(node.id)
         if existing is None:

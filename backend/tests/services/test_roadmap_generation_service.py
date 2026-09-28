@@ -145,6 +145,25 @@ async def test_generate_roadmap_raises_on_node_missing_id(tmp_path: Path) -> Non
 
 
 @pytest.mark.asyncio
+async def test_generate_roadmap_raises_when_the_ai_proposes_no_nodes(tmp_path: Path) -> None:
+    """The bug this guards against: a degraded/rate-limited AI response
+    can come back with a structurally valid but empty `roadmap_nodes: []`
+    -- that used to succeed with an active Roadmap row and zero linked
+    concepts, so the goal's very next session failed opaquely with "no
+    activity candidates" instead of a clear, immediate error here."""
+    engine = _engine(tmp_path)
+    _seed_goal(engine)
+    provider = MockProvider()
+    provider.set_response(PlannerResponse, _planner_response(roadmap_nodes=[], roadmap_edges=[]))
+
+    with pytest.raises(RoadmapValidationError, match="no concepts"):
+        await _service(engine, provider).generate_roadmap("goal_1")
+
+    assert SqlConceptRepository(engine).list_by_goal("goal_1") == []
+    assert SqlRoadmapRepository(engine).get_active_for_goal("goal_1") is None
+
+
+@pytest.mark.asyncio
 async def test_generate_roadmap_raises_on_edge_missing_source(tmp_path: Path) -> None:
     engine = _engine(tmp_path)
     _seed_goal(engine)

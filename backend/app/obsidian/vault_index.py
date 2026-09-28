@@ -1,6 +1,6 @@
 import json
 import re
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Any
 
 from pydantic import BaseModel
@@ -42,6 +42,18 @@ class VaultIndexEntry(BaseModel):
     metadata: dict[str, Any]
     indexed_at: str
     missing: bool
+
+
+def _json_default(value: object) -> str:
+    """YAML frontmatter like `created: 2026-01-01` parses to a native
+    `date`/`datetime`, not a string -- plain `json.dumps` can't serialize
+    those and crashed the whole scan on any note with a bare-date field
+    (a common, valid Obsidian pattern). Falls back to `str()` for any
+    other type PyYAML might hand back (e.g. `Decimal`) rather than
+    crashing on those too."""
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    return str(value)
 
 
 def _managed_id(frontmatter: dict[str, Any]) -> str | None:
@@ -86,7 +98,7 @@ class VaultIndexer:
                 content_hash = hash_content(content)
                 modified_at = datetime.fromtimestamp(absolute.stat().st_mtime, tz=UTC).isoformat()
                 managed_id = _managed_id(parsed.frontmatter)
-                metadata_json = json.dumps(parsed.frontmatter)
+                metadata_json = json.dumps(parsed.frontmatter, default=_json_default)
 
                 seen_paths.add(scanned.path)
                 row = db.get(VaultFileModel, scanned.path)

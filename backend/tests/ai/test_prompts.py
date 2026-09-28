@@ -6,6 +6,7 @@ from app.ai.protocol import AIRequest
 
 EXPECTED_VERSIONS = {
     "planner.v1",
+    "planner.v2",
     "diagnostician.v1",
     "tutor.v1",
     "exercise_generator.v1",
@@ -14,7 +15,7 @@ EXPECTED_VERSIONS = {
 }
 
 
-def test_registry_has_exactly_the_six_required_versions() -> None:
+def test_registry_has_exactly_the_seven_required_versions() -> None:
     assert set(PROMPT_REGISTRY.keys()) == EXPECTED_VERSIONS
 
 
@@ -63,6 +64,17 @@ def test_curator_prompt_restricts_to_the_four_allowed_operations() -> None:
 def test_tutor_prompt_never_reveals_solutions_by_default() -> None:
     template = get_prompt("tutor.v1")
     assert "solution" in template.instructions.lower()
+
+
+def test_planner_v2_tells_the_model_roadmap_nodes_need_a_domain() -> None:
+    """docs/TASKS.md T150: planner.v1 never mentioned roadmap_nodes/edges
+    at all, so the AI had zero structural guidance for a required field
+    (Concept.domain) -- a real "no domain" failure this caused in
+    practice. v2 spells out the expected shape explicitly."""
+    template = get_prompt("planner.v2")
+    assert "domain" in template.instructions.lower()
+    assert "roadmap_nodes" in template.instructions
+    assert "roadmap_edges" in template.instructions
 
 
 def test_system_prompt_adds_no_language_directive_when_unset() -> None:

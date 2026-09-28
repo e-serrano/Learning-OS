@@ -66,6 +66,25 @@ def test_reindex_extracts_managed_id_from_frontmatter(tmp_path: Path) -> None:
     assert entries[0].metadata["type"] == "concept"
 
 
+def test_reindex_handles_a_native_yaml_date_in_frontmatter(tmp_path: Path) -> None:
+    """`created: 2026-01-01` (no quotes) is a common, valid Obsidian
+    pattern -- YAML parses that into a native `date`, not a string, which
+    plain `json.dumps` can't serialize and used to crash the whole scan
+    on the first note that had one."""
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    (vault / "note.md").write_text("---\ncreated: 2026-01-01\n---\nBody\n")
+    indexer, engine = _make_indexer(tmp_path, vault)
+
+    entries = indexer.reindex()
+
+    assert entries[0].metadata["created"].isoformat() == "2026-01-01"
+    with DbSession(engine) as db:
+        row = db.get(VaultFileModel, "note.md")
+        assert row is not None
+        assert '"created": "2026-01-01"' in row.metadata_json
+
+
 def test_reindex_ignores_id_without_managed_by_marker(tmp_path: Path) -> None:
     vault = tmp_path / "vault"
     vault.mkdir()

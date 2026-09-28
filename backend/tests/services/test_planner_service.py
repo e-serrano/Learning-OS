@@ -175,7 +175,7 @@ async def test_plan_sends_goal_and_available_time_in_the_request(tmp_path: Path)
 
     sent = captured[0]
     assert sent.role == "planner"
-    assert sent.prompt_version == "planner.v1"
+    assert sent.prompt_version == "planner.v2"
     assert sent.goal["id"] == "goal_1"
     assert sent.goal["target_level"] == "professional"
     assert sent.task["available_minutes_per_week"] == 180

@@ -160,6 +160,41 @@ def test_recalculate_roadmap_supersedes_the_previous_version(client: TestClient,
     assert response.json()["version"] == 2
 
 
+def test_generate_roadmap_maps_an_empty_ai_response_to_422(tmp_path: Path) -> None:
+    """The bug this guards against: a degraded/rate-limited AI response
+    can come back with a structurally valid but empty `roadmap_nodes: []`
+    -- that used to return 200 with an active-but-conceptless roadmap
+    instead of a clear error here."""
+    engine = create_sqlite_engine(str(tmp_path / "test3.sqlite3"))
+    Base.metadata.create_all(engine)
+    _seed_goal(engine)
+
+    provider = MockProvider()
+    provider.set_response(PlannerResponse, _planner_response(roadmap_nodes=[], roadmap_edges=[]))
+    orchestrator = AIOrchestrator(engine, provider, provider_name="mock", model="mock-1")
+    planner = PlannerService(SqlGoalRepository(engine), SqlConceptRepository(engine), orchestrator)
+    roadmap_service = _roadmap_service(engine)
+    generation_service = RoadmapGenerationService(planner, roadmap_service)
+
+    app.dependency_overrides[get_roadmap_service] = lambda: roadmap_service
+    app.dependency_overrides[get_roadmap_generation_service] = lambda: generation_service
+    test_client = TestClient(app)
+    try:
+        response = test_client.post("/api/v1/goals/goal_1/roadmap/generate")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 422
+    assert response.json()["detail"]["error"]["code"] == "AI_INVALID_OUTPUT"
+
+    follow_up = TestClient(app)
+    app.dependency_overrides[get_roadmap_service] = lambda: roadmap_service
+    try:
+        assert follow_up.get("/api/v1/goals/goal_1/roadmap").status_code == 404
+    finally:
+        app.dependency_overrides.clear()
+
+
 def test_generate_roadmap_maps_provider_unavailable(tmp_path: Path) -> None:
     engine = create_sqlite_engine(str(tmp_path / "test2.sqlite3"))
     Base.metadata.create_all(engine)

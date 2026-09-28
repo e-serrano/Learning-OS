@@ -111,6 +111,23 @@ def test_build_roadmap_raises_when_goal_not_found_without_writing_anything(tmp_p
     assert SqlConceptRepository(engine).get("x") is None
 
 
+def test_build_roadmap_rejects_an_empty_node_list_without_writing_anything(
+    tmp_path: Path,
+) -> None:
+    """A degraded/rate-limited AI response can come back with a
+    structurally valid but empty `roadmap_nodes: []` -- accepting that
+    used to leave an active Roadmap row with zero linked concepts, so
+    sessions failed later with an opaque "no activity candidates" error
+    instead of surfacing the real problem here, immediately."""
+    engine = _engine(tmp_path)
+    _seed_goal(engine)
+
+    with pytest.raises(RoadmapValidationError, match="no concepts"):
+        _service(engine).build_roadmap("goal_1", [], [])
+
+    assert SqlRoadmapRepository(engine).get_active_for_goal("goal_1") is None
+
+
 def test_build_roadmap_rejects_duplicate_node_ids(tmp_path: Path) -> None:
     engine = _engine(tmp_path)
     _seed_goal(engine)
@@ -204,12 +221,33 @@ def test_node_domain_falls_back_to_goal_domain(tmp_path: Path) -> None:
     assert concept.domain == "sql"
 
 
-def test_node_without_domain_and_goal_without_domain_raises(tmp_path: Path) -> None:
+def test_node_without_domain_and_goal_without_domain_falls_back_to_the_goal_title(
+    tmp_path: Path,
+) -> None:
+    """docs/TASKS.md T150: a missing domain used to hard-fail the whole
+    roadmap even when everything else about it was valid -- domain is
+    cosmetic (grouping/filtering), not worth losing real work over."""
     engine = _engine(tmp_path)
-    _seed_goal(engine, domain=None)
+    _seed_goal(engine, domain=None, title="Learn SQL")
 
-    with pytest.raises(RoadmapValidationError, match="domain"):
-        _service(engine).build_roadmap("goal_1", [RoadmapNode(id="a", title="A")], [])
+    _service(engine).build_roadmap("goal_1", [RoadmapNode(id="a", title="A")], [])
+
+    concept = SqlConceptRepository(engine).get("a")
+    assert concept is not None
+    assert concept.domain == "learn_sql"
+
+
+def test_node_without_domain_and_goal_with_a_blank_title_falls_back_to_general(
+    tmp_path: Path,
+) -> None:
+    engine = _engine(tmp_path)
+    _seed_goal(engine, domain=None, title="!!!")
+
+    _service(engine).build_roadmap("goal_1", [RoadmapNode(id="a", title="A")], [])
+
+    concept = SqlConceptRepository(engine).get("a")
+    assert concept is not None
+    assert concept.domain == "general"
 
 
 def test_rebuilding_roadmap_supersedes_the_previous_version(tmp_path: Path) -> None:

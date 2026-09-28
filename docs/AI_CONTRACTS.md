@@ -88,13 +88,30 @@ Output:
     }
   ],
   "deferred_topics": [],
-  "roadmap_nodes": [],
-  "roadmap_edges": [],
+  "roadmap_nodes": [
+    {"id": "select_basics", "title": "SELECT basics", "domain": "sql", "importance": 4}
+  ],
+  "roadmap_edges": [
+    {"source": "select_basics", "target": "window_functions", "relation": "prerequisite_of"}
+  ],
   "diagnostic_focus": []
 }
 ```
 
 The planner must distinguish high-leverage fundamentals from advanced optional knowledge.
+
+`roadmap_nodes`/`roadmap_edges` stay untyped `list[dict]` in the schema (no
+nested Pydantic model pins their keys), so `planner.v2`'s prompt (docs/TASKS.md
+T150) is the only place that tells the model their expected shape --
+`id`/`title`/`domain` per node (`importance` optional, default 3),
+`source`/`target` per edge (`relation` optional, default
+`prerequisite_of`). `RoadmapService` (docs/DATABASE_SCHEMA.md, T068)
+still enforces this at the decision point regardless of what the prompt
+achieves: an empty `roadmap_nodes` is rejected outright (a degraded
+response is not a valid plan), and a node/goal both missing `domain`
+falls back to a slug derived from the goal's own title rather than
+hard-failing over a field that only affects grouping/filtering, never
+mastery or evidence.
 
 ---
 
