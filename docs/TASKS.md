@@ -1308,6 +1308,15 @@ Petición directa del usuario (2026-09-28): "actúa como un beta tester que util
 
 18 tests nuevos backend (`test_transfer_assessment_service.py`: reintenta una vez y se recupera, falla limpio tras repetirse dos veces sin persistir nada -- 2) + 1029/1029 suite backend completa, ruff/mypy limpios. 10 tests nuevos frontend (`useSlowOperationHint.test.ts`: arranca en `false`, no se activa si `active` es `false`, se activa tras el delay, se resetea -- 4; `LanguageToggle.test.tsx` reescrito para comprobar el SVG por color de `fill` en vez de contenido de texto emoji -- 0 nuevos, 2 modificados) + suite frontend completa, `tsc -b` y `oxlint` limpios.
 
+### T152 — nginx mataba las peticiones de IA lentas antes de que el backend respondiera (504)
+**Estado:** DONE
+**Dep:** T143 (nginx reverse proxy), T151 (diagnóstico de la espera de ~2 minutos)  
+Usuario, en producción real (2026-09-28): "al iniciar evaluación de transferencia obtengo un error de gateway-timeout". Consecuencia directa, no detectada en T151: `frontend/nginx.conf` nunca fijó `proxy_read_timeout` en el `location /api/`, así que usaba el default de nginx -- 60s -- pero T151 ya había establecido que la cadena real de `RetryingProvider` (primario hasta 60s + fallback hasta otros 60s) puede tardar legítimamente hasta ~120s. nginx cortaba la conexión al backend a los 60s y devolvía 504 al navegador, aunque el backend habría terminado (con éxito o con un error limpio) unos segundos más tarde. El hint de "esto puede tardar" añadido en T151 lo hacía peor en la práctica -- el usuario ahora esperaba pacientemente sabiendo que podía tardar, y aun así lo cortaban a los 60s con un error genérico feo.
+
+**Nota:** arreglado con `proxy_read_timeout 180s;` en el bloque `location /api/` -- margen por encima del peor caso real (~120s), no ajustado al límite. Verificado en vivo tras reconstruir Docker: mismo flujo que reportó el usuario (evaluación de transferencia) ya NO produce 504 -- la petición ahora completa y el backend responde de verdad (esta vez con un `AIInvalidOutputError` real y distinto -- el modelo de OpenRouter devolvió `type: "transfer"` -- no es un valor válido de `ExerciseType` --, `difficulty: "intermediate"` -- string en vez de entero -- y `transfer_variant` como un dict anidado en vez de string; los tres ya rechazados correctamente por la validación de Pydantic existente tras el reintento automático de `RetryingProvider`. Fallo distinto, no relacionado con nginx -- señalado al usuario como hallazgo aparte, no arreglado en esta tarea).
+
+Sin test nuevo -- es una línea de configuración de infraestructura (`nginx.conf`), no código de aplicación; ningún test de este repo levanta nginx real. Verificación fue en vivo contra el despliegue Docker reconstruido, la misma que detectó el problema original.
+
 ---
 
 # Vertical slice mínimo recomendado
