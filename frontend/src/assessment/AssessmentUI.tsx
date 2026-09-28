@@ -9,6 +9,7 @@ import {
 } from '../api/assessments'
 import { ApiError } from '../api/client'
 import { useTranslation } from '../i18n/LanguageContext'
+import { useSlowOperationHint } from '../shared/useSlowOperationHint'
 import './assessment.css'
 
 const DEFAULT_CONFIDENCE = 70
@@ -35,6 +36,7 @@ export function AssessmentUI() {
   const [showHints, setShowHints] = useState(false)
   const [result, setResult] = useState<AssessmentAnswerResult | null>(null)
   const [busy, setBusy] = useState(false)
+  const showSlowHint = useSlowOperationHint(busy)
 
   useEffect(() => {
     if (!assessmentId) return
@@ -170,6 +172,7 @@ export function AssessmentUI() {
             <button type="submit" disabled={busy || answer.trim().length === 0}>
               {busy ? t('assessment.submitting') : t('assessment.submitAnswer')}
             </button>
+            {showSlowHint && <p className="field-hint">{t('common.slowAiHint')}</p>}
           </form>
         </>
       )}

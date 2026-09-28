@@ -1328,6 +1328,16 @@ Arreglado en el sitio correcto: `AIInvalidOutputError` (`app/ai/errors.py`) ahor
 
 4 tests nuevos (`test_errors.py`, nuevo: `str()` conserva el detalle completo, `user_message` por defecto es genérico y no menciona el detalle técnico, `user_message` puede sobreescribirse -- 3; `test_assessments.py`: extremo a extremo con un provider que lanza `AIInvalidOutputError` con un volcado de Pydantic simulado, confirma que ni "validation error" ni "ExerciseGeneratorResponse" ni "pydantic" aparecen en la respuesta HTTP -- 1) + 1033/1033 suite backend completa, ruff/mypy limpios. Sin cambios de frontend -- ya mostraba `err.message` tal cual, ahora ese mensaje simplemente es limpio de origen.
 
+### T154 — `AssessmentUI` no tenía el hint de "esto puede tardar" (T151) en el envío de respuesta
+
+**Estado:** DONE
+**Dep:** T151 (`useSlowOperationHint`, ya usado en `SessionUI`/`KnowledgeExplorer`/`RoadmapView`)
+Usuario, en producción real (2026-09-28): "cuando envio una respuesta en una evaluacion de transferencia, no obtengo solución ni se ejecuta ninguna accion". Reproducido en vivo contra el despliegue Docker real: el envío SÍ llegaba al backend y SÍ completaba -- `ai_runs` registró una llamada al `evaluator` de 90502ms (`success=1`) para una de las repro -- pero `AssessmentUI.tsx::handleSubmit` solo cambiaba el texto del botón a "Enviando…", sin ningún indicio de que una respuesta tardía es normal. T151 ya había identificado exactamente este problema (ISSUE-005, ~2 minutos sin feedback) y añadió `useSlowOperationHint` a Session/Roadmap/Knowledge, pero se le olvidó el propio flujo de envío de evaluación de transferencia -- precisamente la llamada de IA más lenta observada (el `evaluator`), porque genera el feedback completo de corrección/razonamiento/independencia/transferencia en una sola respuesta.
+
+**Nota:** mismo patrón ya usado en T151 -- `useSlowOperationHint(busy)` + `{showSlowHint && <p className="field-hint">{t('common.slowAiHint')}</p>}` bajo el botón "Enviar respuesta". No se añadió al botón "Completar evaluación" (`handleComplete`) porque esa llamada no invoca IA -- solo marca la sesión completada, es rápida por construcción.
+
+Sin test nuevo específico para el hint -- mismo patrón ya cubierto por `useSlowOperationHint.test.ts` (T151); `AssessmentUI.test.tsx` (3/3) y la suite frontend completa (114/114) siguen pasando. `tsc -b` y `oxlint` limpios (ninguna advertencia nueva). Verificado en vivo tras reconstruir Docker: una evaluación real disparó el hint a los 8s y resolvió correctamente a la fase de resultado (100% en las 4 métricas) tras 24s de llamada real al `evaluator`.
+
 ---
 
 # Vertical slice mínimo recomendado
