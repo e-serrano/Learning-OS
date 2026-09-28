@@ -117,4 +117,66 @@ describe('AppRoutes', () => {
     expect(screen.getByRole('link', { name: 'Dashboard' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Vault Changes' })).toBeInTheDocument()
   })
+
+  it('does not show a pending-changes badge on the Vault nav link when there are none', async () => {
+    renderAt('/')
+
+    await screen.findByRole('heading', { name: 'Dashboard' })
+
+    expect(screen.getByRole('link', { name: 'Vault' })).toBeInTheDocument()
+    expect(screen.queryByLabelText(/pending change/)).not.toBeInTheDocument()
+  })
+
+  it('shows a pending-changes badge on the Vault nav link when the vault has pending proposals', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((input: RequestInfo | URL) => {
+        const url = String(input)
+        if (url.match(/\/vault\/changes$/)) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              changes: [
+                {
+                  id: 'change_1',
+                  path: 'Concepts/Window Functions.md',
+                  operation: 'create_file',
+                  section: null,
+                  content: '# Window Functions',
+                  status: 'pending',
+                  error: null,
+                  created_at: '2026-01-01T00:00:00Z',
+                  updated_at: '2026-01-01T00:00:00Z',
+                  applied_at: null,
+                },
+              ],
+            }),
+          })
+        }
+        if (url.match(/\/reviews\/today$/)) {
+          return Promise.resolve({ ok: true, json: async () => ({ reviews: [] }) })
+        }
+        if (url.match(/\/settings$/)) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              language: 'en',
+              supported_languages: { en: 'English' },
+              git_auto_commit: false,
+              git_available: false,
+            }),
+          })
+        }
+        return Promise.resolve({ ok: true, json: async () => ({ goals: [] }) })
+      }),
+    )
+
+    renderAt('/')
+
+    await screen.findByRole('heading', { name: 'Dashboard' })
+
+    expect(
+      await screen.findByLabelText('1 pending change(s) in the vault'),
+    ).toBeInTheDocument()
+  })
 })

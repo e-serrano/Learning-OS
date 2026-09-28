@@ -38,6 +38,10 @@ export const translations: Record<string, Record<Language, string>> = {
   'nav.reviews': { en: 'Reviews', es: 'Repasos' },
   'nav.vault': { en: 'Vault', es: 'Vault' },
   'nav.settings': { en: 'Settings', es: 'Ajustes' },
+  'nav.vaultPendingChangesSuffix': {
+    en: 'pending change(s) in the vault',
+    es: 'cambio(s) pendiente(s) en el vault',
+  },
 
   // --- dashboard -----------------------------------------------------
   'dashboard.title': { en: 'Dashboard', es: 'Panel' },

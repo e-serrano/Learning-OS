@@ -1,4 +1,6 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { listVaultChanges } from '../api/vault'
 import { useTranslation } from '../i18n/LanguageContext'
 import { LanguageToggle } from '../i18n/LanguageToggle'
 import './AppShell.css'
@@ -10,9 +12,33 @@ import './AppShell.css'
  * URL and get their own links once the Dashboard (T111) can list goals.
  *
  * `LanguageToggle` (docs/TASKS.md T147) lives here -- the "general UI"
- * the user asked for, visible on every routed page. */
+ * the user asked for, visible on every routed page.
+ *
+ * Pending-changes badge (docs/TASKS.md T155, user request): `GET
+ * /vault/changes` already returns only PENDING proposals (T081), so the
+ * count is a direct read, no separate "unread" concept needed. Refetches
+ * on every navigation (not just once on mount) since `AppShell` itself
+ * never remounts between routes -- otherwise the badge would go stale
+ * the moment the user approves/rejects a proposal on `/vault`. */
 export function AppShell() {
   const { t } = useTranslation()
+  const location = useLocation()
+  const [pendingChanges, setPendingChanges] = useState(0)
+
+  useEffect(() => {
+    let cancelled = false
+    listVaultChanges()
+      .then((res) => {
+        if (!cancelled) setPendingChanges(res.changes.length)
+      })
+      .catch(() => {
+        // Best-effort nav badge -- never worth surfacing an error for.
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [location.pathname])
+
   return (
     <div className="app-shell">
       <nav className="app-nav">
@@ -21,7 +47,17 @@ export function AppShell() {
           {t('nav.dashboard')}
         </NavLink>
         <NavLink to="/reviews">{t('nav.reviews')}</NavLink>
-        <NavLink to="/vault">{t('nav.vault')}</NavLink>
+        <NavLink to="/vault">
+          {t('nav.vault')}
+          {pendingChanges > 0 && (
+            <span
+              className="app-nav-badge"
+              aria-label={`${pendingChanges} ${t('nav.vaultPendingChangesSuffix')}`}
+            >
+              {pendingChanges}
+            </span>
+          )}
+        </NavLink>
         <NavLink to="/settings">{t('nav.settings')}</NavLink>
         <LanguageToggle />
       </nav>

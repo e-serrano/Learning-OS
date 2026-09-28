@@ -1338,6 +1338,18 @@ Usuario, en producción real (2026-09-28): "cuando envio una respuesta en una ev
 
 Sin test nuevo específico para el hint -- mismo patrón ya cubierto por `useSlowOperationHint.test.ts` (T151); `AssessmentUI.test.tsx` (3/3) y la suite frontend completa (114/114) siguen pasando. `tsc -b` y `oxlint` limpios (ninguna advertencia nueva). Verificado en vivo tras reconstruir Docker: una evaluación real disparó el hint a los 8s y resolvió correctamente a la fase de resultado (100% en las 4 métricas) tras 24s de llamada real al `evaluator`.
 
+### T155 — Badge de cambios pendientes junto a "Vault" en el nav
+
+**Estado:** DONE
+**Dep:** T081 (`ChangeProposal`/`GET /vault/changes`, ya filtra por `PENDING`), T139 (`MasteryCurationTriggerService`, la fuente real de la propuesta que motivó esto)
+Usuario, al verificar por qué una de las evaluaciones de prueba de T154 no dejó nota en el vault: la nota SÍ se generó -- `group_having` cruzó a `mastered` y disparó el curator (T139), dejando un `ChangeProposal` con `status: pending` -- pero nada en el nav lo señalaba, así que pasó desapercibido hasta preguntarlo explícitamente. Pedido explícito: icono/indicador junto a "Vault" en el menú lateral cuando hay acciones pendientes en ese apartado.
+
+**Nota:** `GET /vault/changes` (`app/api/vault.py::list_changes`) ya filtra por `ProposalStatus.PENDING` server-side, así que el conteo es una lectura directa de `changes.length`, sin lógica nueva de "no leído". Vive en `AppShell.tsx` (no en `VaultDiffUI`) porque el nav es lo único visible en todas las rutas. `AppShell` en sí nunca se remonta entre rutas (envuelve el `<Outlet>`), así que el `useEffect` depende de `location.pathname` (`useLocation`) para refrescar en cada navegación -- de lo contrario el badge quedaría obsoleto en cuanto el usuario aprobara/rechazara una propuesta en `/vault` sin recargar la página entera. Fetch best-effort (`.catch` silencioso, igual que `LanguageProvider`) -- un badge de navegación nunca vale la pena bloquear ni mostrar un error propio.
+
+Badge: `<span className="app-nav-badge">` con el número, `aria-label` construido combinando `nav.vaultPendingChangesSuffix` (nueva clave i18n) con el conteo -- mismo patrón de concatenación que `VaultDiffUI::handleScan` (T151) ya usa para frases con números dinámicos, dado que `t()` no soporta interpolación.
+
+2 tests nuevos en `routes.test.tsx` (badge ausente cuando `/vault/changes` devuelve `[]`; badge con "1" y su `aria-label` cuando devuelve una propuesta pendiente) + suite frontend completa 116/116, `tsc -b`/`oxlint` limpios. Verificado en vivo tras reconstruir Docker: la propuesta pendiente real de `group_having` (T154) mostró el badge rojo "1" junto a "Vault" en el Panel.
+
 ---
 
 # Vertical slice mínimo recomendado
