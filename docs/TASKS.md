@@ -1317,6 +1317,17 @@ Usuario, en producción real (2026-09-28): "al iniciar evaluación de transferen
 
 Sin test nuevo -- es una línea de configuración de infraestructura (`nginx.conf`), no código de aplicación; ningún test de este repo levanta nginx real. Verificación fue en vivo contra el despliegue Docker reconstruido, la misma que detectó el problema original.
 
+### T153 — El error de validación crudo de Pydantic llegaba tal cual al usuario
+**Estado:** DONE
+**Dep:** T152 (verificación en vivo que lo reveló)  
+Al verificar T152 en vivo, el intento de evaluación de transferencia esta vez completó (sin 504) pero devolvió un `AIInvalidOutputError` real: el modelo de OpenRouter había devuelto `type: "transfer"` (no un `ExerciseType` válido), `difficulty: "intermediate"` (string en vez de entero) y `transfer_variant` como un dict anidado en vez de string -- los tres correctamente rechazados por Pydantic tras el reintento automático de `RetryingProvider`. El mensaje que llegó al usuario, sin embargo, era el volcado técnico crudo de `ValidationError` de Pydantic -- nombres de campo, nombres de tipo internos, una URL a pydantic.dev -- exactamente lo que devolvía `str(exc)` en cada adapter, propagado tal cual hasta la respuesta HTTP. Usuario: "sí, arréglalo también".
+
+**Nota:** primer intento de arreglo (limpiar el mensaje en cada adapter, en el mismo punto donde T144 puso `provider_unavailable_error`) revertido antes de terminar -- `RetryingProvider._with_validation_error` (docs/AI_CONTRACTS.md #13) reenvía `str(primer_error)` al modelo como `previous_validation_error` en su único reintento automático; ese detalle técnico (qué campo exacto falló y con qué valor) es precisamente lo que necesita el modelo para autocorregirse -- limpiar el mensaje ahí habría dejado el reintento automático a ciegas, rompiendo silenciosamente una función ya existente sin ningún test que lo hubiera atrapado (ningún test de adapter comprueba el *contenido* del mensaje, solo el tipo de excepción).
+
+Arreglado en el sitio correcto: `AIInvalidOutputError` (`app/ai/errors.py`) ahora separa las dos audiencias -- `str(self)` sigue siendo el detalle técnico completo (sin cambios, sigue alimentando el reintento), y un nuevo atributo `user_message` (por defecto, un resumen genérico no técnico; sobreescribible cuando el propio código ya tiene algo más específico que decir, como el "expected N embeddings, got M" que ya existía). Las 14 rutas de API que atrapan `AIInvalidOutputError` (`assessments.py` ×2, `diagnostic.py`, `projects.py` ×2, `roadmap.py`, `sessions.py` ×3, `teach_back.py`, `vault.py` ×2) cambian de `str(exc)` a `exc.user_message`. `RoadmapValidationError` (T149, un mensaje ya limpio y propio, no un volcado de Pydantic) se deja intacto a propósito.
+
+4 tests nuevos (`test_errors.py`, nuevo: `str()` conserva el detalle completo, `user_message` por defecto es genérico y no menciona el detalle técnico, `user_message` puede sobreescribirse -- 3; `test_assessments.py`: extremo a extremo con un provider que lanza `AIInvalidOutputError` con un volcado de Pydantic simulado, confirma que ni "validation error" ni "ExerciseGeneratorResponse" ni "pydantic" aparecen en la respuesta HTTP -- 1) + 1033/1033 suite backend completa, ruff/mypy limpios. Sin cambios de frontend -- ya mostraba `err.message` tal cual, ahora ese mensaje simplemente es limpio de origen.
+
 ---
 
 # Vertical slice mínimo recomendado

@@ -166,7 +166,7 @@ async def create_project(
     except GoalNotFoundError as exc:
         raise api_error("NOT_FOUND", f"Goal '{goal_id}' not found", 404) from exc
     except AIInvalidOutputError as exc:
-        raise api_error("AI_INVALID_OUTPUT", str(exc), 422) from exc
+        raise api_error("AI_INVALID_OUTPUT", exc.user_message, 422) from exc
     except AIProviderUnavailableError as exc:
         raise api_error("AI_UNAVAILABLE", str(exc), 503) from exc
     return CreateProjectResponse.from_result(result)
@@ -216,7 +216,7 @@ async def submit_task(
     except NotAProjectTaskError as exc:
         raise api_error("VALIDATION_ERROR", str(exc), 400) from exc
     except AIInvalidOutputError as exc:
-        raise api_error("AI_INVALID_OUTPUT", str(exc), 422) from exc
+        raise api_error("AI_INVALID_OUTPUT", exc.user_message, 422) from exc
     except AIProviderUnavailableError as exc:
         raise api_error("AI_UNAVAILABLE", str(exc), 503) from exc
 

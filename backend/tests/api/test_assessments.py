@@ -8,6 +8,7 @@ from sqlalchemy import Engine
 
 from app.ai.adapters.mock import MockProvider
 from app.ai.contracts import EvaluatorResponse, ExerciseGeneratorResponse
+from app.ai.errors import AIInvalidOutputError
 from app.ai.orchestrator import AIOrchestrator
 from app.api.dependencies import (
     get_assessment_flow_service,
@@ -283,3 +284,70 @@ def test_answer_missing_assessment_404s(client: TestClient) -> None:
     )
 
     assert response.status_code == 404
+
+
+class _MalformedResponseProvider:
+    """Raises exactly the shape a real Pydantic `ValidationError` takes
+    when an adapter converts it (docs/TASKS.md T153, reported live: the
+    real OpenRouter model returned `type: "transfer"` -- not a valid
+    `ExerciseType` -- plus a string `difficulty` and a dict
+    `transfer_variant`). The technical detail must never reach the HTTP
+    response; only `AIInvalidOutputError.user_message` should."""
+
+    async def generate(self, request: object, response_model: object) -> object:
+        raise AIInvalidOutputError(
+            "3 validation errors for ExerciseGeneratorResponse\n"
+            "type\n  Input should be 'mcq', 'short_answer', ... "
+            "[type=enum, input_value='transfer', input_type=str]"
+        )
+
+
+def test_create_assessment_never_leaks_the_raw_validation_error(tmp_path: Path) -> None:
+    engine = create_sqlite_engine(str(tmp_path / "malformed.sqlite3"))
+    Base.metadata.create_all(engine)
+    _seed_goal_and_concept(engine)
+
+    goals = SqlGoalRepository(engine)
+    concepts = SqlConceptRepository(engine)
+    orchestrator = AIOrchestrator(
+        engine,
+        _MalformedResponseProvider(),
+        provider_name="mock",
+        model="mock-1",  # type: ignore[arg-type]
+    )
+    transfer_assessment = TransferAssessmentService(
+        goals=goals,
+        context_builder=ContextBuilder(
+            goals=goals,
+            concepts=concepts,
+            concept_relations=SqlConceptRelationRepository(engine),
+            evidence=SqlEvidenceRepository(engine),
+            mistakes=SqlMistakeRepository(engine),
+        ),
+        exercises=SqlExerciseRepository(engine),
+        orchestrator=orchestrator,
+        clock=FakeClock(),
+        ids=UuidIdGenerator(),
+    )
+    assessment_session = AssessmentSessionService(
+        sessions=SqlSessionRepository(engine),
+        activities=SqlActivityRepository(engine),
+        exercises=SqlExerciseRepository(engine),
+        transfer_assessment=transfer_assessment,
+        clock=FakeClock(),
+        ids=UuidIdGenerator(),
+    )
+    app.dependency_overrides[get_assessment_session_service] = lambda: assessment_session
+    test_client = TestClient(app)
+    try:
+        response = test_client.post(
+            "/api/v1/goals/goal_1/assessments", json={"concept_id": "window_functions"}
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 422
+    message = response.json()["detail"]["error"]["message"]
+    assert "validation error" not in message.lower()
+    assert "ExerciseGeneratorResponse" not in message
+    assert "pydantic" not in message.lower()

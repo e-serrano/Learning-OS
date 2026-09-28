@@ -91,7 +91,7 @@ async def create_teach_back(
     except GoalNotFoundError as exc:
         raise api_error("NOT_FOUND", f"Goal '{goal_id}' not found", 404) from exc
     except AIInvalidOutputError as exc:
-        raise api_error("AI_INVALID_OUTPUT", str(exc), 422) from exc
+        raise api_error("AI_INVALID_OUTPUT", exc.user_message, 422) from exc
     except AIProviderUnavailableError as exc:
         raise api_error("AI_UNAVAILABLE", str(exc), 503) from exc
     return TeachBackResponse.from_result(result)

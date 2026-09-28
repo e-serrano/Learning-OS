@@ -241,7 +241,7 @@ async def _pick_and_attach(
     try:
         return await activity_content.attach_exercise(goal_id, activity)
     except AIInvalidOutputError as exc:
-        raise api_error("AI_INVALID_OUTPUT", str(exc), 422) from exc
+        raise api_error("AI_INVALID_OUTPUT", exc.user_message, 422) from exc
     except AIProviderUnavailableError as exc:
         raise api_error("AI_UNAVAILABLE", str(exc), 503) from exc
 
@@ -292,7 +292,7 @@ async def tutor_turn(
             409,
         ) from exc
     except AIInvalidOutputError as exc:
-        raise api_error("AI_INVALID_OUTPUT", str(exc), 422) from exc
+        raise api_error("AI_INVALID_OUTPUT", exc.user_message, 422) from exc
     except AIProviderUnavailableError as exc:
         raise api_error("AI_UNAVAILABLE", str(exc), 503) from exc
     return TutorTurnResponse.from_tutor_response(response)
@@ -323,7 +323,7 @@ async def submit_answer(
             409,
         ) from exc
     except AIInvalidOutputError as exc:
-        raise api_error("AI_INVALID_OUTPUT", str(exc), 422) from exc
+        raise api_error("AI_INVALID_OUTPUT", exc.user_message, 422) from exc
     except AIProviderUnavailableError as exc:
         raise api_error("AI_UNAVAILABLE", str(exc), 503) from exc
     return SubmitAnswerResponse.from_result(result)

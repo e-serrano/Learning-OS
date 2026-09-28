@@ -100,7 +100,7 @@ async def _generate(goal_id: str, service: RoadmapGenerationServiceDep) -> Roadm
     except RoadmapValidationError as exc:
         raise api_error("AI_INVALID_OUTPUT", str(exc), 422) from exc
     except AIInvalidOutputError as exc:
-        raise api_error("AI_INVALID_OUTPUT", str(exc), 422) from exc
+        raise api_error("AI_INVALID_OUTPUT", exc.user_message, 422) from exc
     except AIProviderUnavailableError as exc:
         raise api_error("AI_UNAVAILABLE", str(exc), 503) from exc
 

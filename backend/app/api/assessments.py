@@ -163,7 +163,7 @@ async def create_assessment(
     except GoalNotFoundError as exc:
         raise api_error("NOT_FOUND", f"Goal '{goal_id}' not found", 404) from exc
     except AIInvalidOutputError as exc:
-        raise api_error("AI_INVALID_OUTPUT", str(exc), 422) from exc
+        raise api_error("AI_INVALID_OUTPUT", exc.user_message, 422) from exc
     except AIProviderUnavailableError as exc:
         raise api_error("AI_UNAVAILABLE", str(exc), 503) from exc
     return AssessmentResponse.from_result(result)
@@ -204,7 +204,7 @@ async def answer_assessment(
             "SESSION_STATE_ERROR", f"Session '{assessment.session.id}' is not active", 409
         ) from exc
     except AIInvalidOutputError as exc:
-        raise api_error("AI_INVALID_OUTPUT", str(exc), 422) from exc
+        raise api_error("AI_INVALID_OUTPUT", exc.user_message, 422) from exc
     except AIProviderUnavailableError as exc:
         raise api_error("AI_UNAVAILABLE", str(exc), 503) from exc
 
