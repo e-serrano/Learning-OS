@@ -52,7 +52,7 @@ export function VaultDiffUI() {
     try {
       const summary = await scanVault()
       setScanSummary(
-        `Scanned ${summary.files_scanned} files -- ${summary.changed_files} changed, ${summary.errors.length} error(s).`,
+        `${t('vault.scanned')} ${summary.files_scanned} ${t('vault.filesScanned')} ${summary.changed_files} ${t('vault.filesChanged')} ${summary.errors.length} ${t('vault.scanErrors')}`,
       )
       await load()
     } catch (err) {

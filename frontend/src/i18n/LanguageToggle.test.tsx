@@ -24,27 +24,29 @@ describe('LanguageToggle', () => {
   it('shows the Spanish flag (the language a click switches TO) while English is active', () => {
     vi.stubGlobal('fetch', vi.fn().mockReturnValue(new Promise(() => {})))
 
-    render(
+    const { container } = render(
       <LanguageProvider>
         <LanguageToggle />
       </LanguageProvider>,
     )
 
-    const button = screen.getByRole('button', { name: 'Switch to Spanish' })
-    expect(button).toHaveTextContent('🇪🇸')
+    // Inline SVG, not an emoji glyph (docs/TASKS.md T151) -- Spain's
+    // flag is a distinctive red/yellow rect, checked by fill color.
+    screen.getByRole('button', { name: 'Switch to Spanish' })
+    expect(container.querySelector('rect[fill="#AA151B"]')).toBeInTheDocument()
   })
 
   it('shows the British flag (switch back to English) once Spanish is active', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(settingsResponse('es')))
 
-    render(
+    const { container } = render(
       <LanguageProvider>
         <LanguageToggle />
       </LanguageProvider>,
     )
 
-    const button = await screen.findByRole('button', { name: 'Cambiar a inglés' })
-    expect(button).toHaveTextContent('🇬🇧')
+    await screen.findByRole('button', { name: 'Cambiar a inglés' })
+    expect(container.querySelector('rect[fill="#012169"]')).toBeInTheDocument()
   })
 
   it('clicking it persists the switch via PATCH /settings/language', async () => {

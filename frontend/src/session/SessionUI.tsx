@@ -13,6 +13,7 @@ import {
 import { useTranslation } from '../i18n/LanguageContext'
 import { ReadAloudButton } from '../shared/ReadAloudButton'
 import { SqlSandbox } from '../shared/SqlSandbox'
+import { useSlowOperationHint } from '../shared/useSlowOperationHint'
 import { VoiceInputButton } from '../shared/VoiceInputButton'
 import './session.css'
 import { TutorChat } from './TutorChat'
@@ -47,6 +48,7 @@ export function SessionUI() {
   const [showHints, setShowHints] = useState(false)
   const [result, setResult] = useState<AnswerResult | null>(null)
   const [busy, setBusy] = useState(false)
+  const showSlowHint = useSlowOperationHint(phase === 'loading')
 
   useEffect(() => {
     if (!sessionId) return
@@ -130,6 +132,7 @@ export function SessionUI() {
     return (
       <div className="session-ui">
         <p>{t('common.loading')}</p>
+        {showSlowHint && <p className="field-hint">{t('common.slowAiHint')}</p>}
       </div>
     )
   }

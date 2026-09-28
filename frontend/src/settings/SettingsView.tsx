@@ -10,6 +10,17 @@ function isSupportedLanguage(value: string): value is Language {
   return value === 'en' || value === 'es'
 }
 
+/** The picker's own options were rendering the backend's English display
+ * names ("English"/"Spanish") verbatim regardless of UI language -- the
+ * one control whose entire job is picking a language, showing the wrong
+ * one (docs/TASKS.md T151). `SUPPORTED_LANGUAGES` is a fixed {en, es}
+ * set (T147), so this is a plain lookup, not a full i18n mapping. */
+function languageOptionName(code: string, t: (key: string) => string, fallback: string): string {
+  if (code === 'en') return t('settings.languageNameEn')
+  if (code === 'es') return t('settings.languageNameEs')
+  return fallback
+}
+
 /** Settings page (user request, 2026-09-24): a single app-wide language
  * preference that steers both the UI's own copy and every AI-generated
  * response, including Obsidian note content the curator writes
@@ -112,7 +123,7 @@ export function SettingsView() {
       <select id="language" value={language} onChange={handleLanguageChange} disabled={saving}>
         {Object.entries(languages).map(([code, name]) => (
           <option key={code} value={code}>
-            {name}
+            {languageOptionName(code, t, name)}
           </option>
         ))}
       </select>

@@ -40,3 +40,7 @@ Thumbs.db
 
 # Logs
 *.log
+
+# QA/beta-testing session output (screenshots, videos, reports -- delivered
+# to the user directly, not part of the codebase)
+/dogfood-output/

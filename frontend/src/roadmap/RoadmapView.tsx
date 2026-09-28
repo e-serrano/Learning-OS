@@ -10,6 +10,7 @@ import {
 } from '../api/roadmap'
 import { useTranslation } from '../i18n/LanguageContext'
 import { MasteryBar } from '../shared/MasteryBar'
+import { useSlowOperationHint } from '../shared/useSlowOperationHint'
 import './roadmap.css'
 
 const MAX_MASTERY = 5
@@ -29,6 +30,7 @@ export function RoadmapView() {
   const [notGenerated, setNotGenerated] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const showSlowHint = useSlowOperationHint(busy)
 
   const load = useCallback(async () => {
     if (!goalId) return
@@ -95,6 +97,7 @@ export function RoadmapView() {
         <button type="button" onClick={handleGenerate} disabled={busy}>
           {busy ? t('roadmap.generating') : t('roadmap.generate')}
         </button>
+        {showSlowHint && <p className="field-hint">{t('common.slowAiHint')}</p>}
       </div>
     )
   }
@@ -122,6 +125,7 @@ export function RoadmapView() {
       <button type="button" className="secondary" onClick={handleRecalculate} disabled={busy}>
         {busy ? t('roadmap.recalculating') : t('roadmap.recalculate')}
       </button>
+      {showSlowHint && <p className="field-hint">{t('common.slowAiHint')}</p>}
       <div className="roadmap-nodes">
         {roadmap.nodes.map((node) => (
           <RoadmapNodeCard key={node.id} node={node} prerequisites={prerequisitesOf(node.id)} />

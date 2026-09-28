@@ -11,6 +11,7 @@ import {
 } from '../api/knowledge'
 import { useTranslation } from '../i18n/LanguageContext'
 import { MasteryBar } from '../shared/MasteryBar'
+import { useSlowOperationHint } from '../shared/useSlowOperationHint'
 import { KnowledgeGraph } from './KnowledgeGraph'
 import './knowledge.css'
 
@@ -295,6 +296,7 @@ function ConceptDetailsPanel({
   assessing: boolean
 }) {
   const { t } = useTranslation()
+  const showSlowHint = useSlowOperationHint(assessing)
   return (
     <div className="concept-details">
       <MasteryBar mastery={concept.mastery / MAX_MASTERY} />
@@ -333,6 +335,7 @@ function ConceptDetailsPanel({
       <button type="button" className="secondary" onClick={onStartAssessment} disabled={assessing}>
         {assessing ? t('knowledge.starting') : t('knowledge.startTransferAssessment')}
       </button>
+      {showSlowHint && <p className="field-hint">{t('common.slowAiHint')}</p>}
     </div>
   )
 }

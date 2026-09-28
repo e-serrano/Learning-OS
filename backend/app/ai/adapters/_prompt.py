@@ -18,9 +18,16 @@ def _language_directive(request: AIRequest) -> str:
     name = SUPPORTED_LANGUAGES.get(code) if isinstance(code, str) else None
     if name is None or name == "English":
         return ""
+    # Explicit field examples beyond "content" (docs/TASKS.md T151,
+    # reported live: an exercise's `prompt` came back in English despite
+    # this constraint) -- the original wording only called out Obsidian
+    # note content, which a model can reasonably read as not applying to
+    # other roles' free-text fields like an exercise prompt or tutor
+    # feedback.
     return (
-        f" Respond in {name}, including any Obsidian note content field "
-        "values (e.g. `content`) you generate."
+        f" Respond in {name}: every free-text field in your output "
+        f"(e.g. `prompt`, `content`, `feedback`, `hints`, `solution`) "
+        f"must be written in {name}, not English."
     )
 
 

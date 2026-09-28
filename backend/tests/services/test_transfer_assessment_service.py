@@ -6,6 +6,7 @@ from sqlalchemy import Engine
 
 from app.ai.adapters.mock import MockProvider
 from app.ai.contracts import ExerciseGeneratorResponse
+from app.ai.errors import AIInvalidOutputError
 from app.ai.orchestrator import AIOrchestrator
 from app.ai.protocol import AIRequest
 from app.domain.entities import Concept, Exercise, LearningGoal
@@ -22,6 +23,12 @@ from app.persistence.repositories import (
 )
 from app.services.context_builder import ContextBuilder, GoalNotFoundError
 from app.services.transfer_assessment_service import TransferAssessmentService
+
+_ECHOED_INSTRUCTION = (
+    "Generate a new situation that requires transferring this "
+    "concept to a different context. Do not reuse or lightly "
+    "rephrase any of the prior exercises listed below."
+)
 
 NOW = datetime(2026, 1, 1, tzinfo=UTC)
 
@@ -213,3 +220,49 @@ async def test_generate_transfer_scenario_includes_prior_exercise_prompts_to_avo
     await service.generate_transfer_scenario("goal_1", "window_functions")
 
     assert captured[0].task["prior_exercise_prompts"] == ["Write a query using ROW_NUMBER()."]
+
+
+@pytest.mark.asyncio
+async def test_generate_transfer_scenario_retries_once_when_ai_echoes_its_own_instruction(
+    tmp_path: Path,
+) -> None:
+    """docs/TASKS.md T151, reported live: a degraded model answered with
+    its own task instruction as the exercise prompt instead of an actual
+    exercise -- structurally valid, so schema validation alone never
+    catches it. One retry should recover a good response."""
+    engine = _engine(tmp_path)
+    _seed_goal_and_concept(engine)
+    calls = {"count": 0}
+
+    def _flaky(request: AIRequest) -> ExerciseGeneratorResponse:
+        calls["count"] += 1
+        if calls["count"] == 1:
+            return _generator_response(prompt=_ECHOED_INSTRUCTION)
+        return _generator_response()
+
+    provider = MockProvider()
+    provider.set_response(ExerciseGeneratorResponse, _flaky)
+    service = _service(engine, provider)
+
+    exercise = await service.generate_transfer_scenario("goal_1", "window_functions")
+
+    assert calls["count"] == 2
+    assert exercise.prompt == "Given a new logistics dataset, rank shipments per warehouse."
+
+
+@pytest.mark.asyncio
+async def test_generate_transfer_scenario_raises_when_ai_echoes_instruction_twice(
+    tmp_path: Path,
+) -> None:
+    engine = _engine(tmp_path)
+    _seed_goal_and_concept(engine)
+    provider = MockProvider()
+    provider.set_response(
+        ExerciseGeneratorResponse, _generator_response(prompt=_ECHOED_INSTRUCTION)
+    )
+    service = _service(engine, provider)
+
+    with pytest.raises(AIInvalidOutputError, match="own generation instruction"):
+        await service.generate_transfer_scenario("goal_1", "window_functions")
+
+    assert SqlExerciseRepository(engine).list_by_concept("window_functions") == []

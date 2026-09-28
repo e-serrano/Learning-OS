@@ -17,6 +17,7 @@ assessment record.
 """
 
 from app.ai.contracts import ExerciseGeneratorResponse
+from app.ai.errors import AIInvalidOutputError
 from app.ai.orchestrator import AIOrchestrator
 from app.ai.protocol import AIRequest
 from app.domain.entities import Exercise
@@ -25,6 +26,22 @@ from app.services.context_builder import ContextBuilder, GoalNotFoundError
 
 TRANSFER_PROMPT_VERSION = "exercise_generator.v1"
 MAX_PRIOR_EXERCISES = 5
+
+_TRANSFER_INSTRUCTION = (
+    "Generate a new situation that requires transferring this "
+    "concept to a different context. Do not reuse or lightly "
+    "rephrase any of the prior exercises listed below."
+)
+
+
+def _echoes_the_instruction(prompt: str) -> bool:
+    """A degraded model can answer with its own meta-instruction instead
+    of an actual exercise -- structurally valid (still a non-empty
+    string), so schema validation never catches it (docs/TASKS.md T151,
+    reported live: the exercise prompt was word-for-word
+    `_TRANSFER_INSTRUCTION`). Checked as a substring, not equality --
+    the model may wrap it in a little extra text either side."""
+    return _TRANSFER_INSTRUCTION in prompt
 
 
 class TransferAssessmentService:
@@ -62,16 +79,26 @@ class TransferAssessmentService:
             task={
                 "concept_id": concept_id,
                 "assessment_type": "transfer",
-                "instruction": (
-                    "Generate a new situation that requires transferring this "
-                    "concept to a different context. Do not reuse or lightly "
-                    "rephrase any of the prior exercises listed below."
-                ),
+                "instruction": _TRANSFER_INSTRUCTION,
                 "prior_exercise_prompts": prior_prompts,
             },
         )
         response = await self._orchestrator.generate(request, ExerciseGeneratorResponse)
         assert isinstance(response, ExerciseGeneratorResponse)
+
+        if _echoes_the_instruction(response.prompt):
+            # One retry before giving up -- same "retry once, then
+            # surface a clean failure" policy docs/AI_CONTRACTS.md #13
+            # already applies to schema-invalid output; this is the
+            # content-quality equivalent for a response that is
+            # structurally fine but semantically useless.
+            response = await self._orchestrator.generate(request, ExerciseGeneratorResponse)
+            assert isinstance(response, ExerciseGeneratorResponse)
+            if _echoes_the_instruction(response.prompt):
+                raise AIInvalidOutputError(
+                    "the model returned its own generation instruction as the "
+                    "exercise prompt instead of an actual exercise"
+                )
 
         exercise = Exercise(
             id=self._ids.new_id("exercise"),

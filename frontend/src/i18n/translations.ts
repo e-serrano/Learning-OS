@@ -26,6 +26,10 @@ export const translations: Record<string, Record<Language, string>> = {
     en: 'Could not reach the backend',
     es: 'No se pudo contactar con el backend',
   },
+  'common.slowAiHint': {
+    en: 'This is taking longer than usual -- the AI provider can take up to a couple of minutes.',
+    es: 'Esto está tardando más de lo normal -- el proveedor de IA puede tardar hasta un par de minutos.',
+  },
   'common.backToGoal': { en: '← Goal', es: '← Objetivo' },
   'common.backToDashboard': { en: '← Dashboard', es: '← Panel' },
 
@@ -204,6 +208,10 @@ export const translations: Record<string, Record<Language, string>> = {
   'vault.title': { en: 'Vault Changes', es: 'Cambios en el Vault' },
   'vault.rescan': { en: 'Rescan vault', es: 'Re-escanear vault' },
   'vault.scanning': { en: 'Scanning…', es: 'Escaneando…' },
+  'vault.scanned': { en: 'Scanned', es: 'Se escanearon' },
+  'vault.filesScanned': { en: 'files --', es: 'archivos --' },
+  'vault.filesChanged': { en: 'changed,', es: 'cambiado(s),' },
+  'vault.scanErrors': { en: 'error(s).', es: 'error(es).' },
   'vault.noPending': { en: 'No pending changes.', es: 'No hay cambios pendientes.' },
   'vault.section': { en: 'Section:', es: 'Sección:' },
   'vault.before': { en: 'Before', es: 'Antes' },
@@ -230,6 +238,8 @@ export const translations: Record<string, Record<Language, string>> = {
   // --- settings --------------------------------------------------------
   'settings.title': { en: 'Settings', es: 'Ajustes' },
   'settings.language': { en: 'Language', es: 'Idioma' },
+  'settings.languageNameEn': { en: 'English', es: 'Inglés' },
+  'settings.languageNameEs': { en: 'Spanish', es: 'Español' },
   'settings.languageHint': {
     en: 'Applies to the app and to notes the AI writes into your Obsidian vault.',
     es: 'Se aplica a la app y a las notas que la IA escribe en tu vault de Obsidian.',
