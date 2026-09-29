@@ -1402,6 +1402,16 @@ También pedido en el mismo mensaje: `<textarea>` de descripción (T157) demasia
 
 Sin test nuevo, mismo motivo que T158. Verificado en vivo tras reconstruir Docker: `getComputedStyle` confirma fondo/color correctos en `<option>`, y `rows` del textarea en 6.
 
+### T160 — Textarea de descripción más alto (T159) pero seguía estrecho
+
+**Estado:** DONE
+**Dep:** T159
+Usuario: "el cuadro de descripcion tiene buena altura, pero quiero que sea mas ancho". Causa raíz real, encontrada al medir en vivo: el `<textarea>` nunca estuvo en la regla compartida `.create-goal-form input, .create-goal-form select { width: 100%; ... }` -- T157 lo añadió al JSX pero no al selector CSS, así que renderizaba con el ancho por defecto del navegador (`cols` implícito, ~168px medidos en vivo) dentro de un formulario de 480px. También heredaba la fuente monoespaciada por defecto de `<textarea>` en vez de la del resto del formulario -- visible en las capturas del usuario.
+
+**Nota:** añadido `.create-goal-form textarea` al mismo selector compartido que `input`/`select`, más `font-family: inherit` (que `input`/`select` sí heredan por defecto del navegador, `textarea` no). Confirmado en vivo: `textarea.getBoundingClientRect().width === 480` (igual que el formulario), fuente igual a `system-ui, "Segoe UI", Roboto, sans-serif`.
+
+Sin test nuevo -- layout/tipografía puro, sin lógica que testear; ya cubierto por los tests existentes de T157 (envío/omisión de `description`). Suite frontend 129/129 sigue pasando. Verificado en vivo tras reconstruir Docker.
+
 ---
 
 # Vertical slice mínimo recomendado
