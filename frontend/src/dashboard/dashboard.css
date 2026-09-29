@@ -99,12 +99,16 @@
   box-sizing: border-box;
   background: transparent;
   color: inherit;
-  /* Forces the select's native popup into dark rendering regardless of
-     the OS/browser's own light/dark preference -- this app has no light
-     palette to fall back to, so leaving it to `light dark` auto-detect
-     (src/index.css) can otherwise pair a dark page with a light native
-     dropdown popup (docs/TASKS.md T158, user request). */
+  /* `color-scheme: dark` alone (docs/TASKS.md T158) isn't enough --
+     confirmed live (T159) that real Chrome on Windows still opened a
+     white/black native popup despite it. Styling `option` directly is
+     what actually controls the popup's colors in Chromium. */
   color-scheme: dark;
+}
+
+.create-goal-form select option {
+  background-color: #1e1e1e;
+  color: #fff;
 }
 
 .dashboard button {

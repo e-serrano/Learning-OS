@@ -191,7 +191,7 @@ function CreateGoalForm({
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         placeholder={t('dashboard.descriptionPlaceholder')}
-        rows={3}
+        rows={6}
       />
       <label htmlFor="goal-level">{t('dashboard.targetLevel')}</label>
       <select

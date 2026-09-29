@@ -1390,6 +1390,18 @@ Pedido explícito del usuario: "reconfigura los UI de los combobox para modo osc
 
 Sin test nuevo -- CSS puro, `color-scheme` no es observable de forma significativa en jsdom (sin layout/rendering real) y el desplegable nativo del `<select>` no es parte del DOM capturable por un test de React Testing Library. Verificado en vivo tras reconstruir Docker: `getComputedStyle(select).colorScheme === 'dark'` confirmado en los 5 selects reales de la app (idioma, proveedor de IA, nivel de objetivo, modo de sesión, filtro de estado); suite frontend completa 129/129 sigue pasando (sin regresión visual en el estado cerrado).
 
+### T159 — `color-scheme: dark` (T158) no bastaba: el desplegable real seguía en blanco
+
+**Estado:** DONE
+**Dep:** T158
+Usuario, con capturas de pantalla reales de Chrome en Windows tras T158: el desplegable seguía con fondo blanco y texto negro, contradiciendo lo que `getComputedStyle` había confirmado (`color-scheme: dark` sí estaba puesto en el `<select>`). Confirma un límite real de `color-scheme` en la práctica: el valor computado en el propio elemento no garantiza que el navegador lo aplique al popup nativo de opciones en todas las combinaciones de SO/navegador -- un caso exactamente igual al que motivó T158, no resuelto por completo por ese arreglo.
+
+**Nota:** añadida una regla `select option { background-color: #1e1e1e; color: #fff; }` en los mismos 5 archivos que T158 (junto a `color-scheme: dark`, que se deja puesto como refuerzo, no se retira). A diferencia de `color-scheme`, estilar `option` directamente sí controla de forma fiable el color de fondo de cada fila del popup en Chromium -- confirmado en vivo: `getComputedStyle(option).backgroundColor === 'rgb(30, 30, 30)'`. La fila resaltada por teclado/ratón puede seguir usando el color de acento nativo del SO (no hay CSS estándar para sobreescribir ese highlight en un `<select>` nativo) -- fuera de alcance, es el propio SO, no la app.
+
+También pedido en el mismo mensaje: `<textarea>` de descripción (T157) demasiado pequeño -- `rows` 3 → 6.
+
+Sin test nuevo, mismo motivo que T158. Verificado en vivo tras reconstruir Docker: `getComputedStyle` confirma fondo/color correctos en `<option>`, y `rows` del textarea en 6.
+
 ---
 
 # Vertical slice mínimo recomendado

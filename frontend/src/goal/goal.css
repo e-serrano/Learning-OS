@@ -82,9 +82,16 @@
   font: inherit;
   background: transparent;
   color: inherit;
-  /* Forces the native popup into dark rendering regardless of the
-     OS/browser's own light/dark preference (docs/TASKS.md T158). */
+  /* `color-scheme: dark` alone (T158) isn't enough -- confirmed live
+     (T159) that real Chrome on Windows still opened a white/black
+     native popup despite it. Styling `option` directly is what
+     actually controls the popup's colors in Chromium. */
   color-scheme: dark;
+}
+
+.goal-view-actions select option {
+  background-color: #1e1e1e;
+  color: #fff;
 }
 
 .goal-projects {
