@@ -10,6 +10,7 @@ import {
   listKnowledge,
 } from '../api/knowledge'
 import { useTranslation } from '../i18n/LanguageContext'
+import { orderByPrerequisite } from '../shared/conceptLevels'
 import { MasteryBar } from '../shared/MasteryBar'
 import { useSlowOperationHint } from '../shared/useSlowOperationHint'
 import { KnowledgeGraph } from './KnowledgeGraph'
@@ -43,18 +44,23 @@ const STATUS_FILTERS: ConceptStatus[] = [
  * Graph view (docs/TASKS.md T131) adds a node-link rendering of the same
  * data alongside the list, `KnowledgeGraph.tsx` -- the first real
  * node-link diagram in the app (`RoadmapView`, T113, deliberately chose a
- * list over one for its MVP scope). There is no batch "relations for a
- * goal" endpoint (only `GET /concepts/{id}/relations`, one concept at a
- * time), so switching to graph view fetches every currently-loaded
- * concept's relations in parallel and merges them into the same
- * `relationsById` cache the list view already populates lazily per row
- * -- same underlying call, just eager instead of on-expand. Because it
- * reuses `concepts` as-is, the graph reflects whatever the status filter
- * currently shows; an edge whose other end was filtered out is simply
- * skipped (the graph can only draw nodes it has -- switch the filter to
- * "All" for the complete graph). Selecting a node reuses
- * `toggleExpand`/`ConceptDetailsPanel` -- one detail-rendering path for
- * both views. */
+ * list over one for its MVP scope). Because it reuses `concepts` as-is,
+ * the graph reflects whatever the status filter currently shows; an edge
+ * whose other end was filtered out is simply skipped (the graph can only
+ * draw nodes it has -- switch the filter to "All" for the complete
+ * graph). Selecting a node reuses `toggleExpand`/`ConceptDetailsPanel` --
+ * one detail-rendering path for both views.
+ *
+ * List order (docs/TASKS.md T156, user request): basics the goal needs
+ * first, more complex/dependent concepts after, same prerequisite-depth
+ * ordering `RoadmapView` uses. That means relations for every displayed
+ * concept need to be loaded up front rather than lazily per expanded
+ * row -- there is no batch "relations for a goal" endpoint (only `GET
+ * /concepts/{id}/relations`, one concept at a time), so both the list
+ * and graph views now eagerly fetch every currently-loaded concept's
+ * relations in parallel into the same `relationsById` cache (previously
+ * only the graph view did this; the list re-sorts once each fetch
+ * resolves, a brief reorder rather than a blocking spinner). */
 export function KnowledgeExplorer() {
   const { t } = useTranslation()
   const { goalId } = useParams<{ goalId: string }>()
@@ -66,7 +72,7 @@ export function KnowledgeExplorer() {
   const [relationsById, setRelationsById] = useState<Record<string, ConceptRelation[]>>({})
   const [assessing, setAssessing] = useState(false)
   const [view, setView] = useState<'list' | 'graph'>('list')
-  const [loadingGraph, setLoadingGraph] = useState(false)
+  const [loadingRelations, setLoadingRelations] = useState(false)
 
   const load = useCallback(async () => {
     if (!goalId) return
@@ -84,16 +90,20 @@ export function KnowledgeExplorer() {
   }, [load])
 
   useEffect(() => {
-    if (view !== 'graph' || !concepts) return
+    if (!concepts) return
     const missing = concepts.filter((c) => !relationsById[c.id])
     if (missing.length === 0) return
     let cancelled = false
-    setLoadingGraph(true)
+    setLoadingRelations(true)
     Promise.all(
       missing.map(async (c): Promise<readonly [string, ConceptRelation[]]> => {
         try {
           const { relations } = await getConceptRelations(c.id)
-          return [c.id, relations]
+          // `relationsById[id]` doubles as the "already fetched" check
+          // below (`!relationsById[c.id]`) -- storing `undefined` for a
+          // malformed response would make that check permanently false,
+          // re-fetching forever instead of settling on "fetched, empty".
+          return [c.id, relations ?? []]
         } catch {
           return [c.id, []]
         }
@@ -105,17 +115,23 @@ export function KnowledgeExplorer() {
         for (const [id, relations] of entries) next[id] = relations
         return next
       })
-      setLoadingGraph(false)
+      setLoadingRelations(false)
     })
     return () => {
       cancelled = true
     }
-  }, [view, concepts, relationsById])
+  }, [concepts, relationsById])
 
   const titleById = useMemo(
     () => Object.fromEntries((concepts ?? []).map((c) => [c.id, c.title])),
     [concepts],
   )
+
+  const orderedConcepts = useMemo(() => {
+    if (!concepts) return concepts
+    const edges = concepts.flatMap((c) => relationsById[c.id] ?? [])
+    return orderByPrerequisite(concepts, edges)
+  }, [concepts, relationsById])
 
   async function toggleExpand(conceptId: string) {
     if (expandedId === conceptId) {
@@ -197,7 +213,7 @@ export function KnowledgeExplorer() {
 
       {concepts && concepts.length > 0 && view === 'list' && (
         <div className="concept-list">
-          {concepts.map((concept) => (
+          {(orderedConcepts ?? concepts).map((concept) => (
             <ConceptRow
               key={concept.id}
               concept={concept}
@@ -214,7 +230,7 @@ export function KnowledgeExplorer() {
 
       {concepts && concepts.length > 0 && view === 'graph' && (
         <div className="knowledge-graph-wrapper">
-          {loadingGraph && <p className="subtitle">{t('knowledge.loadingRelations')}</p>}
+          {loadingRelations && <p className="subtitle">{t('knowledge.loadingRelations')}</p>}
           <KnowledgeGraph
             concepts={concepts}
             relations={concepts.flatMap((c) => relationsById[c.id] ?? [])}

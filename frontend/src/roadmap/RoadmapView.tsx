@@ -9,6 +9,7 @@ import {
   recalculateRoadmap,
 } from '../api/roadmap'
 import { useTranslation } from '../i18n/LanguageContext'
+import { orderByPrerequisite } from '../shared/conceptLevels'
 import { MasteryBar } from '../shared/MasteryBar'
 import { useSlowOperationHint } from '../shared/useSlowOperationHint'
 import './roadmap.css'
@@ -115,6 +116,10 @@ export function RoadmapView() {
       .filter((e) => e.relation === 'PREREQUISITE_OF' && e.target_id === nodeId)
       .map((e) => roadmap.nodes.find((n) => n.id === e.source_id)?.title ?? e.source_id)
 
+  // Basics first, dependents after (docs/TASKS.md T156, user request) --
+  // same prerequisite depth `KnowledgeGraph`'s row layout uses (T131).
+  const orderedNodes = orderByPrerequisite(roadmap.nodes, roadmap.edges)
+
   return (
     <div className="roadmap-view">
       <BackLink goalId={goalId} />
@@ -127,7 +132,7 @@ export function RoadmapView() {
       </button>
       {showSlowHint && <p className="field-hint">{t('common.slowAiHint')}</p>}
       <div className="roadmap-nodes">
-        {roadmap.nodes.map((node) => (
+        {orderedNodes.map((node) => (
           <RoadmapNodeCard key={node.id} node={node} prerequisites={prerequisitesOf(node.id)} />
         ))}
       </div>

@@ -1,4 +1,5 @@
 import type { Concept, ConceptRelation } from '../api/knowledge'
+import { computeLevels } from '../shared/conceptLevels'
 
 const NODE_WIDTH = 140
 const NODE_HEIGHT = 44
@@ -21,47 +22,14 @@ interface LaidOutEdge {
   y2: number
 }
 
-/** Node-link layout for `KnowledgeGraph` (docs/TASKS.md T131). Level 0 =
- * concepts with no `PREREQUISITE_OF` prerequisite inside the current node
- * set (foundational); every other concept sits one row below the deepest
- * of its own prerequisites -- the same edge direction `RoadmapView`
- * (T113) already reads (source = the prerequisite, target = the concept
- * that needs it). Cycles shouldn't happen in practice, but relations can
- * be AI-authored and aren't guaranteed acyclic, so a concept already
- * "in progress" up its own chain falls back to level 0 instead of
- * recursing forever. No layout-engine dependency -- a level-per-row
- * grid is enough to make prerequisite structure legible without pulling
- * in a graph library (frontend has no chart/graph dependency today). */
-function computeLevels(concepts: Concept[], relations: ConceptRelation[]): Map<string, number> {
-  const ids = new Set(concepts.map((c) => c.id))
-  const prerequisitesOf = new Map<string, string[]>()
-  for (const r of relations) {
-    if (r.relation !== 'PREREQUISITE_OF') continue
-    if (!ids.has(r.source_id) || !ids.has(r.target_id) || r.source_id === r.target_id) continue
-    const list = prerequisitesOf.get(r.target_id) ?? []
-    list.push(r.source_id)
-    prerequisitesOf.set(r.target_id, list)
-  }
-
-  const levels = new Map<string, number>()
-  const inProgress = new Set<string>()
-
-  function levelOf(id: string): number {
-    const cached = levels.get(id)
-    if (cached !== undefined) return cached
-    if (inProgress.has(id)) return 0
-    inProgress.add(id)
-    const prereqs = prerequisitesOf.get(id) ?? []
-    const level = prereqs.length === 0 ? 0 : 1 + Math.max(...prereqs.map(levelOf))
-    inProgress.delete(id)
-    levels.set(id, level)
-    return level
-  }
-
-  for (const c of concepts) levelOf(c.id)
-  return levels
-}
-
+/** Node-link layout for `KnowledgeGraph` (docs/TASKS.md T131). Row =
+ * `computeLevels`'s prerequisite depth (`../shared/conceptLevels.ts`,
+ * shared with `RoadmapView`/`KnowledgeExplorer`'s list ordering, T156) --
+ * the same edge direction `RoadmapView` (T113) already reads (source =
+ * the prerequisite, target = the concept that needs it). No
+ * layout-engine dependency -- a level-per-row grid is enough to make
+ * prerequisite structure legible without pulling in a graph library
+ * (frontend has no chart/graph dependency today). */
 function layout(concepts: Concept[], relations: ConceptRelation[]) {
   const levels = computeLevels(concepts, relations)
   const byLevel = new Map<number, Concept[]>()

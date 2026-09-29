@@ -60,6 +60,41 @@ describe('KnowledgeExplorer', () => {
     expect(screen.getByText('Subqueries')).toBeInTheDocument()
   })
 
+  it('lists prerequisite concepts before the concepts that depend on them', async () => {
+    // CONCEPT_A ('Window Functions') is listed first by the API, but
+    // CONCEPT_B ('Subqueries') is its prerequisite -- the rendered list
+    // should show the prerequisite first regardless of API order
+    // (docs/TASKS.md T156, user request: basics before what depends on
+    // them).
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((input: RequestInfo | URL) => {
+        const url = String(input)
+        if (url.includes('/concepts/b/relations')) {
+          return Promise.resolve(
+            jsonResponse({
+              relations: [{ source_id: 'b', target_id: 'a', relation: 'PREREQUISITE_OF', weight: null }],
+            }),
+          )
+        }
+        if (url.includes('/relations')) {
+          return Promise.resolve(jsonResponse({ relations: [] }))
+        }
+        return Promise.resolve(jsonResponse({ concepts: [CONCEPT_A, CONCEPT_B] }))
+      }),
+    )
+
+    const { container } = renderAt('/goals/goal_1/knowledge')
+
+    await screen.findByText('Window Functions')
+    await waitFor(() => {
+      const titles = Array.from(container.querySelectorAll('.concept-row-header strong')).map(
+        (el) => el.textContent,
+      )
+      expect(titles).toEqual(['Subqueries', 'Window Functions'])
+    })
+  })
+
   it('shows an empty state when nothing matches the filter', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({ concepts: [] })))
 
@@ -116,6 +151,9 @@ describe('KnowledgeExplorer', () => {
               },
             }),
           )
+        }
+        if (url.includes('/relations')) {
+          return Promise.resolve(jsonResponse({ relations: [] }))
         }
         return Promise.resolve(jsonResponse({ concepts: [CONCEPT_A, CONCEPT_B] }))
       }),

@@ -1350,6 +1350,20 @@ Badge: `<span className="app-nav-badge">` con el número, `aria-label` construid
 
 2 tests nuevos en `routes.test.tsx` (badge ausente cuando `/vault/changes` devuelve `[]`; badge con "1" y su `aria-label` cuando devuelve una propuesta pendiente) + suite frontend completa 116/116, `tsc -b`/`oxlint` limpios. Verificado en vivo tras reconstruir Docker: la propuesta pendiente real de `group_having` (T154) mostró el badge rojo "1" junto a "Vault" en el Panel.
 
+### T156 — Hoja de ruta y explorador de conocimiento sin ordenar por prioridad de aprendizaje
+
+**Estado:** DONE
+**Dep:** T113 (`RoadmapView`), T114/T131 (`KnowledgeExplorer`, `KnowledgeGraph`)
+Pedido explícito del usuario: en ambas vistas, la lista debe aparecer por orden de preferencia de aprendizaje -- lo básico que hay que aprender primero arriba, lo complejo que depende de ello después. Antes, `RoadmapView` renderizaba `roadmap.nodes` tal cual llegaban del backend (orden del planner de IA, sin garantía alguna) y `KnowledgeExplorer` renderizaba `concepts` en el orden que devuelve `GET /goals/{id}/knowledge` (sin relación con prerrequisitos).
+
+**Nota:** `KnowledgeGraph.tsx` (T131) ya resolvía exactamente este problema para su propio layout de filas -- `computeLevels`, profundidad de prerrequisito vía DFS memoizado (nivel 0 = sin prerrequisito `PREREQUISITE_OF` dentro del conjunto actual, cycle-safe: un concepto ya "en curso" en su propia cadena cae a nivel 0 en vez de recursar para siempre). Extraído tal cual a `frontend/src/shared/conceptLevels.ts` en vez de escribir un segundo algoritmo de ordenación distinto -- reutiliza lógica ya probada por los tests existentes de `KnowledgeGraph.test.tsx` en lugar de duplicarla. Nueva función `orderByPrerequisite` en el mismo módulo: ordena por nivel ascendente, estable dentro del mismo nivel (orden original conservado, `Array.prototype.sort` es estable desde ES2019).
+
+`RoadmapView`: `roadmap.edges` ya trae el grafo completo de la hoja de ruta en una sola respuesta -- orden calculado sin fetch adicional. `KnowledgeExplorer`: el orden de la lista necesita las relaciones de TODOS los conceptos mostrados, no solo del expandido -- el efecto que antes cargaba relaciones en paralelo solo para la vista "Grafo" ahora corre también para "Lista" (mismo `relationsById` cache, mismo patrón, solo sin el gate `view === 'graph'`); la lista se reordena en cuanto cada fetch resuelve (reordenamiento breve, no un spinner bloqueante).
+
+Bug real encontrado al escribir el test de este cambio: la comprobación "¿ya lo tengo?" (`!relationsById[c.id]`) trataba una respuesta con `relations` ausente/`undefined` como "todavía no cargado" -- si `getConceptRelations` alguna vez resolviera sin ese campo, el efecto reintentaría para siempre (nunca ocurría en producción porque la vista Grafo nunca se monta antes de que el usuario la pida explícitamente, pero SÍ ocurría ahora que la vista Lista es la que carga por defecto al entrar en la página). Arreglado forzando `relations ?? []` antes de guardar en el cache, para que "cargado pero vacío" y "no cargado" nunca se confundan.
+
+Tests nuevos: `conceptLevels.test.ts` (nuevo, 10 tests -- niveles con/sin prerrequisitos, cadena más profunda entre varios caminos, relaciones no-`PREREQUISITE_OF` ignoradas, aristas fuera del conjunto ignoradas, ciclo no cuelga ni pierde items, orden estable dentro del mismo nivel); `KnowledgeExplorer.test.tsx` (nuevo: prerrequisito listado antes que su dependiente aunque la API los devuelva en el orden contrario). Suite frontend completa 127/127, `tsc -b`/`oxlint` limpios (mismas advertencias preexistentes, ninguna nueva). Verificado en vivo tras reconstruir Docker contra el objetivo real "Big Query" (cadena real de 6 conceptos en `concept_relations`): tanto `/roadmap` como `/knowledge` muestran el orden correcto -- Selección básica → Filtrado WHERE → Uniones → GROUP BY/HAVING → Funciones de ventana → Particionamiento.
+
 ---
 
 # Vertical slice mínimo recomendado
