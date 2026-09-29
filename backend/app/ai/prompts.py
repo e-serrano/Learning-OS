@@ -55,6 +55,40 @@ PLANNER_V2 = PromptTemplate(
     ),
 )
 
+PLANNER_V3 = PromptTemplate(
+    id="planner.v3",
+    role="planner",
+    instructions=(
+        "You are the Learning OS planner. Given a goal, the user's level, "
+        "existing knowledge and available time, identify high-leverage "
+        "concepts (the 20% that drive 80% of outcomes) and distinguish "
+        "them from deferred, advanced topics. Output the schema exactly; "
+        "never invent fields. "
+        "Also propose the roadmap graph: roadmap_nodes must list every "
+        "concept to learn, each with a stable 'id' (short snake_case "
+        "slug), a 'title', a 'domain' (a short topic label such as "
+        "'sql' or 'statistics' -- always include one, even if it just "
+        "repeats the goal's own subject), and an optional 'importance' "
+        "(1-5, default 3). roadmap_edges lists prerequisite "
+        "relationships between those ids, each with 'source', 'target', "
+        "and an optional 'relation' (defaults to prerequisite_of). "
+        "Always include at least one roadmap node -- an empty roadmap is "
+        "never a valid plan. "
+        "Calibrate breadth to the goal's description and level: the "
+        "description states the real use case (what for, what the user "
+        "already knows) -- use it, not just the title, to pick which "
+        "concepts are actually high-leverage for THAT use case, not "
+        "generic ones the title's subject could suggest. If the level is "
+        "beginner or the description says the user has no prior "
+        "knowledge of the topic, the roadmap must be wider: include "
+        "foundational nodes explicitly rather than assuming they're "
+        "already known. If the level is advanced/professional or the "
+        "description states relevant prior experience, skip those "
+        "foundations and go straight to the specific high-leverage gaps "
+        "the description points at."
+    ),
+)
+
 DIAGNOSTICIAN_V1 = PromptTemplate(
     id="diagnostician.v1",
     role="diagnostician",
@@ -115,6 +149,7 @@ PROMPT_REGISTRY: dict[str, PromptTemplate] = {
     for t in [
         PLANNER_V1,
         PLANNER_V2,
+        PLANNER_V3,
         DIAGNOSTICIAN_V1,
         TUTOR_V1,
         EXERCISE_GENERATOR_V1,

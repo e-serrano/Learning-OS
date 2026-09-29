@@ -7,6 +7,7 @@ from app.ai.protocol import AIRequest
 EXPECTED_VERSIONS = {
     "planner.v1",
     "planner.v2",
+    "planner.v3",
     "diagnostician.v1",
     "tutor.v1",
     "exercise_generator.v1",
@@ -15,7 +16,7 @@ EXPECTED_VERSIONS = {
 }
 
 
-def test_registry_has_exactly_the_seven_required_versions() -> None:
+def test_registry_has_exactly_the_eight_required_versions() -> None:
     assert set(PROMPT_REGISTRY.keys()) == EXPECTED_VERSIONS
 
 
@@ -73,6 +74,19 @@ def test_planner_v2_tells_the_model_roadmap_nodes_need_a_domain() -> None:
     practice. v2 spells out the expected shape explicitly."""
     template = get_prompt("planner.v2")
     assert "domain" in template.instructions.lower()
+    assert "roadmap_nodes" in template.instructions
+    assert "roadmap_edges" in template.instructions
+
+
+def test_planner_v3_tells_the_model_to_use_the_description_and_calibrate_breadth() -> None:
+    """docs/TASKS.md T157: v2 already received `goal.description` in the
+    request but never told the model to actually use it -- a bare title
+    like "Big Query" produced a generic SQL-101 roadmap instead of one
+    calibrated to the user's real use case. v3 makes that instruction
+    explicit, plus widening the roadmap for a stated-beginner level."""
+    template = get_prompt("planner.v3")
+    assert "description" in template.instructions.lower()
+    assert "beginner" in template.instructions.lower()
     assert "roadmap_nodes" in template.instructions
     assert "roadmap_edges" in template.instructions
 

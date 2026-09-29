@@ -67,6 +67,11 @@ export const translations: Record<string, Record<Language, string>> = {
     en: 'e.g. Advanced SQL for analytics',
     es: 'p. ej. SQL avanzado para análisis de datos',
   },
+  'dashboard.description': { en: 'Description (optional)', es: 'Descripción (opcional)' },
+  'dashboard.descriptionPlaceholder': {
+    en: 'e.g.: I analyze sales data in BigQuery for work. I already know basic SQL and want to focus on cost and performance. If you have no prior knowledge of the topic, say so here -- the roadmap will cover more of the basics.',
+    es: 'p. ej.: Analizo datos de ventas en BigQuery para mi trabajo. Ya sé SQL básico y quiero centrarme en coste y rendimiento. Si no tienes conocimientos previos del tema, dilo aquí -- la ruta cubrirá más lo básico.',
+  },
   'dashboard.targetLevel': { en: 'Target level', es: 'Nivel objetivo' },
   'dashboard.creating': { en: 'Creating…', es: 'Creando…' },
   'dashboard.createGoal': { en: 'Create goal', es: 'Crear objetivo' },

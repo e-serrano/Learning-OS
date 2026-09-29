@@ -24,7 +24,7 @@ from app.ai.protocol import AIRequest
 from app.domain.ports import ConceptRepository, GoalRepository
 from app.services.context_builder import GoalNotFoundError
 
-PLANNER_PROMPT_VERSION = "planner.v2"
+PLANNER_PROMPT_VERSION = "planner.v3"
 
 
 @dataclass(frozen=True)

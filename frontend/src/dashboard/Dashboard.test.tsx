@@ -108,4 +108,71 @@ describe('Dashboard', () => {
 
     await waitFor(() => expect(screen.getByText('Learn SQL')).toBeInTheDocument())
   })
+
+  it('sends the description when the user fills it in', async () => {
+    const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (url.endsWith('/goals') && init?.method === 'POST') {
+        return Promise.resolve(jsonResponse(GOAL_1))
+      }
+      if (url.endsWith('/goals')) {
+        return Promise.resolve(jsonResponse({ goals: [] }))
+      }
+      return Promise.reject(new Error(`unexpected fetch: ${url}`))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderDashboard()
+
+    const titleInput = await screen.findByLabelText('What do you want to learn?')
+    fireEvent.change(titleInput, { target: { value: 'Learn SQL' } })
+    fireEvent.change(screen.getByLabelText('Description (optional)'), {
+      target: { value: 'I already know basic SQL, want to focus on BigQuery cost and performance.' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Create goal' }))
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining('/goals'),
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({
+            title: 'Learn SQL',
+            target_level: 'intermediate',
+            description: 'I already know basic SQL, want to focus on BigQuery cost and performance.',
+          }),
+        }),
+      ),
+    )
+  })
+
+  it('omits the description field when left blank', async () => {
+    const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (url.endsWith('/goals') && init?.method === 'POST') {
+        return Promise.resolve(jsonResponse(GOAL_1))
+      }
+      if (url.endsWith('/goals')) {
+        return Promise.resolve(jsonResponse({ goals: [] }))
+      }
+      return Promise.reject(new Error(`unexpected fetch: ${url}`))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderDashboard()
+
+    const titleInput = await screen.findByLabelText('What do you want to learn?')
+    fireEvent.change(titleInput, { target: { value: 'Learn SQL' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Create goal' }))
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining('/goals'),
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ title: 'Learn SQL', target_level: 'intermediate' }),
+        }),
+      ),
+    )
+  })
 })

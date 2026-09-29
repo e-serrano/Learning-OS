@@ -1364,6 +1364,22 @@ Bug real encontrado al escribir el test de este cambio: la comprobación "¿ya l
 
 Tests nuevos: `conceptLevels.test.ts` (nuevo, 10 tests -- niveles con/sin prerrequisitos, cadena más profunda entre varios caminos, relaciones no-`PREREQUISITE_OF` ignoradas, aristas fuera del conjunto ignoradas, ciclo no cuelga ni pierde items, orden estable dentro del mismo nivel); `KnowledgeExplorer.test.tsx` (nuevo: prerrequisito listado antes que su dependiente aunque la API los devuelva en el orden contrario). Suite frontend completa 127/127, `tsc -b`/`oxlint` limpios (mismas advertencias preexistentes, ninguna nueva). Verificado en vivo tras reconstruir Docker contra el objetivo real "Big Query" (cadena real de 6 conceptos en `concept_relations`): tanto `/roadmap` como `/knowledge` muestran el orden correcto -- Selección básica → Filtrado WHERE → Uniones → GROUP BY/HAVING → Funciones de ventana → Particionamiento.
 
+### T157 — Roadmap sin calibrar al caso de uso real: falta descripción en la creación del goal
+
+**Estado:** DONE
+**Dep:** T067 (`PlannerService`, ya enviaba `goal.description` a la IA), T150 (`planner.v2`)
+Analizando en vivo el roadmap real de "Big Query" (T156): 5 de 6 nodos eran SQL genérico, solo 1 específico de BigQuery -- el planner nunca priorizó coste ni datos anidados/repetidos (STRUCT/ARRAY), que son el 20% de mayor apalancamiento real para BigQuery específicamente. Causa raíz: el goal no tenía `description` (era `null`) -- `CreateGoalForm` (`Dashboard.tsx`) nunca exponía ese campo en la UI, aunque `Goal.description` existe en el dominio y `POST /goals` ya lo acepta de punta a punta. El planner recibía solo un título ("Big Query") como señal, así que producía un plan genérico en vez de uno calibrado al caso de uso real. Pedido explícito del usuario: exponer el campo con un ejemplo de qué escribir (tema libre, BigQuery vale como ilustración), y que un usuario sin conocimientos previos del tema pueda pedir un roadmap más amplio que cubra lo básico.
+
+**Nota:** dos partes, frontend y prompt.
+
+Frontend (`Dashboard.tsx`/`api/goals.ts`): nuevo `<textarea>` "Descripción (opcional)" entre título y nivel objetivo, con placeholder de ejemplo (`dashboard.descriptionPlaceholder`, ES/EN) mostrando el patrón pedido -- caso de uso real + qué sabe ya + indicación de decir "no tengo conocimientos previos" si aplica. Campo opcional a propósito (no bloquea la creación rápida de un goal); `description.trim() || undefined` para que `JSON.stringify` omita la clave entera cuando queda en blanco, en vez de enviar `""`.
+
+Prompt (`planner.v2` → `planner.v3`, nueva versión -- nunca se edita una versión ya publicada in-place, docs/AGENTS.md): v2 ya recibía `goal.description` en el `AIRequest` (`planner_service.py`, sin cambios ahí) pero nunca le decía al modelo que lo usara para nada -- una descripción real como "ya sé SQL básico, quiero enfocarme en coste" se enviaba pero se ignoraba. v3 añade instrucción explícita: calibrar qué conceptos son de alto apalancamiento según la descripción (caso de uso real), no solo el título; si el nivel es beginner o la descripción dice que no hay conocimiento previo, ampliar el roadmap con nodos fundacionales explícitos; si el nivel es avanzado/profesional o la descripción indica experiencia relevante, saltarse esos fundamentos.
+
+`docs/AI_CONTRACTS.md` #4 actualizado: nota explicando que "goal" incluye `description` como señal real de calibración, y las dos referencias a `planner.v2` corregidas a `planner.v3`.
+
+Tests nuevos: `test_prompts.py` (registro pasa a 8 versiones esperadas; nuevo test confirma que v3 menciona `description` y `beginner` además de `roadmap_nodes`/`roadmap_edges`), `test_planner_service.py` (versión de prompt actualizada a `planner.v3`; nueva aserción confirma que `sent.goal["description"]` llega en el request). `Dashboard.test.tsx`: 2 tests nuevos -- envía `description` cuando el usuario la rellena, la omite del body cuando queda en blanco. Suite backend completa 1035/1035, ruff/mypy limpios; suite frontend completa 129/129, `tsc -b`/`oxlint` limpios (sin advertencias nuevas). Verificado en vivo tras reconstruir Docker: formulario de nuevo objetivo muestra el campo y el placeholder de ejemplo correctamente.
+
 ---
 
 # Vertical slice mínimo recomendado

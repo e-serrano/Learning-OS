@@ -34,7 +34,11 @@ export function listGoals(): Promise<GoalListResponse> {
   return request('/goals')
 }
 
-export function createGoal(input: { title: string; target_level: TargetLevel }): Promise<Goal> {
+export function createGoal(input: {
+  title: string
+  target_level: TargetLevel
+  description?: string
+}): Promise<Goal> {
   return request('/goals', { method: 'POST', body: JSON.stringify(input) })
 }
 

@@ -139,6 +139,7 @@ function CreateGoalForm({
   const { t } = useTranslation()
   const [expanded, setExpanded] = useState(!collapsedByDefault)
   const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
   const [targetLevel, setTargetLevel] = useState<TargetLevel>('intermediate')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -156,8 +157,13 @@ function CreateGoalForm({
     setBusy(true)
     setError(null)
     try {
-      await createGoal({ title: title.trim(), target_level: targetLevel })
+      await createGoal({
+        title: title.trim(),
+        target_level: targetLevel,
+        description: description.trim() || undefined,
+      })
       setTitle('')
+      setDescription('')
       setExpanded(collapsedByDefault ? false : true)
       onCreated()
     } catch (err) {
@@ -178,6 +184,14 @@ function CreateGoalForm({
         onChange={(e) => setTitle(e.target.value)}
         placeholder={t('dashboard.goalPlaceholder')}
         required
+      />
+      <label htmlFor="goal-description">{t('dashboard.description')}</label>
+      <textarea
+        id="goal-description"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        placeholder={t('dashboard.descriptionPlaceholder')}
+        rows={3}
       />
       <label htmlFor="goal-level">{t('dashboard.targetLevel')}</label>
       <select

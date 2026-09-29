@@ -100,8 +100,18 @@ Output:
 
 The planner must distinguish high-leverage fundamentals from advanced optional knowledge.
 
+"Goal" includes `description` -- the real use case (what for, what the
+user already knows), not just the title. `planner.v3`'s prompt
+(docs/TASKS.md T157) explicitly tells the model to use it to pick which
+concepts are actually high-leverage for that use case rather than
+generic ones the title alone could suggest, and to widen the roadmap
+with explicit foundational nodes when the level is beginner or the
+description states no prior knowledge -- a bare title with no
+description (e.g. "Big Query") previously produced a generic SQL-101
+roadmap regardless of the user's real goal.
+
 `roadmap_nodes`/`roadmap_edges` stay untyped `list[dict]` in the schema (no
-nested Pydantic model pins their keys), so `planner.v2`'s prompt (docs/TASKS.md
+nested Pydantic model pins their keys), so `planner.v3`'s prompt (docs/TASKS.md
 T150) is the only place that tells the model their expected shape --
 `id`/`title`/`domain` per node (`importance` optional, default 3),
 `source`/`target` per edge (`relation` optional, default
