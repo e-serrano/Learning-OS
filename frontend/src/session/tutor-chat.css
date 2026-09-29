@@ -5,6 +5,9 @@
   font: inherit;
   background: transparent;
   color: inherit;
+  /* Forces the native popup into dark rendering regardless of the
+     OS/browser's own light/dark preference (docs/TASKS.md T158). */
+  color-scheme: dark;
 }
 
 .tutor-chat-transcript {

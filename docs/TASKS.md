@@ -1380,6 +1380,16 @@ Prompt (`planner.v2` → `planner.v3`, nueva versión -- nunca se edita una vers
 
 Tests nuevos: `test_prompts.py` (registro pasa a 8 versiones esperadas; nuevo test confirma que v3 menciona `description` y `beginner` además de `roadmap_nodes`/`roadmap_edges`), `test_planner_service.py` (versión de prompt actualizada a `planner.v3`; nueva aserción confirma que `sent.goal["description"]` llega en el request). `Dashboard.test.tsx`: 2 tests nuevos -- envía `description` cuando el usuario la rellena, la omite del body cuando queda en blanco. Suite backend completa 1035/1035, ruff/mypy limpios; suite frontend completa 129/129, `tsc -b`/`oxlint` limpios (sin advertencias nuevas). Verificado en vivo tras reconstruir Docker: formulario de nuevo objetivo muestra el campo y el placeholder de ejemplo correctamente.
 
+### T158 — Combobox (`<select>`) sin forzar modo oscuro
+
+**Estado:** DONE
+**Dep:** ninguna (CSS puro)
+Pedido explícito del usuario: "reconfigura los UI de los combobox para modo oscuro". Investigado: la app entera no tiene una paleta oscura propia -- todo (`index.css`: `:root { color-scheme: light dark; }`, y cada componente con `background: transparent; color: inherit;`) depende de que el navegador/SO auto-rellene el lienzo oscuro cuando detecta `prefers-color-scheme: dark`. La caja cerrada de cada `<select>` hereda ese color correctamente (fondo transparente, texto heredado), pero el desplegable de opciones es un control nativo aparte -- su color depende de que el navegador respete `color-scheme` con la preferencia real del SO en ese momento, algo que no está garantizado en todos los navegadores/SO (ej. Windows con el SO en claro pero la página forzada a oscuro) y que ningún `select` de la app fijaba explícitamente.
+
+**Nota:** añadido `color-scheme: dark;` a los 5 bloques CSS que estilan cada `<select>` de la app (`dashboard.css` `.create-goal-form select`, `goal.css` `.goal-view-actions select`, `knowledge.css` `.knowledge-explorer select`, `session/tutor-chat.css` `.tutor-chat select`, `settings.css` `.settings-view select` -- cubre los 6 componentes que renderizan un `<select>`, ya que `AIProviderSettings` vive anidado dentro de `.settings-view`). Fuerza el desplegable nativo a renderizar oscuro siempre, sin depender de que el SO/navegador visitante también esté en oscuro -- coherente con que esta app no tiene ni necesita un tema claro real.
+
+Sin test nuevo -- CSS puro, `color-scheme` no es observable de forma significativa en jsdom (sin layout/rendering real) y el desplegable nativo del `<select>` no es parte del DOM capturable por un test de React Testing Library. Verificado en vivo tras reconstruir Docker: `getComputedStyle(select).colorScheme === 'dark'` confirmado en los 5 selects reales de la app (idioma, proveedor de IA, nivel de objetivo, modo de sesión, filtro de estado); suite frontend completa 129/129 sigue pasando (sin regresión visual en el estado cerrado).
+
 ---
 
 # Vertical slice mínimo recomendado
