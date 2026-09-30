@@ -236,4 +236,50 @@ describe('GoalView', () => {
 
     await waitFor(() => expect(screen.getByText('project id: project_1')).toBeInTheDocument())
   })
+
+  it('shows a start-project failure inline instead of blanking the rest of the page', async () => {
+    // docs/TASKS.md T161 (ISSUE-006): a gateway timeout returns a
+    // non-JSON body -- client.ts falls back to response.statusText --
+    // and GoalView used to replace its ENTIRE render with just that
+    // error, discarding the goal title/links/actions already on screen.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+        if (url.match(/\/goals\/[^/]+\/projects$/) && init?.method === 'POST') {
+          return Promise.resolve({
+            ok: false,
+            status: 504,
+            statusText: 'Gateway Time-out',
+            json: async () => {
+              throw new Error('not json')
+            },
+          } as unknown as Response)
+        }
+        if (url.match(/\/goals\/[^/]+\/knowledge$/)) {
+          return Promise.resolve(jsonResponse({ concepts: [{ id: 'window_functions' }] }))
+        }
+        if (url.match(/\/goals\/[^/]+\/progress$/)) {
+          return Promise.resolve(jsonResponse(PROGRESS))
+        }
+        if (url.match(/\/goals\/[^/]+\/projects$/)) {
+          return Promise.resolve(jsonResponse({ projects: [] }))
+        }
+        if (url.match(/\/goals\/[^/]+$/)) {
+          return Promise.resolve(jsonResponse(ACTIVE_GOAL))
+        }
+        return Promise.reject(new Error(`unexpected fetch: ${url}`))
+      }),
+    )
+
+    renderGoalView()
+
+    await screen.findByRole('heading', { name: 'Learn SQL' })
+    fireEvent.click(screen.getByRole('button', { name: 'Start project' }))
+
+    await waitFor(() => expect(screen.getByText('Gateway Time-out')).toBeInTheDocument())
+    expect(screen.getByRole('heading', { name: 'Learn SQL' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Roadmap' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Start project' })).toBeInTheDocument()
+  })
 })

@@ -16,6 +16,20 @@ import './roadmap.css'
 
 const MAX_MASTERY = 5
 
+/** `RoadmapValidationError`/`AIInvalidOutputError` both map to
+ * `AI_INVALID_OUTPUT` (docs/AI_CONTRACTS.md #4, docs/TASKS.md T153) and
+ * their message is a raw, English-only exception string -- shown as-is
+ * it read wrong on an otherwise fully Spanish-localized page
+ * (docs/TASKS.md T161, ISSUE-001). Any other `ApiError` (network,
+ * unexpected backend failure) still shows its own message, same as
+ * every other page in the app. */
+function describeGenerationError(err: unknown, t: (key: string) => string): string {
+  if (err instanceof ApiError) {
+    return err.code === 'AI_INVALID_OUTPUT' ? t('roadmap.generationFailed') : err.message
+  }
+  return t('common.couldNotReachBackend')
+}
+
 /** Roadmap view (docs/TASKS.md T113, dep T101): dependencies and
  * progress per concept. Renders the node/edge graph `GET
  * /goals/{id}/roadmap` returns as a readable list rather than a node-link
@@ -61,7 +75,7 @@ export function RoadmapView() {
       setRoadmap(await generateRoadmap(goalId))
       setNotGenerated(false)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
+      setError(describeGenerationError(err, t))
     } finally {
       setBusy(false)
     }
@@ -74,13 +88,13 @@ export function RoadmapView() {
     try {
       setRoadmap(await recalculateRoadmap(goalId))
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
+      setError(describeGenerationError(err, t))
     } finally {
       setBusy(false)
     }
   }
 
-  if (error) {
+  if (error && !roadmap && !notGenerated) {
     return (
       <div className="roadmap-view">
         <BackLink goalId={goalId} />
@@ -95,6 +109,7 @@ export function RoadmapView() {
         <BackLink goalId={goalId} />
         <h2>{t('roadmap.title')}</h2>
         <p className="subtitle">{t('roadmap.notGenerated')}</p>
+        {error && <div className="message error">{error}</div>}
         <button type="button" onClick={handleGenerate} disabled={busy}>
           {busy ? t('roadmap.generating') : t('roadmap.generate')}
         </button>
@@ -131,6 +146,7 @@ export function RoadmapView() {
         {busy ? t('roadmap.recalculating') : t('roadmap.recalculate')}
       </button>
       {showSlowHint && <p className="field-hint">{t('common.slowAiHint')}</p>}
+      {error && <div className="message error">{error}</div>}
       <div className="roadmap-nodes">
         {orderedNodes.map((node) => (
           <RoadmapNodeCard key={node.id} node={node} prerequisites={prerequisitesOf(node.id)} />

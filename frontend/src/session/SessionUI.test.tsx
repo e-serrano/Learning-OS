@@ -85,6 +85,29 @@ describe('SessionUI', () => {
     expect(screen.getByRole('button', { name: 'Try it: run SQL' })).toBeInTheDocument()
   })
 
+  it('hides the SQL sandbox for a non-SQL exercise', async () => {
+    // docs/TASKS.md T161 (ISSUE-002): the sandbox used to render for
+    // every exercise regardless of type -- a Python exercise offered a
+    // fully working "run SQL" button with no connection to the task.
+    const codingActivity = {
+      ...ACTIVITY_1,
+      content: { ...ACTIVITY_1.content, type: 'coding', prompt: 'Write a Python function.' },
+    }
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((input: RequestInfo | URL) => {
+        const url = String(input)
+        if (url.endsWith('/next')) return Promise.resolve(jsonResponse(codingActivity))
+        return Promise.resolve(jsonResponse(SESSION))
+      }),
+    )
+
+    renderAt('/sessions/session_1')
+
+    expect(await screen.findByText('Write a Python function.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Try it: run SQL' })).not.toBeInTheDocument()
+  })
+
   it('reveals hints on demand', async () => {
     vi.stubGlobal(
       'fetch',

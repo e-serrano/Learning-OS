@@ -1,5 +1,6 @@
 import { type FormEvent, useEffect, useState } from 'react'
 import { ApiError } from '../api/client'
+import { listKnowledge } from '../api/knowledge'
 import {
   type Review,
   type ReviewCompletionResult,
@@ -32,12 +33,32 @@ export function ReviewsUI() {
   const [confidence, setConfidence] = useState(DEFAULT_CONFIDENCE)
   const [result, setResult] = useState<ReviewCompletionResult | null>(null)
   const [busy, setBusy] = useState(false)
+  const [titleById, setTitleById] = useState<Record<string, string>>({})
 
   useEffect(() => {
     listTodaysReviews()
       .then(({ reviews: list }) => {
         setReviews(list)
         setPhase(list.length > 0 ? 'reviewing' : 'empty')
+
+        // Reviews only carry `concept_id` (docs/TASKS.md T161, ISSUE-004
+        // -- a raw id like "select_basic" was shown as-is where every
+        // other page in the app shows the concept's title). Reusing
+        // `listKnowledge`, the same endpoint KnowledgeExplorer already
+        // uses, avoids adding a new backend field just for this.
+        const goalIds = [...new Set(list.map((r) => r.goal_id))]
+        Promise.all(goalIds.map((goalId) => listKnowledge(goalId)))
+          .then((results) => {
+            const next: Record<string, string> = {}
+            for (const { concepts } of results) {
+              for (const c of concepts) next[c.id] = c.title
+            }
+            setTitleById(next)
+          })
+          .catch(() => {
+            // Best-effort -- falling back to the raw id is still correct,
+            // just less friendly, never worth failing the whole page.
+          })
       })
       .catch((err: unknown) => {
         setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
@@ -111,7 +132,7 @@ export function ReviewsUI() {
 
       {phase === 'reviewing' && current && (
         <>
-          <p className="concept-label">{current.concept_id}</p>
+          <p className="concept-label">{titleById[current.concept_id] ?? current.concept_id}</p>
           <form onSubmit={handleSubmit}>
             <label htmlFor="answer">{t('reviews.whatDoYouRecall')}</label>
             <textarea

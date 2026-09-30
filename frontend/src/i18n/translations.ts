@@ -106,6 +106,10 @@ export const translations: Record<string, Record<Language, string>> = {
   'roadmap.recalculate': { en: 'Recalculate', es: 'Recalcular' },
   'roadmap.recalculating': { en: 'Recalculating…', es: 'Recalculando…' },
   'roadmap.requires': { en: 'Requires: ', es: 'Requiere: ' },
+  'roadmap.generationFailed': {
+    en: "The AI couldn't produce a usable roadmap this time. Try again.",
+    es: 'La IA no pudo generar una hoja de ruta utilizable esta vez. Inténtalo de nuevo.',
+  },
 
   // --- knowledge explorer ------------------------------------------------
   'knowledge.title': { en: 'Knowledge Explorer', es: 'Explorador de Conocimiento' },

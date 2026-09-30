@@ -48,6 +48,31 @@ describe('ReviewsUI', () => {
     expect(screen.getByText('1 of 2')).toBeInTheDocument()
   })
 
+  it('shows the concept title instead of its raw id when available', async () => {
+    // docs/TASKS.md T161 (ISSUE-004): the raw id (e.g. "select_basic")
+    // used to be shown as-is -- every other page in the app shows the
+    // friendly concept title.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((input: RequestInfo | URL) => {
+        const url = String(input)
+        if (url.includes('/knowledge')) {
+          return Promise.resolve(
+            jsonResponse({
+              concepts: [{ id: 'window_functions', title: 'Window Functions' }],
+            }),
+          )
+        }
+        return Promise.resolve(jsonResponse({ reviews: [REVIEW_1] }))
+      }),
+    )
+
+    render(<ReviewsUI />, { wrapper: LanguageProvider })
+
+    expect(await screen.findByText('Window Functions')).toBeInTheDocument()
+    expect(screen.queryByText('window_functions')).not.toBeInTheDocument()
+  })
+
   it('submits a review and advances to the next one', async () => {
     vi.stubGlobal(
       'fetch',

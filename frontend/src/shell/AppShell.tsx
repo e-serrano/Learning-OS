@@ -19,7 +19,12 @@ import './AppShell.css'
  * count is a direct read, no separate "unread" concept needed. Refetches
  * on every navigation (not just once on mount) since `AppShell` itself
  * never remounts between routes -- otherwise the badge would go stale
- * the moment the user approves/rejects a proposal on `/vault`. */
+ * the moment the user approves/rejects a proposal on `/vault`. That
+ * still left the count stale for an approve/reject that happens WITHOUT
+ * a navigation (staying on `/vault` itself, T161/ISSUE-005) -- fixed by
+ * also listening for a `vault:changed` window event `VaultDiffUI`
+ * dispatches right after a successful apply/reject, since the two
+ * components are router siblings with no other shared state. */
 export function AppShell() {
   const { t } = useTranslation()
   const location = useLocation()
@@ -27,15 +32,20 @@ export function AppShell() {
 
   useEffect(() => {
     let cancelled = false
-    listVaultChanges()
-      .then((res) => {
-        if (!cancelled) setPendingChanges(res.changes.length)
-      })
-      .catch(() => {
-        // Best-effort nav badge -- never worth surfacing an error for.
-      })
+    function refresh() {
+      listVaultChanges()
+        .then((res) => {
+          if (!cancelled) setPendingChanges(res.changes.length)
+        })
+        .catch(() => {
+          // Best-effort nav badge -- never worth surfacing an error for.
+        })
+    }
+    refresh()
+    window.addEventListener('vault:changed', refresh)
     return () => {
       cancelled = true
+      window.removeEventListener('vault:changed', refresh)
     }
   }, [location.pathname])
 

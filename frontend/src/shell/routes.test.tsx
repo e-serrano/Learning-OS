@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { LanguageProvider } from '../i18n/LanguageContext'
@@ -178,5 +178,72 @@ describe('AppRoutes', () => {
     expect(
       await screen.findByLabelText('1 pending change(s) in the vault'),
     ).toBeInTheDocument()
+  })
+
+  it('clears the pending-changes badge right after approving on the Vault page itself, no navigation needed', async () => {
+    // docs/TASKS.md T161 (ISSUE-005): the badge only refetched on
+    // location.pathname change, so approving/rejecting while staying on
+    // /vault left it showing a stale count until the user navigated away
+    // and back.
+    let pending = true
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+        if (url.match(/\/vault\/changes\/change_1\/apply$/) && init?.method === 'POST') {
+          pending = false
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              id: 'change_1',
+              path: 'Concepts/Window Functions.md',
+              operation: 'create_file',
+              section: null,
+              content: '# Window Functions',
+              status: 'applied',
+              error: null,
+              created_at: '2026-01-01T00:00:00Z',
+              updated_at: '2026-01-01T00:00:00Z',
+              applied_at: '2026-01-01T00:00:01Z',
+            }),
+          })
+        }
+        if (url.match(/\/vault\/changes$/)) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              changes: pending
+                ? [
+                    {
+                      id: 'change_1',
+                      path: 'Concepts/Window Functions.md',
+                      operation: 'create_file',
+                      section: null,
+                      content: '# Window Functions',
+                      status: 'pending',
+                      error: null,
+                      created_at: '2026-01-01T00:00:00Z',
+                      updated_at: '2026-01-01T00:00:00Z',
+                      applied_at: null,
+                    },
+                  ]
+                : [],
+            }),
+          })
+        }
+        return Promise.resolve({ ok: true, json: async () => ({ goals: [] }) })
+      }),
+    )
+
+    renderAt('/vault')
+
+    await screen.findByLabelText('1 pending change(s) in the vault')
+
+    fireEvent.click(screen.getByRole('button', { name: /Window Functions.md/ }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Approve' }))
+
+    await waitFor(() =>
+      expect(screen.queryByLabelText(/pending change/)).not.toBeInTheDocument(),
+    )
   })
 })

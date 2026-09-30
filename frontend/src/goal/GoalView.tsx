@@ -131,7 +131,7 @@ export function GoalView() {
     }
   }
 
-  if (error) {
+  if (error && !goal) {
     return (
       <div className="goal-view">
         <div className="message error">{error}</div>
@@ -151,6 +151,7 @@ export function GoalView() {
       <Link to="/" className="back-link">
         {t('common.backToDashboard')}
       </Link>
+      {error && <div className="message error">{error}</div>}
       <div className="goal-view-header">
         <h2>{goal.title}</h2>
         <span className={`status-tag status-${goal.status}`}>{goal.status}</span>

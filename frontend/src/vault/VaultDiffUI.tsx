@@ -71,6 +71,7 @@ export function VaultDiffUI() {
     setError(null)
     try {
       updateChange(await applyVaultChange(id))
+      window.dispatchEvent(new Event('vault:changed'))
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
     } finally {
@@ -83,6 +84,7 @@ export function VaultDiffUI() {
     setError(null)
     try {
       updateChange(await rejectVaultChange(id))
+      window.dispatchEvent(new Event('vault:changed'))
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
     } finally {

@@ -1,3 +1,4 @@
+import asyncio
 from pathlib import Path
 
 import pytest
@@ -16,6 +17,18 @@ from app.persistence.models import AIRunModel
 
 class Greeting(BaseModel):
     text: str
+
+
+class _HangingProvider:
+    """A provider that never returns -- docs/TASKS.md T161: a real
+    OpenRouter call was observed taking 419s despite each adapter's own
+    60s httpx timeout (a provider trickling keep-alive bytes resets
+    httpx's per-chunk read timeout indefinitely, so it never bounds
+    total wall-clock time). This stands in for that failure mode."""
+
+    async def generate(self, request: AIRequest, response_model: type[BaseModel]) -> BaseModel:
+        await asyncio.sleep(3600)
+        raise AssertionError("should have been cancelled by the orchestrator's own timeout")
 
 
 def _engine(tmp_path: Path):  # type: ignore[no-untyped-def]
@@ -112,6 +125,29 @@ async def test_session_id_is_recorded_when_provided(tmp_path: Path) -> None:
         run = db.scalars(select(AIRunModel)).first()
         assert run is not None
         assert run.session_id == "session_1"
+
+
+@pytest.mark.asyncio
+async def test_a_hanging_provider_is_cancelled_and_raises_a_clean_unavailable_error(
+    tmp_path: Path,
+) -> None:
+    """docs/TASKS.md T161: without this, a provider that never answers
+    (or answers well past nginx's own timeout) leaves nginx to kill the
+    connection and hand the user a raw, untranslated 504 instead of the
+    backend's own clean, already-handled AIProviderUnavailableError."""
+    engine = _engine(tmp_path)
+    orchestrator = AIOrchestrator(
+        engine, _HangingProvider(), provider_name="mock", model="mock-1", timeout_seconds=0.05
+    )
+
+    with pytest.raises(AIProviderUnavailableError):
+        await orchestrator.generate(AIRequest(role="tutor", prompt_version="tutor.v1"), Greeting)
+
+    with DbSession(engine) as db:
+        run = db.scalars(select(AIRunModel)).first()
+        assert run is not None
+        assert run.success is False
+        assert run.error_type == "AIProviderUnavailableError"
 
 
 @pytest.mark.asyncio

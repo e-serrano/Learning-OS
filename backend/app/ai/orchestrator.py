@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 import time
 from datetime import UTC, datetime
@@ -7,8 +8,19 @@ from pydantic import BaseModel
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session as DbSession
 
+from app.ai.errors import AIProviderUnavailableError
 from app.ai.protocol import AIProvider, AIRequest
 from app.persistence.models import AIRunModel
+
+# Comfortably under nginx's proxy_read_timeout (180s, docs/TASKS.md T152)
+# -- a real project-generation call was observed taking 419s (primary +
+# retry + fallback, each adapter-level timeout=60s not actually bounding
+# wall-clock time when a provider trickles keep-alive bytes), so nginx
+# killed the connection and the user saw a raw, unhandled 504 instead of
+# a clean error (docs/TASKS.md T161). This is the one place every AI
+# call already funnels through, so it's the one place a hard deadline
+# guarantees the backend always answers before nginx does.
+DEFAULT_PROVIDER_TIMEOUT_SECONDS = 150.0
 
 
 def _input_hash(request: AIRequest) -> str:
@@ -32,12 +44,14 @@ class AIOrchestrator:
         provider_name: str,
         model: str,
         language: str = "en",
+        timeout_seconds: float = DEFAULT_PROVIDER_TIMEOUT_SECONDS,
     ) -> None:
         self._engine = engine
         self._provider = provider
         self._provider_name = provider_name
         self._model = model
         self._language = language
+        self._timeout_seconds = timeout_seconds
 
     @property
     def provider_name(self) -> str:
@@ -64,9 +78,16 @@ class AIOrchestrator:
         success = False
         error_type: str | None = None
         try:
-            result = await self._provider.generate(request, response_model)
+            result = await asyncio.wait_for(
+                self._provider.generate(request, response_model), timeout=self._timeout_seconds
+            )
             success = True
             return result
+        except TimeoutError as exc:
+            error_type = "AIProviderUnavailableError"
+            raise AIProviderUnavailableError(
+                f"The AI provider did not respond within {int(self._timeout_seconds)}s."
+            ) from exc
         except Exception as exc:
             error_type = type(exc).__name__
             raise

@@ -88,4 +88,39 @@ describe('RoadmapView', () => {
 
     await waitFor(() => expect(screen.getByText('Window Functions')).toBeInTheDocument())
   })
+
+  it('shows a translated message and keeps the retry button when generation fails', async () => {
+    // docs/TASKS.md T161 (ISSUE-001): a RoadmapValidationError's raw
+    // English message ("the AI proposed no concepts for this roadmap")
+    // used to be shown as-is, and the whole page collapsed to just that
+    // error -- no way to retry without navigating away and back.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((_input: RequestInfo | URL, init?: RequestInit) => {
+        if (init?.method === 'POST') {
+          return Promise.resolve(
+            errorResponse(
+              'AI_INVALID_OUTPUT',
+              'the AI proposed no concepts for this roadmap',
+              422,
+            ),
+          )
+        }
+        return Promise.resolve(errorResponse('NOT_FOUND', 'not found'))
+      }),
+    )
+
+    renderAt('/goals/goal_1/roadmap')
+
+    const generateButton = await screen.findByRole('button', { name: 'Generate roadmap' })
+    fireEvent.click(generateButton)
+
+    expect(
+      await screen.findByText("The AI couldn't produce a usable roadmap this time. Try again."),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText('the AI proposed no concepts for this roadmap'),
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Generate roadmap' })).toBeInTheDocument()
+  })
 })

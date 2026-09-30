@@ -224,7 +224,7 @@ export function SessionUI() {
             </div>
           )}
 
-          <SqlSandbox />
+          {activity.content.type === 'sql' && <SqlSandbox />}
 
           <form onSubmit={handleSubmit}>
             <label htmlFor="answer">{t('session.yourAnswer')}</label>
