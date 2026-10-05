@@ -1448,6 +1448,18 @@ Frontend (`AIProviderSettings.tsx`): guarda la lista completa de proveedores del
 
 Tests nuevos: backend (`test_onboarding.py`, sonda de red parcheada para validar varios proveedores remotos sin red real) -- cambiar de proveedor conserva el anterior con su clave, volver reutiliza la clave guardada sin escribirla (la sonda recibe la clave del keyring), reescribir una clave sobrescribe la misma entrada sin dejar huérfanos, un proveedor sin clave guardada ni escrita sigue fallando; frontend (`AIProviderSettings.test.tsx`) -- restaurar modelo/endpoint/fallback, clave opcional con pista cuando hay una guardada, sigue obligatoria sin ninguna, `validate` recibe `credential: null` al reutilizarla.
 
+### T163 — Ollama: modelo y fallback como desplegables con los modelos instalados
+
+**Estado:** DONE
+**Dep:** T146 (sección de IA en Ajustes), T148 (`fallback_model`), T162
+Pedido explícito del usuario: "cuando se seleccione ollama en los ajustes para ponerlo como proveedor de IA, quiero que en la seleccion de modelos sean desplegables y se carguen los modelos que tenga descargados e instalados el usuario".
+
+**Nota:** el navegador no puede hablar con Ollama -- el endpoint que el usuario escribe (p. ej. `http://host.docker.internal:11434`) solo es alcanzable desde el backend, y AGENTS.md prohíbe saltarse la API. Ruta nueva `GET /onboarding/ollama/models?base_url=...` (por defecto `http://localhost:11434`): `list_ollama_models()` (`app/ai/adapters/ollama.py`, el código específico de Ollama sigue dentro de su adaptador) llama a `GET {base_url}/api/tags` y devuelve los nombres ordenados. Endpoint inalcanzable o respuesta malformada → `AI_UNAVAILABLE` 503, igual que el resto de rutas de IA. No lista modelos de embeddings por separado: `/api/tags` no distingue capacidades sin una llamada extra por modelo (`/api/show`), y elegir uno como modelo de chat falla en la validación con un error claro.
+
+Frontend (`AIProviderSettings.tsx`): con Ollama seleccionado y un endpoint escrito, pide los modelos (con *debounce* de 400 ms, porque el endpoint se teclea) y convierte "Modelo" y "Modelo de fallback" en `<select>`; el fallback gana una primera opción "Ninguno". Un `<select>` solo puede mostrar un valor instalado, así que un modelo guardado que no esté instalado se ajusta al primero de la lista, y `llama3` casa con `llama3:latest` (Ollama los trata como el mismo). Si el endpoint no responde, o no hay ningún modelo instalado, los campos siguen siendo de texto libre con una pista (`aiProvider.ollamaUnreachable`, que menciona `host.docker.internal` para quien lo ejecute en Docker, y `aiProvider.ollamaNoModels`). Con otro proveedor no se hace ninguna petición. El asistente de onboarding (`CredentialModelStep`) no cambia: el pedido era sobre Ajustes.
+
+Tests nuevos: backend -- `test_ollama.py` (nombres ordenados desde `/api/tags`, lista vacía, error de conexión → `AIProviderUnavailableError`, respuestas malformadas → `AIInvalidOutputError`), `test_onboarding.py` (ruta devuelve los modelos y reenvía el `base_url`, usa el endpoint local por defecto, endpoint caído → 503 `AI_UNAVAILABLE`); frontend -- `AIProviderSettings.test.tsx` (desplegables con los modelos instalados y petición con el endpoint codificado, `llama3` → `llama3:latest`, modelo no instalado → primero de la lista, guardar envía lo elegido, texto libre + pista si Ollama no responde o no tiene modelos, ninguna petición con otro proveedor). `ruff`/`mypy`/`tsc -b`/`oxlint` limpios (sin advertencias nuevas).
+
 ---
 
 # Vertical slice mínimo recomendado

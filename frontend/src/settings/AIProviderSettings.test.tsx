@@ -308,6 +308,116 @@ describe('AIProviderSettings', () => {
     })
   })
 
+  describe('Ollama installed models (docs/TASKS.md T163)', () => {
+    function stubFetch(models: Response | Error) {
+      const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL) => {
+        const url = String(input)
+        if (url.includes('/onboarding/ollama/models')) {
+          return models instanceof Error ? Promise.reject(models) : Promise.resolve(models)
+        }
+        if (url.endsWith('/onboarding/status')) {
+          return Promise.resolve(jsonResponse(STATUS_WITH_OLLAMA))
+        }
+        if (url.endsWith('/onboarding/ai-provider')) {
+          return Promise.resolve(jsonResponse({ onboarding_step: 'AI_PROVIDER' }))
+        }
+        return Promise.resolve(jsonResponse({ onboarding_step: 'VALIDATE', ok: true, reason: null }))
+      })
+      vi.stubGlobal('fetch', fetchMock)
+      return fetchMock
+    }
+
+    const optionNames = (select: HTMLElement) =>
+      Array.from((select as HTMLSelectElement).options).map((o) => o.value)
+
+    it('turns the model and fallback fields into dropdowns of the installed models', async () => {
+      const fetchMock = stubFetch(jsonResponse({ models: ['llama3:latest', 'qwen3:8b'] }))
+      render(<AIProviderSettings />, { wrapper: LanguageProvider })
+
+      const model = await screen.findByRole('combobox', { name: 'Model' })
+
+      expect(optionNames(model)).toEqual(['llama3:latest', 'qwen3:8b'])
+      expect(optionNames(screen.getByLabelText('Fallback model (optional)'))).toEqual([
+        '',
+        'llama3:latest',
+        'qwen3:8b',
+      ])
+      const asked = fetchMock.mock.calls.find((args: unknown[]) =>
+        String(args[0]).includes('/onboarding/ollama/models'),
+      )
+      expect(String(asked![0])).toContain(encodeURIComponent('http://localhost:11434'))
+    })
+
+    it('keeps the saved model selected when Ollama lists it with a :latest tag', async () => {
+      stubFetch(jsonResponse({ models: ['qwen3:8b', 'llama3:latest'] }))
+      render(<AIProviderSettings />, { wrapper: LanguageProvider })
+
+      await screen.findByRole('combobox', { name: 'Model' })
+
+      expect(screen.getByLabelText('Model')).toHaveValue('llama3:latest')
+    })
+
+    it('snaps a model that is not installed to the first installed one', async () => {
+      stubFetch(jsonResponse({ models: ['mistral:7b', 'qwen3:8b'] }))
+      render(<AIProviderSettings />, { wrapper: LanguageProvider })
+
+      await screen.findByRole('combobox', { name: 'Model' })
+
+      expect(screen.getByLabelText('Model')).toHaveValue('mistral:7b')
+    })
+
+    it('saves the model and fallback picked from the dropdowns', async () => {
+      const fetchMock = stubFetch(jsonResponse({ models: ['llama3:latest', 'qwen3:8b'] }))
+      render(<AIProviderSettings />, { wrapper: LanguageProvider })
+      await screen.findByRole('combobox', { name: 'Model' })
+
+      fireEvent.change(screen.getByLabelText('Model'), { target: { value: 'qwen3:8b' } })
+      fireEvent.change(screen.getByLabelText('Fallback model (optional)'), {
+        target: { value: 'llama3:latest' },
+      })
+      fireEvent.click(screen.getByRole('button', { name: 'Save & test connection' }))
+
+      await screen.findByText('Connected successfully.')
+      const call = fetchMock.mock.calls.find((args: unknown[]) =>
+        String(args[0]).endsWith('/onboarding/ai-provider'),
+      )
+      const body = JSON.parse((call![1]?.body as string) ?? '{}')
+      expect(body.model).toBe('qwen3:8b')
+      expect(body.fallback_model).toBe('llama3:latest')
+    })
+
+    it('stays free-text, with a hint, when Ollama cannot be reached', async () => {
+      stubFetch(new Error('network down'))
+      render(<AIProviderSettings />, { wrapper: LanguageProvider })
+
+      expect(await screen.findByText(/Could not list the models installed in Ollama/)).toBeInTheDocument()
+      expect(screen.getByRole('textbox', { name: 'Model' })).toHaveValue('llama3')
+    })
+
+    it('stays free-text, with a hint, when Ollama has no models installed', async () => {
+      stubFetch(jsonResponse({ models: [] }))
+      render(<AIProviderSettings />, { wrapper: LanguageProvider })
+
+      expect(await screen.findByText(/has no models installed/)).toBeInTheDocument()
+      expect(screen.getByRole('textbox', { name: 'Model' })).toHaveValue('llama3')
+    })
+
+    it('does not ask Ollama for models when another provider is selected', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(jsonResponse(STATUS_WITH_ANTHROPIC))
+      vi.stubGlobal('fetch', fetchMock)
+      render(<AIProviderSettings />, { wrapper: LanguageProvider })
+      await screen.findByLabelText('AI provider')
+
+      await new Promise((resolve) => setTimeout(resolve, 600))
+
+      expect(
+        fetchMock.mock.calls.some((args: unknown[]) =>
+          String(args[0]).includes('/onboarding/ollama/models'),
+        ),
+      ).toBe(false)
+    })
+  })
+
   it('shows an error message when the initial status fetch fails', async () => {
     vi.stubGlobal(
       'fetch',

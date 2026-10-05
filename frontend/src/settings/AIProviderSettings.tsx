@@ -5,6 +5,7 @@ import {
   type OnboardingStatus,
   configureAIProvider,
   getStatus,
+  listOllamaModels,
   validateAIProvider,
 } from '../api/onboarding'
 import { useTranslation } from '../i18n/LanguageContext'
@@ -36,6 +37,11 @@ export function AIProviderSettings() {
   // keeps one entry (config + keyring ref) per provider so switching away
   // and back never loses it (docs/TASKS.md T162, user request).
   const [saved, setSaved] = useState<AIProviderConfig[]>([])
+  // Models the user has pulled into Ollama, fetched through the backend
+  // (docs/TASKS.md T163, user request). `null` = not loaded yet or the
+  // endpoint is unreachable -- the fields stay free-text in that case.
+  const [ollamaModels, setOllamaModels] = useState<string[] | null>(null)
+  const [ollamaFailed, setOllamaFailed] = useState(false)
 
   useEffect(() => {
     getStatus()
@@ -58,7 +64,39 @@ export function AIProviderSettings() {
       })
   }, [t])
 
+  useEffect(() => {
+    if (phase !== 'ready' || providerId !== 'ollama' || !baseUrl.trim()) return
+    let stale = false
+    // Debounced: the endpoint field is typed into, one keystroke at a time.
+    const timer = setTimeout(() => {
+      listOllamaModels(baseUrl.trim())
+        .then(({ models }) => {
+          if (stale) return
+          setOllamaModels(models)
+          setOllamaFailed(false)
+          // A <select> can only show an installed model: snap a stale value
+          // (another provider's, or one since uninstalled) to the first one.
+          // Ollama treats `llama3` as `llama3:latest`, so that still matches.
+          const installedAs = (name: string) =>
+            models.find((m) => m === name || m === `${name}:latest`)
+          setModel((current) => installedAs(current) ?? models[0] ?? current)
+          setFallbackModel((current) => installedAs(current) ?? '')
+        })
+        .catch(() => {
+          if (stale) return
+          setOllamaModels(null)
+          setOllamaFailed(true)
+        })
+    }, 400)
+    return () => {
+      stale = true
+      clearTimeout(timer)
+    }
+  }, [phase, providerId, baseUrl])
+
   const provider = PROVIDER_OPTIONS.find((p) => p.id === providerId) ?? null
+  const isOllama = providerId === 'ollama'
+  const installed = isOllama && ollamaModels && ollamaModels.length > 0 ? ollamaModels : null
   const hasSavedKey = saved.some((p) => p.provider_id === providerId && p.credential_ref !== null)
 
   async function handleSubmit(event: FormEvent) {
@@ -143,15 +181,35 @@ export function AIProviderSettings() {
         )}
 
         <label htmlFor="ai-model">{t('aiProvider.model')}</label>
-        <input
-          id="ai-model"
-          type="text"
-          value={model}
-          onChange={(e) => setModel(e.target.value)}
-          placeholder={t('aiProvider.modelPlaceholder')}
-          disabled={saving}
-          required
-        />
+        {installed ? (
+          <select
+            id="ai-model"
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+            disabled={saving}
+            required
+          >
+            {installed.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <input
+            id="ai-model"
+            type="text"
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+            placeholder={t('aiProvider.modelPlaceholder')}
+            disabled={saving}
+            required
+          />
+        )}
+        {isOllama && ollamaFailed && <p className="field-hint">{t('aiProvider.ollamaUnreachable')}</p>}
+        {isOllama && ollamaModels?.length === 0 && (
+          <p className="field-hint">{t('aiProvider.ollamaNoModels')}</p>
+        )}
         {provider?.reasoningModelHint && (
           <p className="field-hint">
             {t('aiProvider.reasoningModelHint')} <code>{provider.reasoningModelHint}</code>
@@ -159,13 +217,29 @@ export function AIProviderSettings() {
         )}
 
         <label htmlFor="ai-fallback-model">{t('aiProvider.fallbackModel')}</label>
-        <input
-          id="ai-fallback-model"
-          type="text"
-          value={fallbackModel}
-          onChange={(e) => setFallbackModel(e.target.value)}
-          disabled={saving}
-        />
+        {installed ? (
+          <select
+            id="ai-fallback-model"
+            value={fallbackModel}
+            onChange={(e) => setFallbackModel(e.target.value)}
+            disabled={saving}
+          >
+            <option value="">{t('aiProvider.noFallback')}</option>
+            {installed.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <input
+            id="ai-fallback-model"
+            type="text"
+            value={fallbackModel}
+            onChange={(e) => setFallbackModel(e.target.value)}
+            disabled={saving}
+          />
+        )}
         <p className="field-hint">
           {t('aiProvider.fallbackModelHint')}
           {provider?.fallbackModelHint && (

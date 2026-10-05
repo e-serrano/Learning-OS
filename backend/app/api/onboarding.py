@@ -3,7 +3,13 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from app.ai.capability_check import check_provider_capability, validate_provider_connection
+from app.ai.adapters.ollama import list_ollama_models
+from app.ai.capability_check import (
+    DEFAULT_OLLAMA_BASE_URL,
+    check_provider_capability,
+    validate_provider_connection,
+)
+from app.ai.errors import AIInvalidOutputError, AIProviderUnavailableError
 from app.ai.provider_registry import ProviderId
 from app.api.dependencies import get_config_store, get_credential_store
 from app.api.errors import api_error
@@ -73,6 +79,10 @@ class CompleteResponse(BaseModel):
     onboarding_step: OnboardingStep
 
 
+class OllamaModelsResponse(BaseModel):
+    models: list[str]
+
+
 @router.get("/status", response_model=OnboardingStatusResponse)
 def get_status(store: ConfigStoreDep) -> OnboardingStatusResponse:
     config = store.load()
@@ -122,6 +132,16 @@ def configure_ai_provider(request: AIProviderRequest, store: ConfigStoreDep) -> 
 
     store.save(config)
     return AIProviderResponse(onboarding_step=config.onboarding_step)
+
+
+@router.get("/ollama/models", response_model=OllamaModelsResponse)
+async def list_installed_ollama_models(
+    base_url: str = DEFAULT_OLLAMA_BASE_URL,
+) -> OllamaModelsResponse:
+    try:
+        return OllamaModelsResponse(models=await list_ollama_models(base_url))
+    except (AIProviderUnavailableError, AIInvalidOutputError) as exc:
+        raise api_error("AI_UNAVAILABLE", str(exc), 503) from exc
 
 
 @router.post("/ai-provider/validate", response_model=ValidateResponse)

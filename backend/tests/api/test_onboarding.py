@@ -5,6 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.ai.capability_check import CapabilityCheckResult
+from app.ai.errors import AIProviderUnavailableError
 from app.ai.provider_registry import ProviderId
 from app.api.dependencies import get_config_store, get_credential_store
 from app.config.credentials import CredentialStore
@@ -415,3 +416,54 @@ def test_a_remote_provider_with_no_saved_key_and_none_typed_still_fails(
 
     assert response.json()["ok"] is False
     assert response.json()["reason"] == "Missing required API credential"
+
+
+def test_ollama_models_lists_what_the_endpoint_has_installed(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    asked: list[str] = []
+
+    async def fake_list(base_url: str) -> list[str]:
+        asked.append(base_url)
+        return ["llama3:latest", "qwen3:8b"]
+
+    monkeypatch.setattr("app.api.onboarding.list_ollama_models", fake_list)
+
+    response = client.get(
+        "/api/v1/onboarding/ollama/models", params={"base_url": "http://host.docker.internal:11434"}
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"models": ["llama3:latest", "qwen3:8b"]}
+    assert asked == ["http://host.docker.internal:11434"]
+
+
+def test_ollama_models_defaults_to_the_local_endpoint(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    asked: list[str] = []
+
+    async def fake_list(base_url: str) -> list[str]:
+        asked.append(base_url)
+        return []
+
+    monkeypatch.setattr("app.api.onboarding.list_ollama_models", fake_list)
+
+    response = client.get("/api/v1/onboarding/ollama/models")
+
+    assert response.json() == {"models": []}
+    assert asked == ["http://localhost:11434"]
+
+
+def test_ollama_models_reports_an_unreachable_endpoint_as_ai_unavailable(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def fake_list(base_url: str) -> list[str]:
+        raise AIProviderUnavailableError("All connection attempts failed")
+
+    monkeypatch.setattr("app.api.onboarding.list_ollama_models", fake_list)
+
+    response = client.get("/api/v1/onboarding/ollama/models")
+
+    assert response.status_code == 503
+    assert response.json()["detail"]["error"]["code"] == "AI_UNAVAILABLE"

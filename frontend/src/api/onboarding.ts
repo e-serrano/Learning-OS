@@ -83,6 +83,13 @@ export function validateAIProvider(credential?: string | null): Promise<Validate
   })
 }
 
+/** Models the user has pulled into the Ollama at `baseUrl`, as seen from
+ * the backend (so inside Docker that means `host.docker.internal`, not
+ * `localhost`). */
+export function listOllamaModels(baseUrl: string): Promise<{ models: string[] }> {
+  return request(`/onboarding/ollama/models?base_url=${encodeURIComponent(baseUrl)}`)
+}
+
 export function completeOnboarding(): Promise<CompleteResponse> {
   return request('/onboarding/complete', { method: 'POST' })
 }

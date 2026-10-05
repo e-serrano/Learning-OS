@@ -10,6 +10,27 @@ from app.ai.errors import AIInvalidOutputError
 from app.ai.protocol import AIRequest
 
 
+async def list_ollama_models(base_url: str, client: httpx.AsyncClient | None = None) -> list[str]:
+    """Names of the models the user has pulled locally (`GET /api/tags`),
+    so Settings can offer them in a dropdown instead of a free-text field
+    (docs/TASKS.md T163, user request)."""
+    owns_client = client is None
+    client = client or httpx.AsyncClient()
+    try:
+        response = await client.get(f"{base_url.rstrip('/')}/api/tags", timeout=10.0)
+        response.raise_for_status()
+    except httpx.HTTPError as exc:
+        raise provider_unavailable_error(exc) from exc
+    finally:
+        if owns_client:
+            await client.aclose()
+
+    try:
+        return sorted(model["name"] for model in response.json()["models"])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise AIInvalidOutputError(str(exc)) from exc
+
+
 class OllamaProvider:
     """Local Ollama endpoint, native /api/chat -- see docs/AI_CONTRACTS.md
     #17. Uses Ollama's own structured-output support (the `format` field

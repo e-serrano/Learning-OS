@@ -278,6 +278,15 @@ export const translations: Record<string, Record<Language, string>> = {
     en: 'e.g. gpt-5, claude-sonnet-5, llama3',
     es: 'p. ej. gpt-5, claude-sonnet-5, llama3',
   },
+  'aiProvider.ollamaUnreachable': {
+    en: 'Could not list the models installed in Ollama at this endpoint -- type a model name instead. From Docker, use http://host.docker.internal:11434.',
+    es: 'No se pudo listar los modelos instalados en Ollama en este endpoint -- escribe el nombre de un modelo. Desde Docker, usa http://host.docker.internal:11434.',
+  },
+  'aiProvider.ollamaNoModels': {
+    en: 'Ollama is reachable but has no models installed. Run "ollama pull <model>", then reload this page.',
+    es: 'Ollama responde pero no tiene modelos instalados. Ejecuta "ollama pull <modelo>" y recarga la página.',
+  },
+  'aiProvider.noFallback': { en: 'None', es: 'Ninguno' },
   'aiProvider.reasoningModelHint': {
     en: 'For reasoning-heavy tasks, try:',
     es: 'Para tareas que requieran mucho razonamiento, prueba:',

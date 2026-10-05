@@ -504,6 +504,14 @@ and capabilities, never credentials:
 {"onboarding_step": "VALIDATE", "ok": true, "reason": null}
 ```
 
+`GET /onboarding/ollama/models?base_url=http://host.docker.internal:11434`
+
+Models installed in the Ollama at `base_url` (default `http://localhost:11434`), sorted, so Settings can offer them in a dropdown (docs/TASKS.md T163). The backend makes the call — `base_url` must be reachable from the backend, not the browser. Unreachable or malformed endpoint → `503 AI_UNAVAILABLE`.
+
+```json
+{"models": ["llama3:latest", "qwen3:8b"]}
+```
+
 `POST /onboarding/complete`
 
 Requires a valid vault and successfully validated AI provider.
