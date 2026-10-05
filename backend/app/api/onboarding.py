@@ -135,40 +135,58 @@ async def validate_ai_provider(
         raise api_error("SESSION_STATE_ERROR", "Select a provider and model before validating", 409)
 
     provider_id = ProviderId(config.provider_id)
+    # A key saved earlier for this same provider is reused when none is
+    # typed, so switching away and back never forces re-entering it
+    # (docs/TASKS.md T162, user request).
+    saved = next((p for p in config.ai_providers if p.provider_id == provider_id), None)
+    credential = request.credential
+    if credential is None and saved is not None and saved.credential_ref is not None:
+        credential = credential_store.get(saved.credential_ref)
+
     result = check_provider_capability(
         provider_id=provider_id,
         model=config.model,
         base_url=config.base_url,
-        credential=request.credential,
+        credential=credential,
     )
     if result.ok:
         result = await validate_provider_connection(
             provider_id=provider_id,
             model=config.model,
             base_url=config.base_url,
-            credential=request.credential,
+            credential=credential,
         )
     if not result.ok:
         return ValidateResponse(
             onboarding_step=config.onboarding_step, ok=False, reason=result.reason
         )
 
-    credential_ref: str | None = None
+    credential_ref = saved.credential_ref if saved is not None else None
     if request.credential is not None:
-        credential_ref = new_credential_ref(provider_id.value)
+        # Same ref overwritten in the keyring, not a fresh one per save --
+        # otherwise every re-entered key would orphan the previous entry.
+        credential_ref = credential_ref or new_credential_ref(provider_id.value)
         credential_store.set(credential_ref, request.credential)
 
-    config.ai_providers = [
-        AIProviderConfig(
-            provider_id=provider_id,
-            model=config.model,
-            base_url=config.base_url,
-            credential_ref=credential_ref,
-            fallback_model=config.fallback_model,
-            enabled=True,
-            is_default=True,
-        )
+    fields = {
+        "model": config.model,
+        "base_url": config.base_url,
+        "credential_ref": credential_ref,
+        "fallback_model": config.fallback_model,
+        "enabled": True,
+        "is_default": True,
+    }
+    entry = (
+        saved.model_copy(update=fields)
+        if saved is not None
+        else AIProviderConfig(provider_id=provider_id, **fields)  # type: ignore[arg-type]
+    )
+    others = [
+        p.model_copy(update={"is_default": False})
+        for p in config.ai_providers
+        if p.provider_id != provider_id
     ]
+    config.ai_providers = [*others, entry]
     if config.onboarding_step != OnboardingStep.COMPLETE:
         config.onboarding_step = _advance_to(config.onboarding_step, OnboardingStep.VALIDATE)
 

@@ -1,5 +1,6 @@
 import { type FormEvent, useEffect, useState } from 'react'
 import {
+  type AIProviderConfig,
   ApiError,
   type OnboardingStatus,
   configureAIProvider,
@@ -31,6 +32,10 @@ export function AIProviderSettings() {
   const [credential, setCredential] = useState('')
   const [saving, setSaving] = useState(false)
   const [result, setResult] = useState<{ ok: boolean; reason: string | null } | null>(null)
+  // Every provider ever saved, not just the default one -- the backend now
+  // keeps one entry (config + keyring ref) per provider so switching away
+  // and back never loses it (docs/TASKS.md T162, user request).
+  const [saved, setSaved] = useState<AIProviderConfig[]>([])
 
   useEffect(() => {
     getStatus()
@@ -38,6 +43,7 @@ export function AIProviderSettings() {
         if (status.provider_id) setProviderId(status.provider_id)
         if (status.model) setModel(status.model)
         const current = status.ai_providers.find((p) => p.is_default)
+        setSaved(status.ai_providers)
         if (current?.base_url) setBaseUrl(current.base_url)
         // Prefilled from the already-saved config, not the provider's
         // suggested default -- unlike onboarding's first-time setup, a
@@ -53,6 +59,7 @@ export function AIProviderSettings() {
   }, [t])
 
   const provider = PROVIDER_OPTIONS.find((p) => p.id === providerId) ?? null
+  const hasSavedKey = saved.some((p) => p.provider_id === providerId && p.credential_ref !== null)
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
@@ -68,6 +75,13 @@ export function AIProviderSettings() {
       })
       const validation = await validateAIProvider(credential.trim() || null)
       setResult({ ok: validation.ok, reason: validation.reason })
+      if (validation.ok) {
+        // Best-effort -- the save already succeeded; a failed refresh only
+        // means the "key already saved" hint lags until the next page load.
+        getStatus()
+          .then((status) => setSaved(status.ai_providers))
+          .catch(() => {})
+      }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('common.couldNotReachBackend'))
     } finally {
@@ -92,8 +106,16 @@ export function AIProviderSettings() {
         value={providerId}
         onChange={(e) => {
           const next = PROVIDER_OPTIONS.find((p) => p.id === e.target.value) ?? null
+          const previous = saved.find((p) => p.provider_id === e.target.value)
           setProviderId(e.target.value)
-          setBaseUrl(next?.defaultBaseUrl ?? '')
+          setBaseUrl(previous?.base_url ?? next?.defaultBaseUrl ?? '')
+          setCredential('')
+          // Back on a provider saved earlier: restore its own model and
+          // fallback instead of leaving the previous provider's in place.
+          if (previous) {
+            setModel(previous.model)
+            setFallbackModel(previous.fallback_model ?? '')
+          }
         }}
         disabled={saving}
       >
@@ -164,9 +186,11 @@ export function AIProviderSettings() {
               onChange={(e) => setCredential(e.target.value)}
               autoComplete="off"
               disabled={saving}
-              required
+              required={!hasSavedKey}
             />
-            <p className="field-hint">{t('aiProvider.apiKeyHint')}</p>
+            <p className="field-hint">
+              {hasSavedKey ? t('aiProvider.apiKeySavedHint') : t('aiProvider.apiKeyHint')}
+            </p>
           </>
         )}
 

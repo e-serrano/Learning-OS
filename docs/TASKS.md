@@ -1434,6 +1434,20 @@ Usuario: "actua como usuario tester que quiere probar la herramienta al completo
 
 Tests nuevos: `test_orchestrator.py` (`_HangingProvider` que nunca responde, confirma `TimeoutError` → `AIProviderUnavailableError` limpio, cancelado y registrado en `ai_runs` sin esperar minutos reales gracias al `timeout_seconds` inyectable), `GoalView.test.tsx` (fallo de "Iniciar proyecto" muestra el error en línea sin ocultar título/enlaces/acciones), `RoadmapView.test.tsx` (mensaje traducido + botón "Generate roadmap" sigue presente tras un fallo `AI_INVALID_OUTPUT`), `SessionUI.test.tsx` (sandbox de SQL oculto para un ejercicio `coding`), `ReviewsUI.test.tsx` (título mostrado cuando `listKnowledge` lo resuelve), `routes.test.tsx` (badge de Vault desaparece justo tras aprobar en la propia página, sin navegar). Suite backend completa + suite frontend completa (134/134), `ruff`/`mypy`/`tsc -b`/`oxlint` limpios (sin advertencias nuevas). Verificado en vivo tras reconstruir Docker.
 
+### T162 — La clave de API de cada proveedor se guarda y se reutiliza al volver a él
+
+**Estado:** DONE
+**Dep:** T146 (sección de IA en Ajustes), T148 (`fallback_model`)
+Pedido explícito del usuario: "una vez elegido el proveedor de IA e introducido su API, debe quedar guardada para que al cambiar de proveedor y retroceder a uno con API ya introducida, no sea necesario volver a introducirla".
+
+Causa raíz, en `POST /onboarding/ai-provider/validate` (`app/api/onboarding.py`): tras validar, hacía `config.ai_providers = [AIProviderConfig(...)]` -- **reemplazaba la lista entera por un único proveedor**. Cambiar a otro proveedor descartaba la fila del anterior (y con ella su `credential_ref`, dejando el secreto huérfano en el keyring sin nada que apuntara a él); además, si no se escribía clave, `credential_ref` quedaba en `None` aunque hubiera una guardada. Y cada guardado generaba un `credential_ref` nuevo, huérfano del anterior.
+
+**Nota:** `validate` ahora (1) conserva una entrada por proveedor -- las demás pasan a `is_default=False`, la actual se actualiza o se crea y es la única por defecto (el `model_validator` de `AppConfig` ya exigía como máximo una; `build_default_provider`/`build_default_embedding_provider` ya buscan "la habilitada por defecto", así que nada más asumía una lista de un solo elemento); (2) si no llega clave pero ya hay una guardada para ese proveedor, la lee del keyring y la usa para validar, manteniendo su `credential_ref`; (3) si llega una clave nueva, sobrescribe la **misma** entrada del keyring en vez de crear una referencia nueva. Un proveedor remoto sin clave guardada y sin clave escrita sigue fallando igual ("Missing required API credential"). El secreto sigue sin salir nunca del keyring -- el status solo expone el `credential_ref`, la clave de lookup opaca que ya exponía antes.
+
+Frontend (`AIProviderSettings.tsx`): guarda la lista completa de proveedores del status; al volver a uno guardado restaura su modelo, endpoint y fallback (antes dejaba los del proveedor anterior); el campo de clave deja de ser `required` cuando ya hay una guardada y muestra una pista nueva ("déjalo en blanco para seguir usándola, o escribe una nueva para reemplazarla"), que se envía como `credential: null`. Refresca la lista tras un guardado correcto. La pista genérica (`aiProvider.apiKeyHint`), que ahora era falsa ("vuelve a escribir tu clave cada vez que guardes"), pasa a decir que solo hace falta escribirla una vez por proveedor.
+
+Tests nuevos: backend (`test_onboarding.py`, sonda de red parcheada para validar varios proveedores remotos sin red real) -- cambiar de proveedor conserva el anterior con su clave, volver reutiliza la clave guardada sin escribirla (la sonda recibe la clave del keyring), reescribir una clave sobrescribe la misma entrada sin dejar huérfanos, un proveedor sin clave guardada ni escrita sigue fallando; frontend (`AIProviderSettings.test.tsx`) -- restaurar modelo/endpoint/fallback, clave opcional con pista cuando hay una guardada, sigue obligatoria sin ninguna, `validate` recibe `credential: null` al reutilizarla.
+
 ---
 
 # Vertical slice mínimo recomendado

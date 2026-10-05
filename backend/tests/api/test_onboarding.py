@@ -4,6 +4,8 @@ import keyring.errors
 import pytest
 from fastapi.testclient import TestClient
 
+from app.ai.capability_check import CapabilityCheckResult
+from app.ai.provider_registry import ProviderId
 from app.api.dependencies import get_config_store, get_credential_store
 from app.config.credentials import CredentialStore
 from app.config.store import ConfigStore
@@ -294,3 +296,122 @@ def test_complete_is_idempotent_once_already_complete(client: TestClient, vault_
 
     assert response.status_code == 200
     assert response.json()["onboarding_step"] == "COMPLETE"
+
+
+@pytest.fixture
+def probed_credentials(monkeypatch: pytest.MonkeyPatch) -> list[str | None]:
+    """Makes the live connection probe (T145) always succeed and records
+    which credential it was handed, so two remote providers can be
+    validated one after the other without any real network call."""
+    seen: list[str | None] = []
+
+    async def fake_probe(
+        provider_id: ProviderId, model: str, base_url: str | None, credential: str | None
+    ) -> CapabilityCheckResult:
+        seen.append(credential)
+        return CapabilityCheckResult(ok=True, provider_id=provider_id)
+
+    monkeypatch.setattr("app.api.onboarding.validate_provider_connection", fake_probe)
+    return seen
+
+
+def _save_provider(
+    client: TestClient, provider_id: str, model: str, credential: str | None, **extra: str
+) -> None:
+    client.post(
+        "/api/v1/onboarding/ai-provider",
+        json={"provider_id": provider_id, "model": model, **extra},
+    )
+    response = client.post(
+        "/api/v1/onboarding/ai-provider/validate", json={"credential": credential}
+    )
+    assert response.json()["ok"] is True
+    # Settings only exists once onboarding is COMPLETE -- before that,
+    # re-posting an earlier step (a provider switch) is rejected as a
+    # backwards transition.
+    client.post("/api/v1/onboarding/complete")
+
+
+def _providers_by_id(client: TestClient) -> dict[str, dict[str, object]]:
+    status = client.get("/api/v1/onboarding/status")
+    return {p["provider_id"]: p for p in status.json()["ai_providers"]}
+
+
+def test_switching_provider_keeps_the_previous_providers_saved_config_and_key(
+    client: TestClient,
+    vault_dir: Path,
+    fake_keyring: FakeKeyringBackend,
+    probed_credentials: list[str | None],
+) -> None:
+    """docs/TASKS.md T162, user request: validate used to replace the whole
+    provider list with just the one being saved, so switching to another
+    provider dropped the first one's config and orphaned its keyring entry."""
+    client.post("/api/v1/onboarding/vault", json={"path": str(vault_dir)})
+    _save_provider(client, "anthropic", "claude-x", "sk-ant-1")
+    _save_provider(
+        client, "openrouter", "or/model", "sk-or-1", base_url="https://openrouter.ai/api/v1"
+    )
+
+    providers = _providers_by_id(client)
+    assert set(providers) == {"anthropic", "openrouter"}
+    assert providers["openrouter"]["is_default"] is True
+    assert providers["anthropic"]["is_default"] is False
+    assert providers["anthropic"]["model"] == "claude-x"
+    assert providers["anthropic"]["credential_ref"] is not None
+    assert sorted(fake_keyring._data.values()) == ["sk-ant-1", "sk-or-1"]
+
+
+def test_switching_back_reuses_the_saved_key_without_retyping_it(
+    client: TestClient,
+    vault_dir: Path,
+    probed_credentials: list[str | None],
+) -> None:
+    client.post("/api/v1/onboarding/vault", json={"path": str(vault_dir)})
+    _save_provider(client, "anthropic", "claude-x", "sk-ant-1")
+    anthropic_before = _providers_by_id(client)["anthropic"]
+    _save_provider(
+        client, "openrouter", "or/model", "sk-or-1", base_url="https://openrouter.ai/api/v1"
+    )
+
+    _save_provider(client, "anthropic", "claude-x", None)  # no key typed this time
+
+    assert probed_credentials[-1] == "sk-ant-1"  # the stored key was what got validated
+    providers = _providers_by_id(client)
+    assert providers["anthropic"]["is_default"] is True
+    assert providers["openrouter"]["is_default"] is False
+    assert providers["anthropic"]["id"] == anthropic_before["id"]
+    assert providers["anthropic"]["credential_ref"] == anthropic_before["credential_ref"]
+
+
+def test_retyping_a_key_overwrites_the_same_keyring_entry_instead_of_orphaning_it(
+    client: TestClient,
+    vault_dir: Path,
+    fake_keyring: FakeKeyringBackend,
+    probed_credentials: list[str | None],
+) -> None:
+    client.post("/api/v1/onboarding/vault", json={"path": str(vault_dir)})
+    _save_provider(client, "anthropic", "claude-x", "sk-ant-1")
+    ref_before = _providers_by_id(client)["anthropic"]["credential_ref"]
+
+    _save_provider(client, "anthropic", "claude-x", "sk-ant-2")
+
+    assert _providers_by_id(client)["anthropic"]["credential_ref"] == ref_before
+    assert list(fake_keyring._data.values()) == ["sk-ant-2"]
+
+
+def test_a_remote_provider_with_no_saved_key_and_none_typed_still_fails(
+    client: TestClient,
+    vault_dir: Path,
+    probed_credentials: list[str | None],
+) -> None:
+    client.post("/api/v1/onboarding/vault", json={"path": str(vault_dir)})
+    _save_provider(client, "anthropic", "claude-x", "sk-ant-1")
+    client.post(
+        "/api/v1/onboarding/ai-provider",
+        json={"provider_id": "openrouter", "model": "or/model", "base_url": "https://x/v1"},
+    )
+
+    response = client.post("/api/v1/onboarding/ai-provider/validate", json={})
+
+    assert response.json()["ok"] is False
+    assert response.json()["reason"] == "Missing required API credential"

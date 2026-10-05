@@ -225,6 +225,89 @@ describe('AIProviderSettings', () => {
     expect(screen.getByLabelText('API key')).toHaveValue('')
   })
 
+  describe('providers saved earlier (docs/TASKS.md T162)', () => {
+    const STATUS_WITH_TWO_SAVED = {
+      ...STATUS_WITH_ANTHROPIC,
+      ai_providers: [
+        ...STATUS_WITH_ANTHROPIC.ai_providers,
+        {
+          id: 'p2',
+          provider_id: 'openrouter',
+          model: 'or/model',
+          base_url: 'https://openrouter.ai/api/v1',
+          credential_ref: 'openrouter:xyz',
+          fallback_model: 'or/fallback',
+          enabled: true,
+          is_default: false,
+        },
+      ],
+    }
+
+    function stubFetch() {
+      const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL) => {
+        const url = String(input)
+        if (url.endsWith('/onboarding/status')) {
+          return Promise.resolve(jsonResponse(STATUS_WITH_TWO_SAVED))
+        }
+        if (url.endsWith('/onboarding/ai-provider')) {
+          return Promise.resolve(jsonResponse({ onboarding_step: 'AI_PROVIDER' }))
+        }
+        return Promise.resolve(jsonResponse({ onboarding_step: 'VALIDATE', ok: true, reason: null }))
+      })
+      vi.stubGlobal('fetch', fetchMock)
+      return fetchMock
+    }
+
+    it('restores a previously saved provider\'s own model, endpoint and fallback when switching back to it', async () => {
+      stubFetch()
+      render(<AIProviderSettings />, { wrapper: LanguageProvider })
+      await screen.findByLabelText('AI provider')
+
+      fireEvent.change(screen.getByLabelText('AI provider'), { target: { value: 'openrouter' } })
+
+      expect(screen.getByLabelText('Model')).toHaveValue('or/model')
+      expect(screen.getByLabelText('Endpoint URL')).toHaveValue('https://openrouter.ai/api/v1')
+      expect(screen.getByLabelText('Fallback model (optional)')).toHaveValue('or/fallback')
+    })
+
+    it('does not require retyping the API key for a provider that already has one saved', async () => {
+      stubFetch()
+      render(<AIProviderSettings />, { wrapper: LanguageProvider })
+      await screen.findByLabelText('AI provider')
+
+      fireEvent.change(screen.getByLabelText('AI provider'), { target: { value: 'openrouter' } })
+
+      expect(screen.getByLabelText('API key')).not.toBeRequired()
+      expect(screen.getByText(/A key is already saved for this provider/)).toBeInTheDocument()
+    })
+
+    it('still requires an API key for a provider with nothing saved', async () => {
+      stubFetch()
+      render(<AIProviderSettings />, { wrapper: LanguageProvider })
+      await screen.findByLabelText('AI provider')
+
+      fireEvent.change(screen.getByLabelText('AI provider'), { target: { value: 'openai' } })
+
+      expect(screen.getByLabelText('API key')).toBeRequired()
+      expect(screen.queryByText(/A key is already saved/)).not.toBeInTheDocument()
+    })
+
+    it('validates with no credential when the saved key is being reused', async () => {
+      const fetchMock = stubFetch()
+      render(<AIProviderSettings />, { wrapper: LanguageProvider })
+      await screen.findByLabelText('AI provider')
+
+      fireEvent.change(screen.getByLabelText('AI provider'), { target: { value: 'openrouter' } })
+      fireEvent.click(screen.getByRole('button', { name: 'Save & test connection' }))
+
+      await screen.findByText('Connected successfully.')
+      const call = fetchMock.mock.calls.find((args: unknown[]) =>
+        String(args[0]).endsWith('/onboarding/ai-provider/validate'),
+      )
+      expect(JSON.parse((call![1]?.body as string) ?? '{}').credential).toBeNull()
+    })
+  })
+
   it('shows an error message when the initial status fetch fails', async () => {
     vi.stubGlobal(
       'fetch',

@@ -290,8 +290,12 @@ export const translations: Record<string, Record<Language, string>> = {
   'aiProvider.fallbackModelSuggestion': { en: 'Alternative:', es: 'Alternativa:' },
   'aiProvider.apiKey': { en: 'API key', es: 'Clave de API' },
   'aiProvider.apiKeyHint': {
-    en: 'Re-enter your key every time you save here, even just to change the model -- it is never stored in the browser or database, only sent once to the OS keyring (or the encrypted equivalent in Docker).',
-    es: 'Vuelve a escribir tu clave cada vez que guardes aquí, aunque solo cambies el modelo -- nunca se guarda en el navegador ni en la base de datos, solo se envía una vez al keyring del sistema (o su equivalente cifrado en Docker).',
+    en: 'Stored only in the OS keyring (or the encrypted equivalent in Docker) -- never in the browser or database. You only need to enter it once per provider.',
+    es: 'Se guarda solo en el keyring del sistema (o su equivalente cifrado en Docker) -- nunca en el navegador ni en la base de datos. Solo hace falta escribirla una vez por proveedor.',
+  },
+  'aiProvider.apiKeySavedHint': {
+    en: 'A key is already saved for this provider -- leave this blank to keep using it, or type a new one to replace it.',
+    es: 'Ya hay una clave guardada para este proveedor -- déjalo en blanco para seguir usándola, o escribe una nueva para reemplazarla.',
   },
   'aiProvider.saveAndTest': { en: 'Save & test connection', es: 'Guardar y probar conexión' },
   'aiProvider.testing': { en: 'Testing…', es: 'Probando…' },
