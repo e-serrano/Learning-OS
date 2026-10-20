@@ -1,4 +1,5 @@
 import uuid
+from collections.abc import Callable
 from datetime import UTC, datetime
 from functools import lru_cache
 from typing import Annotated
@@ -129,8 +130,23 @@ def get_id_generator() -> UuidIdGenerator:
     return UuidIdGenerator()
 
 
-def get_goal_repository() -> SqlGoalRepository:
-    return SqlGoalRepository(get_engine())
+def _repo[T](cls: Callable[[Engine], T]) -> Callable[[], T]:
+    return lambda: cls(get_engine())
+
+
+get_goal_repository = _repo(SqlGoalRepository)
+get_concept_repository = _repo(SqlConceptRepository)
+get_concept_relation_repository = _repo(SqlConceptRelationRepository)
+get_roadmap_repository = _repo(SqlRoadmapRepository)
+get_evidence_repository = _repo(SqlEvidenceRepository)
+get_mistake_repository = _repo(SqlMistakeRepository)
+get_session_repository = _repo(SqlSessionRepository)
+get_activity_repository = _repo(SqlActivityRepository)
+get_exercise_repository = _repo(SqlExerciseRepository)
+get_exercise_attempt_repository = _repo(SqlExerciseAttemptRepository)
+get_evaluation_repository = _repo(SqlEvaluationRepository)
+get_review_repository = _repo(SqlReviewRepository)
+get_project_repository = _repo(SqlProjectRepository)
 
 
 def get_goal_service() -> GoalApplicationService:
@@ -208,14 +224,6 @@ def get_vault_search_service() -> VaultSearchService:
     return VaultSearchService(get_engine())
 
 
-def get_concept_repository() -> SqlConceptRepository:
-    return SqlConceptRepository(get_engine())
-
-
-def get_concept_relation_repository() -> SqlConceptRelationRepository:
-    return SqlConceptRelationRepository(get_engine())
-
-
 def get_knowledge_explorer_service() -> KnowledgeExplorerService:
     return KnowledgeExplorerService(
         get_goal_repository(), get_concept_repository(), get_concept_relation_repository()
@@ -286,10 +294,6 @@ def get_semantic_search_service(
     return SemanticSearchService(get_engine(), orchestrator)
 
 
-def get_roadmap_repository() -> SqlRoadmapRepository:
-    return SqlRoadmapRepository(get_engine())
-
-
 def get_planner_service(
     orchestrator: Annotated[AIOrchestrator, Depends(get_ai_orchestrator)],
 ) -> PlannerService:
@@ -312,22 +316,6 @@ def get_roadmap_generation_service(
     roadmaps: Annotated[RoadmapService, Depends(get_roadmap_service)],
 ) -> RoadmapGenerationService:
     return RoadmapGenerationService(planner, roadmaps)
-
-
-def get_evidence_repository() -> SqlEvidenceRepository:
-    return SqlEvidenceRepository(get_engine())
-
-
-def get_mistake_repository() -> SqlMistakeRepository:
-    return SqlMistakeRepository(get_engine())
-
-
-def get_session_repository() -> SqlSessionRepository:
-    return SqlSessionRepository(get_engine())
-
-
-def get_activity_repository() -> SqlActivityRepository:
-    return SqlActivityRepository(get_engine())
 
 
 def get_context_builder() -> ContextBuilder:
@@ -397,26 +385,6 @@ def get_adaptive_activity_service(
     return AdaptiveActivityService(
         get_session_repository(), get_activity_repository(), activity_selector, get_id_generator()
     )
-
-
-def get_exercise_repository() -> SqlExerciseRepository:
-    return SqlExerciseRepository(get_engine())
-
-
-def get_exercise_attempt_repository() -> SqlExerciseAttemptRepository:
-    return SqlExerciseAttemptRepository(get_engine())
-
-
-def get_evaluation_repository() -> SqlEvaluationRepository:
-    return SqlEvaluationRepository(get_engine())
-
-
-def get_review_repository() -> SqlReviewRepository:
-    return SqlReviewRepository(get_engine())
-
-
-def get_project_repository() -> SqlProjectRepository:
-    return SqlProjectRepository(get_engine())
 
 
 def get_exercise_generator_service(
