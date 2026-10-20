@@ -248,12 +248,7 @@ provider's required variables.
 
 ## Quality gates
 
-Run before every commit (see `CONTRIBUTING.md`):
-
-```bash
-cd backend && uv run ruff format && uv run ruff check --fix . && uv run pytest -q && uv run mypy app
-cd frontend && npm test && npm run build && npm run lint
-```
+See [CONTRIBUTING.md](CONTRIBUTING.md#quality-gates).
 
 ## Credentials
 
