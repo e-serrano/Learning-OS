@@ -29,7 +29,7 @@ from app.ai.capability_check import (
     check_provider_capability,
     validate_provider_connection,
 )
-from app.ai.provider_registry import ProviderDescriptor, ProviderId, list_providers
+from app.ai.provider_registry import PROVIDER_REGISTRY, ProviderDescriptor, ProviderId
 from app.api.dependencies import get_config_store
 from app.config.store import ConfigStore
 
@@ -63,7 +63,7 @@ class ValidateProviderRequest(BaseModel):
 
 @router.get("", response_model=list[ProviderDescriptor])
 def list_supported_providers() -> list[ProviderDescriptor]:
-    return list_providers()
+    return list(PROVIDER_REGISTRY.values())
 
 
 @router.get("/config", response_model=ProviderConfigResponse)

@@ -29,12 +29,10 @@ import pytest
 from pydantic import BaseModel
 
 from app.ai.adapters.anthropic import AnthropicProvider
-from app.ai.adapters.nvidia_nim import NvidiaNimProvider
 from app.ai.adapters.ollama import OllamaProvider
-from app.ai.adapters.openai import OpenAIProvider
-from app.ai.adapters.openai_compatible import OpenAICompatibleProvider
-from app.ai.adapters.openrouter import OpenRouterProvider
+from app.ai.capability_check import build_adapter
 from app.ai.protocol import AIRequest
+from app.ai.provider_registry import ProviderId
 
 
 class SmokeResponse(BaseModel):
@@ -75,9 +73,11 @@ async def test_ollama_live_smoke() -> None:
     reason="set LEARNINGOS_LIVE_OPENAI_API_KEY and LEARNINGOS_LIVE_OPENAI_MODEL to run",
 )
 async def test_openai_live_smoke() -> None:
-    provider = OpenAIProvider(
-        model=os.environ["LEARNINGOS_LIVE_OPENAI_MODEL"],
-        api_key=os.environ["LEARNINGOS_LIVE_OPENAI_API_KEY"],
+    provider = build_adapter(
+        ProviderId.OPENAI,
+        os.environ["LEARNINGOS_LIVE_OPENAI_MODEL"],
+        None,
+        os.environ["LEARNINGOS_LIVE_OPENAI_API_KEY"],
     )
     await _assert_smoke(provider)
 
@@ -105,9 +105,11 @@ async def test_anthropic_live_smoke() -> None:
     reason="set LEARNINGOS_LIVE_OPENROUTER_API_KEY and LEARNINGOS_LIVE_OPENROUTER_MODEL to run",
 )
 async def test_openrouter_live_smoke() -> None:
-    provider = OpenRouterProvider(
-        model=os.environ["LEARNINGOS_LIVE_OPENROUTER_MODEL"],
-        api_key=os.environ["LEARNINGOS_LIVE_OPENROUTER_API_KEY"],
+    provider = build_adapter(
+        ProviderId.OPENROUTER,
+        os.environ["LEARNINGOS_LIVE_OPENROUTER_MODEL"],
+        "https://openrouter.ai/api/v1",
+        os.environ["LEARNINGOS_LIVE_OPENROUTER_API_KEY"],
     )
     await _assert_smoke(provider)
 
@@ -124,10 +126,11 @@ async def test_openrouter_live_smoke() -> None:
     ),
 )
 async def test_nvidia_nim_live_smoke() -> None:
-    provider = NvidiaNimProvider(
-        model=os.environ["LEARNINGOS_LIVE_NVIDIA_MODEL"],
-        api_key=os.environ["LEARNINGOS_LIVE_NVIDIA_API_KEY"],
-        base_url=os.environ["LEARNINGOS_LIVE_NVIDIA_BASE_URL"],
+    provider = build_adapter(
+        ProviderId.NVIDIA_NIM,
+        os.environ["LEARNINGOS_LIVE_NVIDIA_MODEL"],
+        os.environ["LEARNINGOS_LIVE_NVIDIA_BASE_URL"],
+        os.environ["LEARNINGOS_LIVE_NVIDIA_API_KEY"],
     )
     await _assert_smoke(provider)
 
@@ -143,9 +146,10 @@ async def test_nvidia_nim_live_smoke() -> None:
     ),
 )
 async def test_openai_compatible_live_smoke() -> None:
-    provider = OpenAICompatibleProvider(
-        model=os.environ["LEARNINGOS_LIVE_COMPATIBLE_MODEL"],
-        base_url=os.environ["LEARNINGOS_LIVE_COMPATIBLE_BASE_URL"],
-        api_key=os.environ.get("LEARNINGOS_LIVE_COMPATIBLE_API_KEY"),
+    provider = build_adapter(
+        ProviderId.OPENAI_COMPATIBLE,
+        os.environ["LEARNINGOS_LIVE_COMPATIBLE_MODEL"],
+        os.environ["LEARNINGOS_LIVE_COMPATIBLE_BASE_URL"],
+        os.environ.get("LEARNINGOS_LIVE_COMPATIBLE_API_KEY"),
     )
     await _assert_smoke(provider)

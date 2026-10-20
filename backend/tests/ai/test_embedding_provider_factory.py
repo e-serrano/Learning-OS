@@ -5,7 +5,6 @@ from app.ai.adapters.ollama_embeddings import OllamaEmbeddingProvider
 from app.ai.adapters.openai_embeddings import OpenAIEmbeddingProvider
 from app.ai.embedding_provider_factory import (
     MissingCredentialError,
-    NoDefaultEmbeddingModelError,
     NoDefaultProviderError,
     ProviderHasNoEmbeddingSupportError,
     build_default_embedding_provider,
@@ -64,7 +63,7 @@ def test_raises_when_no_default_embedding_model_for_provider() -> None:
         )
     ]
 
-    with pytest.raises(NoDefaultEmbeddingModelError):
+    with pytest.raises(ProviderHasNoEmbeddingSupportError):
         build_default_embedding_provider(configs, _credentials())
 
 

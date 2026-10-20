@@ -102,19 +102,3 @@ PROVIDER_REGISTRY: dict[ProviderId, ProviderDescriptor] = {
         supports_embeddings=True,
     ),
 }
-
-
-class UnknownProviderError(ValueError):
-    def __init__(self, provider_id: str) -> None:
-        super().__init__(f"Unknown provider id: {provider_id!r}")
-
-
-def list_providers() -> list[ProviderDescriptor]:
-    return list(PROVIDER_REGISTRY.values())
-
-
-def get_provider_descriptor(provider_id: ProviderId) -> ProviderDescriptor:
-    try:
-        return PROVIDER_REGISTRY[provider_id]
-    except KeyError as exc:
-        raise UnknownProviderError(provider_id) from exc

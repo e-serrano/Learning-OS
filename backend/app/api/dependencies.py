@@ -9,7 +9,6 @@ from sqlalchemy import Engine
 
 from app.ai.embedding_orchestrator import EmbeddingOrchestrator
 from app.ai.embedding_provider_factory import (
-    NoDefaultEmbeddingModelError,
     ProviderHasNoEmbeddingSupportError,
     build_default_embedding_provider,
 )
@@ -275,7 +274,6 @@ def get_embedding_orchestrator(
         NoDefaultProviderError,
         MissingCredentialError,
         ProviderHasNoEmbeddingSupportError,
-        NoDefaultEmbeddingModelError,
     ) as exc:
         raise api_error("AI_UNAVAILABLE", str(exc), 400) from exc
     return EmbeddingOrchestrator(get_engine(), provider, provider_name=provider_name, model=model)

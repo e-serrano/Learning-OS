@@ -1,18 +1,15 @@
 from pydantic import BaseModel
 
+from app.ai.adapters._openai_compatible_base import OpenAICompatibleAdapter
 from app.ai.adapters.anthropic import AnthropicProvider
-from app.ai.adapters.nvidia_nim import NvidiaNimProvider
+from app.ai.adapters.mock import MockProvider
 from app.ai.adapters.ollama import OllamaProvider
-from app.ai.adapters.openai import OpenAIProvider
-from app.ai.adapters.openai_compatible import OpenAICompatibleProvider
-from app.ai.adapters.openrouter import OpenRouterProvider
 from app.ai.errors import AIInvalidOutputError, AIProviderUnavailableError
 from app.ai.protocol import AIProvider, AIRequest
-from app.ai.provider_registry import ProviderId, get_provider_descriptor
+from app.ai.provider_registry import PROVIDER_REGISTRY, ProviderId
 
 DEFAULT_OLLAMA_BASE_URL = "http://localhost:11434"
-"""Mirrors `app/ai/provider_factory.py`'s own constant -- not imported
-from there, see `_build_probe_adapter`'s docstring for why."""
+OPENAI_BASE_URL = "https://api.openai.com/v1"
 
 
 class CapabilityCheckResult(BaseModel):
@@ -45,7 +42,7 @@ def check_provider_capability(
     to be incomplete, and this function's checks are the ones that catch
     "no credential typed at all" without wasting a request.
     """
-    descriptor = get_provider_descriptor(provider_id)
+    descriptor = PROVIDER_REGISTRY[provider_id]
 
     if descriptor.requires_api_key and not credential:
         return CapabilityCheckResult(
@@ -91,40 +88,24 @@ def _probe_request() -> AIRequest:
     )
 
 
-def _build_probe_adapter(
+def build_adapter(
     provider_id: ProviderId, model: str, base_url: str | None, credential: str | None
 ) -> AIProvider:
-    """Mirrors `app/ai/provider_factory.py`'s `_build_adapter` per-provider
-    switch, but takes primitives instead of `AIProviderConfig`. Deliberately
-    NOT imported from there: `provider_factory.py` imports `app.config`
-    (`AIProviderConfig`, `CredentialStore`), and this module's own
-    `check_provider_capability` docstring already commits to keeping
-    `app.ai` independent of `app.config` (which itself depends on `app.ai`
-    for `ProviderId`) -- reusing that factory here would run the
-    dependency backward, so the small per-provider switch is duplicated
-    instead. Only ever called after `check_provider_capability` returned
-    `ok=True`, so required fields are already known present -- no
-    defensive re-validation here."""
+    """The one per-provider switch, shared with `provider_factory`. Takes
+    primitives rather than `AIProviderConfig` so `app.ai` stays independent
+    of `app.config`. Callers validate required fields first, so the asserts
+    only narrow types."""
+    if provider_id == ProviderId.MOCK:
+        return MockProvider()
     if provider_id == ProviderId.OLLAMA:
         return OllamaProvider(model=model, base_url=base_url or DEFAULT_OLLAMA_BASE_URL)
-    if provider_id == ProviderId.OPENAI:
-        assert credential is not None
-        return OpenAIProvider(model=model, api_key=credential)
     if provider_id == ProviderId.ANTHROPIC:
         assert credential is not None
         return AnthropicProvider(model=model, api_key=credential)
-    if provider_id == ProviderId.OPENROUTER:
-        assert credential is not None
-        assert base_url is not None
-        return OpenRouterProvider(model=model, api_key=credential, base_url=base_url)
-    if provider_id == ProviderId.NVIDIA_NIM:
-        assert credential is not None
-        assert base_url is not None
-        return NvidiaNimProvider(model=model, api_key=credential, base_url=base_url)
-    if provider_id == ProviderId.OPENAI_COMPATIBLE:
-        assert base_url is not None
-        return OpenAICompatibleProvider(model=model, base_url=base_url, api_key=credential)
-    raise ValueError(f"unknown provider id for a live probe: {provider_id!r}")
+    if provider_id == ProviderId.OPENAI:
+        return OpenAICompatibleAdapter(model=model, base_url=OPENAI_BASE_URL, api_key=credential)
+    assert base_url is not None
+    return OpenAICompatibleAdapter(model=model, base_url=base_url, api_key=credential)
 
 
 async def validate_provider_connection(
@@ -155,7 +136,7 @@ async def validate_provider_connection(
         return CapabilityCheckResult(ok=True, provider_id=provider_id)
 
     try:
-        adapter = _build_probe_adapter(provider_id, model, base_url, credential)
+        adapter = build_adapter(provider_id, model, base_url, credential)
         await adapter.generate(_probe_request(), _CapabilityProbeResponse)
     except (AIProviderUnavailableError, AIInvalidOutputError) as exc:
         return CapabilityCheckResult(ok=False, provider_id=provider_id, reason=str(exc))

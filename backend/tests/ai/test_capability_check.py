@@ -5,7 +5,7 @@ from app.ai import capability_check
 from app.ai.adapters.anthropic import AnthropicProvider
 from app.ai.adapters.ollama import OllamaProvider
 from app.ai.capability_check import (
-    _build_probe_adapter,
+    build_adapter,
     check_provider_capability,
     validate_provider_connection,
 )
@@ -96,7 +96,7 @@ def test_result_provider_id_matches_input(provider_id: ProviderId) -> None:
 
 # --- validate_provider_connection (docs/TASKS.md T145) ---------------------
 #
-# `_build_probe_adapter` is monkeypatched rather than injecting a real
+# `build_adapter` is monkeypatched rather than injecting a real
 # `httpx.MockTransport` per provider: each adapter's own wire protocol is
 # already thoroughly covered in `tests/ai/adapters/` (headers, body shape,
 # error parsing). What's specific to `validate_provider_connection` is its
@@ -119,9 +119,9 @@ async def test_mock_is_always_ok_without_ever_building_an_adapter(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     def _must_not_be_called(*args: object, **kwargs: object) -> None:
-        raise AssertionError("mock must never reach _build_probe_adapter")
+        raise AssertionError("mock must never reach build_adapter")
 
-    monkeypatch.setattr(capability_check, "_build_probe_adapter", _must_not_be_called)
+    monkeypatch.setattr(capability_check, "build_adapter", _must_not_be_called)
 
     result = await validate_provider_connection(
         provider_id=ProviderId.MOCK, model="mock-1", base_url=None, credential=None
@@ -136,7 +136,7 @@ async def test_succeeds_when_the_adapter_answers() -> None:
         return _FakeAdapter()
 
     with pytest.MonkeyPatch.context() as mp:
-        mp.setattr(capability_check, "_build_probe_adapter", _fake_adapter)
+        mp.setattr(capability_check, "build_adapter", _fake_adapter)
         result = await validate_provider_connection(
             provider_id=ProviderId.OPENAI, model="gpt-5", base_url=None, credential="sk-abc"
         )
@@ -153,7 +153,7 @@ async def test_reports_the_providers_own_error_reason() -> None:
         return _FakeAdapter(error=error)
 
     with pytest.MonkeyPatch.context() as mp:
-        mp.setattr(capability_check, "_build_probe_adapter", _fake_adapter)
+        mp.setattr(capability_check, "build_adapter", _fake_adapter)
         result = await validate_provider_connection(
             provider_id=ProviderId.ANTHROPIC, model="bad-id", base_url=None, credential="sk-ant"
         )
@@ -170,7 +170,7 @@ async def test_catches_invalid_output_too_not_only_unavailable() -> None:
         return _FakeAdapter(error=error)
 
     with pytest.MonkeyPatch.context() as mp:
-        mp.setattr(capability_check, "_build_probe_adapter", _fake_adapter)
+        mp.setattr(capability_check, "build_adapter", _fake_adapter)
         result = await validate_provider_connection(
             provider_id=ProviderId.OLLAMA,
             model="llama3",
@@ -182,13 +182,13 @@ async def test_catches_invalid_output_too_not_only_unavailable() -> None:
     assert result.reason == "response missing the answer field"
 
 
-def test_build_probe_adapter_wires_anthropic_with_the_given_model_and_key() -> None:
-    adapter = _build_probe_adapter(ProviderId.ANTHROPIC, "claude-x", None, "sk-ant")
+def test_build_adapter_wires_anthropic_with_the_given_model_and_key() -> None:
+    adapter = build_adapter(ProviderId.ANTHROPIC, "claude-x", None, "sk-ant")
 
     assert isinstance(adapter, AnthropicProvider)
 
 
-def test_build_probe_adapter_falls_back_to_the_default_ollama_base_url() -> None:
-    adapter = _build_probe_adapter(ProviderId.OLLAMA, "llama3", None, None)
+def test_build_adapter_falls_back_to_the_default_ollama_base_url() -> None:
+    adapter = build_adapter(ProviderId.OLLAMA, "llama3", None, None)
 
     assert isinstance(adapter, OllamaProvider)
